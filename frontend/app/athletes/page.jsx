@@ -77,7 +77,7 @@ export default function AthletesPage() {
       if (!response.ok) throw new Error('Erreur lors de la suppression')
 
       setAthletes(prev => prev.filter(a => a.id !== athleteToDelete.id))
-      toast.success("Athlète supprimé", { id: loadingToast })
+      toast.dismiss(loadingToast)
       
       setDeleteConfirmOpen(false)
       setShowSuccessModal(true)
