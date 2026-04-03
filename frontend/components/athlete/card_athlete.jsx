@@ -1,5 +1,6 @@
 'use client'
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import {
   Card,
   CardAction,
@@ -11,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Check, ChevronsUpDown, Plus, X, UserCheck } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -80,12 +80,39 @@ const initialFormState = {
 
 export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
   const isCreation = mode === "create"
+  const router = useRouter()
   const [openSports, setOpenSports] = React.useState(false)
   const [openObjectives, setOpenObjectives] = React.useState(false)
   const [openGroupes, setOpenGroupes] = React.useState(false)
   const [objectiveSearch, setObjectiveSearch] = React.useState("")
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
   const [formData, setFormData] = React.useState(initialFormState)
+
+  // Fetch athlete data if in edit mode
+  React.useEffect(() => {
+    if (!isCreation && athleteId) {
+      fetchAthleteData()
+    }
+  }, [athleteId, isCreation])
+
+  const fetchAthleteData = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:3001/api/athletes/${athleteId}`)
+      if (!response.ok) throw new Error("Impossible de charger les données de l'athlète")
+      const data = await response.json()
+      setFormData({
+        ...data,
+        sports: data.sports || [],
+        objectives: data.objectives || [],
+        groupes: data.groupes || [],
+        abonnement: data.abonnement || "Essentiel",
+        mode_paiement: data.mode_paiement || "Carte Bancaire",
+      })
+    } catch (error) {
+      console.error(error)
+      toast.error("Erreur lors du chargement du profil")
+    }
+  }
 
   // Generate a default avatar if none provided
   const displayAvatar = formData.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.first_name || 'default'}`
@@ -180,12 +207,10 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
       toast.dismiss(loadingToast)
       setShowSuccessModal(true)
 
+      // Automatic redirect after success
       setTimeout(() => {
-        setShowSuccessModal(false)
-        if (isCreation) {
-          setFormData(initialFormState)
-        }
-      }, 3000)
+        handleModalClose()
+      }, 2000)
 
     } catch (error) {
       console.error("Erreur:", error)
@@ -197,9 +222,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    if (isCreation) {
-      setFormData(initialFormState)
-    }
+    router.push('/athletes')
   }
 
   return (
@@ -209,7 +232,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
           <CardTitle>{isCreation ? "Nouvel Athlète" : "Profil de l'athlète"}</CardTitle>
           <CardAction>
             <div className="flex flex-wrap items-center gap-2 md:flex-row">
-              <Button variant="ghost" size="sm" onClick={() => window.location.href = '/athletes'}>
+              <Button variant="ghost" size="sm" onClick={() => router.push('/athletes')}>
                 Retour à la liste
               </Button>
             </div>
@@ -228,7 +251,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
                 id="avatar_url" 
                 name="avatar_url" 
                 placeholder="https://..." 
-                value={formData.avatar_url}
+                value={formData.avatar_url || ""}
                 onChange={handleInputChange}
                 className="text-center h-8 text-sm"
               />
@@ -243,7 +266,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
                 id="first_name" 
                 name="first_name" 
                 placeholder="Prénom de l'athlète" 
-                value={formData.first_name}
+                value={formData.first_name || ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -253,7 +276,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
                 id="last_name" 
                 name="last_name" 
                 placeholder="Nom de l'athlète" 
-                value={formData.last_name}
+                value={formData.last_name || ""}
                 onChange={handleInputChange}
               />
             </div>
@@ -266,7 +289,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
               name="email" 
               type="email" 
               placeholder="email@exemple.com" 
-              value={formData.email}
+              value={formData.email || ""}
               onChange={handleInputChange}
             />
           </div>
@@ -366,11 +389,11 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
           <div className="space-y-2">
             <Label>Sports pratiqués</Label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {formData.sports.map(sportValue => {
+              {(formData.sports || []).map(sportValue => {
                 const sport = sportsList.find(s => s.value === sportValue)
                 return (
                   <Badge key={sportValue} variant="secondary" className="flex items-center gap-1">
-                    {sport?.label}
+                    {sport?.label || sportValue}
                     <X 
                       className="h-3 w-3 cursor-pointer hover:text-destructive" 
                       onClick={() => removeSport(sportValue)}
@@ -406,7 +429,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              formData.sports.includes(sport.value) ? "opacity-100" : "opacity-0"
+                              (formData.sports || []).includes(sport.value) ? "opacity-100" : "opacity-0"
                             )}
                           />
                           {sport.label}
@@ -473,7 +496,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              formData.objectives.includes(obj) ? "opacity-100" : "opacity-0"
+                              (formData.objectives || []).includes(obj) ? "opacity-100" : "opacity-0"
                             )}
                           />
                           {obj}
@@ -487,7 +510,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
           </div>
         </CardContent>
         <CardFooter className="flex justify-between border-t p-6 mt-6">
-          <Button variant="outline" onClick={() => setFormData(initialFormState)}>Réinitialiser</Button>
+          <Button variant="outline" onClick={() => router.push('/athletes')}>Annuler</Button>
           <Button onClick={handleSubmit}>{isCreation ? "Créer l'athlète" : "Sauvegarder les modifications"}</Button>
         </CardFooter>
       </Card>
@@ -508,7 +531,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
           </DialogHeader>
           <DialogFooter className="sm:justify-center">
             <Button type="button" onClick={handleModalClose} className="w-full sm:w-auto px-8">
-              Fermer
+              Fermer et retourner à la liste
             </Button>
           </DialogFooter>
         </DialogContent>
