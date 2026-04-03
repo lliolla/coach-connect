@@ -57,9 +57,18 @@ export const CardSeance = () => {
     </CardAction>
   </CardHeader>
   <CardContent>
-   <h2>date</h2>
-  <h2>Type de seance</h2>
-<Popover open={open} onOpenChange={setOpen}>
+    <div className="group-block p-2">
+      <h2>periode</h2>
+git remote -v
+    </div>
+    <div className="group-date p-2">
+   <h2 m-1>date</h2>
+      <input type="date" /> 
+       </div> 
+     
+ <div className="group-type p-2">
+ <h2 m-1 >Type de seance</h2>
+  <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -102,9 +111,28 @@ export const CardSeance = () => {
         </Command>
       </PopoverContent>
     </Popover>
+   </div>
+ <div className="group-km p-2">
+  <h2>nb de km</h2>
+ </div>
+  <div className="group-repetition p-2">
+      <h2>nb de repetition</h2>
+  </div>
+ <div className="group-difficult p-2">
+    <h2>difficulté</h2>
+ </div>
+ <div className="group-duree p-2">
+    <h2>durée exercice </h2>
+ </div>
+ <div className="group-description p-2">
+    <h2>Commentaire du coach</h2>
+ </div>
+ 
+ 
   </CardContent>
   <CardFooter>
-    <p>Card Footer</p>
+    
+<Button>Valider</Button>
   </CardFooter>
 </Card>
   );

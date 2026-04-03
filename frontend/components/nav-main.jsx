@@ -2,6 +2,8 @@
 
 import { IconCirclePlusFilled, IconMail } from "@tabler/icons-react";
 
+import Link from "next/link";
+
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -19,10 +21,13 @@ export function NavMain({
         <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
             <SidebarMenuButton
+              asChild
               tooltip="Quick Create"
               className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear">
-              <IconCirclePlusFilled />
-              <span>Créer une séance</span>
+              <Link href="#">
+                <IconCirclePlusFilled />
+                <span>Créer une séance</span>
+              </Link>
             </SidebarMenuButton>
           
           </SidebarMenuItem>
@@ -30,9 +35,11 @@ export function NavMain({
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton tooltip={item.title}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
+              <SidebarMenuButton asChild tooltip={item.title}>
+                <Link href={item.url}>
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

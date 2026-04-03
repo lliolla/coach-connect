@@ -1,3 +1,4 @@
+2
 import { AppSidebar } from "@/components/app-sidebar"
 import { SectionCards } from "@/components/seance/section-cards"
 import { SiteHeader } from "@/components/site-header"
@@ -32,5 +33,6 @@ export default function Page() {
         </div>
       </SidebarInset>
     </SidebarProvider>)
+    
   );
 }

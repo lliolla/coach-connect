@@ -42,18 +42,18 @@ const data = {
   navMain: [
     {
       title: "Tableau de bord",
-      url: "#",
+      url: "/dashboard",
       icon: IconDashboard,
     },
     {
-      title: "Séances",
-      url: "#",
+      title: "Suivis",
+      url: "/suivis",
       icon: IconListDetails,
     },
    
     {
       title: "Athlètes",
-      url: "#",
+      url: "/athletes",
       icon: IconUsers,
     },
   ],
