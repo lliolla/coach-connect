@@ -73,14 +73,16 @@ const initialFormState = {
   avatar_url: "",
   sports: [],
   objectives: [],
+  groupes: ["Groupe A"],
   abonnement: "Essentiel",
-  groupe: "Groupe A",
+  mode_paiement: "Carte Bancaire",
 }
 
 export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
   const isCreation = mode === "create"
   const [openSports, setOpenSports] = React.useState(false)
   const [openObjectives, setOpenObjectives] = React.useState(false)
+  const [openGroupes, setOpenGroupes] = React.useState(false)
   const [objectiveSearch, setObjectiveSearch] = React.useState("")
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
   const [formData, setFormData] = React.useState(initialFormState)
@@ -125,6 +127,24 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
         return { ...prev, objectives: [...objectives, objective] }
       }
     })
+  }
+
+  const toggleGroup = (groupName) => {
+    setFormData(prev => {
+      const currentGroups = Array.isArray(prev.groupes) ? prev.groupes : []
+      if (currentGroups.includes(groupName)) {
+        return { ...prev, groupes: currentGroups.filter(g => g !== groupName) }
+      } else {
+        return { ...prev, groupes: [...currentGroups, groupName] }
+      }
+    })
+  }
+
+  const removeGroup = (groupName) => {
+    setFormData(prev => ({
+      ...prev,
+      groupes: (Array.isArray(prev.groupes) ? prev.groupes : []).filter(g => g !== groupName)
+    }))
   }
 
   const addNewObjective = () => {
@@ -251,7 +271,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
             />
           </div>
 
-          {/* Abonnement et Groupe */}
+          {/* Abonnement et Mode de Paiement */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="abonnement">Abonnement</Label>
@@ -270,21 +290,76 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="groupe">Groupe</Label>
+              <Label htmlFor="mode_paiement">Mode de Paiement</Label>
               <Select 
-                value={formData.groupe} 
-                onValueChange={(value) => handleSelectChange('groupe', value)}
+                value={formData.mode_paiement} 
+                onValueChange={(value) => handleSelectChange('mode_paiement', value)}
               >
-                <SelectTrigger id="groupe">
-                  <SelectValue placeholder="Choisir un groupe" />
+                <SelectTrigger id="mode_paiement">
+                  <SelectValue placeholder="Choisir un mode de paiement" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Groupe A">Groupe A</SelectItem>
-                  <SelectItem value="Groupe B">Groupe B</SelectItem>
-                  <SelectItem value="Groupe C">Groupe C</SelectItem>
+                  <SelectItem value="Carte Bancaire">Carte Bancaire</SelectItem>
+                  <SelectItem value="Virement">Virement</SelectItem>
+                  <SelectItem value="Prélèvement">Prélèvement</SelectItem>
+                  <SelectItem value="Espèces">Espèces</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Groupes - Multi-select */}
+          <div className="space-y-2">
+            <Label>Groupes</Label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {(Array.isArray(formData.groupes) ? formData.groupes : []).map(groupName => (
+                <Badge key={groupName} variant="secondary" className="flex items-center gap-1">
+                  {groupName}
+                  <X 
+                    className="h-3 w-3 cursor-pointer hover:text-destructive" 
+                    onClick={() => removeGroup(groupName)}
+                  />
+                </Badge>
+              ))}
+            </div>
+            <Popover open={openGroupes} onOpenChange={setOpenGroupes}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openGroupes}
+                  className="w-full justify-between"
+                >
+                  Choisir des groupes...
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                <Command>
+                  <CommandInput placeholder="Rechercher un groupe..." />
+                  <CommandList>
+                    <CommandEmpty>Aucun groupe trouvé.</CommandEmpty>
+                    <CommandGroup>
+                      {["Groupe A", "Groupe B", "Groupe C"].map((groupName) => (
+                        <CommandItem
+                          key={groupName}
+                          value={groupName}
+                          onSelect={() => toggleGroup(groupName)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              (Array.isArray(formData.groupes) ? formData.groupes : []).includes(groupName) ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {groupName}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Sports - Multi-select */}

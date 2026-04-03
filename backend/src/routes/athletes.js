@@ -83,8 +83,11 @@ export default async function athleteRoutes(fastify, opts) {
 
   // CREATE new athlete
   fastify.post('/athletes', async (request, reply) => {
-    const { sports, objectives, groupes, abonnement, mode_paiement, ...athleteData } = request.body
+    const { sports, objectives, groupes, groupe, abonnement, mode_paiement, ...athleteData } = request.body
     
+    // Merge single 'groupe' into 'groupes' array for M2M syncing
+    const allGroupes = Array.isArray(groupes) ? groupes : (groupe ? [groupe] : [])
+
     // Resolve abonnement_id and mode_paiement_id
     if (abonnement) {
       const { data: ab } = await supabase.from('abonnements').select('id').eq('label', abonnement).maybeSingle()
@@ -104,7 +107,7 @@ export default async function athleteRoutes(fastify, opts) {
     const newAthlete = data[0]
 
     // Sync Many-to-Many
-    if (groupes) await syncManyToMany(newAthlete.id, 'athletes_groupes', 'groupes', 'name', groupes, 'groupe_id')
+    if (allGroupes.length > 0) await syncManyToMany(newAthlete.id, 'athletes_groupes', 'groupes', 'name', allGroupes, 'groupe_id')
     if (objectives) await syncManyToMany(newAthlete.id, 'athletes_objectifs', 'objectifs', 'label', objectives, 'objectif_id')
 
     return reply.status(201).send(newAthlete)
@@ -113,7 +116,10 @@ export default async function athleteRoutes(fastify, opts) {
   // UPDATE athlete
   fastify.put('/athletes/:id', async (request, reply) => {
     const { id } = request.params
-    const { sports, objectives, groupes, abonnement, mode_paiement, ...athleteData } = request.body
+    const { sports, objectives, groupes, groupe, abonnement, mode_paiement, ...athleteData } = request.body
+
+    // Merge single 'groupe' into 'groupes' array for M2M syncing
+    const allGroupes = Array.isArray(groupes) ? groupes : (groupe ? [groupe] : [])
 
     // Resolve abonnement_id and mode_paiement_id
     if (abonnement) {
@@ -134,7 +140,7 @@ export default async function athleteRoutes(fastify, opts) {
     if (error) return reply.status(400).send(error)
 
     // Sync Many-to-Many
-    if (groupes) await syncManyToMany(id, 'athletes_groupes', 'groupes', 'name', groupes, 'groupe_id')
+    if (allGroupes.length > 0) await syncManyToMany(id, 'athletes_groupes', 'groupes', 'name', allGroupes, 'groupe_id')
     if (objectives) await syncManyToMany(id, 'athletes_objectifs', 'objectifs', 'label', objectives, 'objectif_id')
 
     return data[0]
