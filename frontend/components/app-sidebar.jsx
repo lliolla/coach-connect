@@ -17,6 +17,10 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
+  IconTrophy,
+  IconTarget,
+  IconCreditCard,
+  IconLayoutGrid
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -35,9 +39,9 @@ import {
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Admin",
+    email: "admin@prepathlete.com",
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
   },
   navMain: [
     {
@@ -50,93 +54,49 @@ const data = {
       url: "/suivis",
       icon: IconListDetails,
     },
-   
     {
       title: "Athlètes",
       url: "/athletes",
       icon: IconUsers,
     },
   ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: IconCamera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: IconFileDescription,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: IconFileAi,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-  ],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
+      title: "Paramètres",
+      url: "/parametrage",
       icon: IconSettings,
     },
     {
-      title: "Get Help",
+      title: "Aide",
       url: "#",
       icon: IconHelp,
     },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
   ],
-  documents: [
+  administration: [
     {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
+      name: "Gestion Globale",
+      url: "/parametrage",
+      icon: IconLayoutGrid,
     },
     {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
+      name: "Groupes",
+      url: "/parametrage?tab=groupes",
+      icon: IconUsers,
     },
     {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
+      name: "Abonnements",
+      url: "/parametrage?tab=abonnements",
+      icon: IconTrophy,
+    },
+    {
+      name: "Objectifs",
+      url: "/parametrage?tab=objectifs",
+      icon: IconTarget,
+    },
+    {
+      name: "Modes de Paiement",
+      url: "/parametrage?tab=paiements",
+      icon: IconCreditCard,
     },
   ],
 }
@@ -150,7 +110,7 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="data-[slot=sidebar-menu-button]:!p-1.5">
-              <a href="#">
+              <a href="/dashboard">
                 <IconInnerShadowTop className="!size-5" />
                 <span className="text-base font-semibold">Prep Athlète</span>
               </a>
@@ -160,7 +120,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
+        <NavDocuments items={data.administration} label="Administration" />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
