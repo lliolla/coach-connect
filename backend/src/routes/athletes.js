@@ -83,7 +83,11 @@ export default async function athleteRoutes(fastify, opts) {
 
   // CREATE new athlete
   fastify.post('/athletes', async (request, reply) => {
-    const { sports, objectives, groupes, groupe, abonnement, mode_paiement, ...athleteData } = request.body
+    const { 
+      sports, objectives, groupes, groupe, abonnement, mode_paiement,
+      abonnements, modes_paiement, athletes_groupes, athletes_objectifs,
+      ...athleteData 
+    } = request.body
     
     // Merge single 'groupe' into 'groupes' array for M2M syncing
     const allGroupes = Array.isArray(groupes) ? groupes : (groupe ? [groupe] : [])
@@ -116,7 +120,11 @@ export default async function athleteRoutes(fastify, opts) {
   // UPDATE athlete
   fastify.put('/athletes/:id', async (request, reply) => {
     const { id } = request.params
-    const { sports, objectives, groupes, groupe, abonnement, mode_paiement, ...athleteData } = request.body
+    const { 
+      sports, objectives, groupes, groupe, abonnement, mode_paiement,
+      abonnements, modes_paiement, athletes_groupes, athletes_objectifs,
+      ...athleteData 
+    } = request.body
 
     // Merge single 'groupe' into 'groupes' array for M2M syncing
     const allGroupes = Array.isArray(groupes) ? groupes : (groupe ? [groupe] : [])

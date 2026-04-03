@@ -17,14 +17,27 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { IconSearch, IconUserPlus, IconLoader2, IconTrophy, IconUsers } from "@tabler/icons-react"
+import { IconSearch, IconUserPlus, IconLoader2, IconTrophy, IconUsers, IconTrash, IconAlertTriangle, IconCheck } from "@tabler/icons-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function AthletesPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
   const [athletes, setAthletes] = React.useState([])
   const [loading, setLoading] = React.useState(true)
+  
+  // States for Modals
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [athleteToDelete, setAthleteToDelete] = React.useState(null)
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
 
   React.useEffect(() => {
     fetchAthletes()
@@ -36,20 +49,46 @@ export default function AthletesPage() {
       const response = await fetch('http://127.0.0.1:3001/api/athletes')
       if (!response.ok) throw new Error('Erreur lors de la récupération des athlètes')
       const data = await response.json()
-      
-      // Generate mock data for subscription and group if they don't exist
-      const enrichedData = data.map(athlete => ({
-        ...athlete,
-        abonnement: athlete.abonnement || ["Essentiel", "Premium", "Performance"][Math.floor(Math.random() * 3)],
-        groupe: athlete.groupe || ["Groupe A", "Groupe B", "Groupe C"][Math.floor(Math.random() * 3)]
-      }))
-      
-      setAthletes(enrichedData)
+      setAthletes(data)
     } catch (error) {
       console.error(error)
       toast.error("Impossible de charger la liste des athlètes")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const openDeleteConfirm = (e, athlete) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setAthleteToDelete(athlete)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!athleteToDelete) return
+
+    const loadingToast = toast.loading("Suppression en cours...")
+    try {
+      const response = await fetch(`http://127.0.0.1:3001/api/athletes/${athleteToDelete.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) throw new Error('Erreur lors de la suppression')
+
+      setAthletes(prev => prev.filter(a => a.id !== athleteToDelete.id))
+      toast.success("Athlète supprimé", { id: loadingToast })
+      
+      setDeleteConfirmOpen(false)
+      setShowSuccessModal(true)
+      
+      setTimeout(() => {
+        setShowSuccessModal(false)
+        setAthleteToDelete(null)
+      }, 2500)
+    } catch (error) {
+      console.error(error)
+      toast.error("Erreur lors de la suppression", { id: loadingToast })
     }
   }
 
@@ -98,7 +137,15 @@ export default function AthletesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredAthletes.map((athlete) => (
                 <Link key={athlete.id} href={`/athletes/${athlete.id}`}>
-                  <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                  <Card className="hover:border-primary transition-colors cursor-pointer h-full relative group">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      onClick={(e) => openDeleteConfirm(e, athlete)}
+                    >
+                      <IconTrash size={16} />
+                    </Button>
                     <CardHeader className="flex flex-row items-center gap-4 pb-2">
                       <Avatar className="h-12 w-12 border border-primary/10">
                         <AvatarImage src={athlete.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${athlete.first_name || 'default'}`} />
@@ -119,7 +166,11 @@ export default function AthletesPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <IconUsers size={14} className="text-primary" />
-                          <span className="font-medium text-foreground">{athlete.groupe}</span>
+                          <span className="font-medium text-foreground">
+                            {Array.isArray(athlete.groupes) && athlete.groupes.length > 0 
+                              ? athlete.groupes.join(", ") 
+                              : athlete.groupe || "Sans groupe"}
+                          </span>
                         </div>
                       </div>
                       
@@ -148,6 +199,49 @@ export default function AthletesPage() {
           )}
         </div>
       </SidebarInset>
+
+      {/* Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <IconAlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              Êtes-vous sûr de vouloir supprimer l'athlète <strong>{athleteToDelete?.first_name} {athleteToDelete?.last_name}</strong> ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-center gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none">
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <IconCheck className="h-6 w-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              L'athlète a été supprimé de la base de données avec succès.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button type="button" onClick={() => setShowSuccessModal(false)} className="w-full sm:w-auto px-8">
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }
