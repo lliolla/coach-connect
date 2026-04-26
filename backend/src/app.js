@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import supabasePlugin from './plugins/supabase.js'
 import athleteRoutes from './routes/athletes.js'
 import sessionRoutes from './routes/sessions.js'
+import exerciceRoutes from './routes/exercices.js'
 import lookupRoutes from './routes/lookups.js'
 
 const fastify = Fastify({
@@ -19,6 +20,7 @@ fastify.register(supabasePlugin)
 // Register Routes
 fastify.register(athleteRoutes, { prefix: '/api' })
 fastify.register(sessionRoutes, { prefix: '/api' })
+fastify.register(exerciceRoutes, { prefix: '/api' })
 fastify.register(lookupRoutes, { prefix: '/api' })
 
 // Base Routes

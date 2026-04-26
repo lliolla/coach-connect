@@ -118,8 +118,9 @@ export default async function athleteRoutes(fastify, opts) {
       return reply.status(400).send(error)
     }
 
-2    const newAthlete = data[0]
+    const newAthlete = data[0]
 
+    
     // Sync Many-to-Many
     if (allGroupes.length > 0) await syncManyToMany(newAthlete.id, 'athletes_groupes', 'groupes', 'name', allGroupes, 'groupe_id')
     if (objectives) await syncManyToMany(newAthlete.id, 'athletes_objectifs', 'objectifs', 'label', objectives, 'objectif_id')
