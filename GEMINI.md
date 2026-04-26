@@ -28,7 +28,10 @@ This project is a web application for athlete preparation management. It consist
 ## Workflow Rules (CRITICAL)
 - **Git Commits**: After each feature creation or modification, a git commit must be proposed.
 - **Validation**: **DO NOT** commit without explicit user validation of the proposed commit message and changes.
-- **UI/UX Standard**: All forms (creation, modification) and critical actions (deletion) MUST use styled Modals/Dialogs for success, confirmation, or error messages. Native browser pop-ups (alert, confirm) are FORBIDDEN.
+- **UI/UX Standard**: 
+    - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.
+    - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.
+    - **Toasts**: Prefer Success Modals over Toasts for critical validation messages.
 
 ## Development
 - **Frontend:** `npm run dev` in `frontend` directory.

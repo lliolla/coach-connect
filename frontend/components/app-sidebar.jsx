@@ -2,25 +2,16 @@
 
 import * as React from "react"
 import {
-  IconCamera,
-  IconChartBar,
   IconDashboard,
-  IconDatabase,
-  IconFileAi,
-  IconFileDescription,
-  IconFileWord,
-  IconFolder,
+  IconListDetails,
+  IconUsers,
+  IconSettings,
   IconHelp,
   IconInnerShadowTop,
-  IconListDetails,
-  IconReport,
-  IconSearch,
-  IconSettings,
-  IconUsers,
-  IconTrophy,
-  IconTarget,
-  IconCreditCard,
-  IconLayoutGrid
+  IconLogout,
+  IconLayoutGrid,
+  IconBarbell,
+  IconAdjustments
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -50,7 +41,7 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Suivis",
+      title: "Plan",
       url: "/suivis",
       icon: IconListDetails,
     },
@@ -60,10 +51,22 @@ const data = {
       icon: IconUsers,
     },
   ],
+  configuration: [
+    {
+      name: "Gestion des listes",
+      url: "/parametrage",
+      icon: IconAdjustments,
+    },
+    {
+      name: "Bibliothèque d'exercices",
+      url: "/exercices",
+      icon: IconBarbell,
+    },
+  ],
   navSecondary: [
     {
       title: "Paramètres",
-      url: "/parametrage",
+      url: "/parametrage?tab=settings",
       icon: IconSettings,
     },
     {
@@ -71,32 +74,10 @@ const data = {
       url: "#",
       icon: IconHelp,
     },
-  ],
-  administration: [
     {
-      name: "Gestion Globale",
-      url: "/parametrage",
-      icon: IconLayoutGrid,
-    },
-    {
-      name: "Groupes",
-      url: "/parametrage?tab=groupes",
-      icon: IconUsers,
-    },
-    {
-      name: "Abonnements",
-      url: "/parametrage?tab=abonnements",
-      icon: IconTrophy,
-    },
-    {
-      name: "Objectifs",
-      url: "/parametrage?tab=objectifs",
-      icon: IconTarget,
-    },
-    {
-      name: "Modes de Paiement",
-      url: "/parametrage?tab=paiements",
-      icon: IconCreditCard,
+      title: "Déconnexion",
+      url: "#",
+      icon: IconLogout,
     },
   ],
 }
@@ -120,7 +101,7 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.administration} label="Administration" />
+        <NavDocuments items={data.configuration} label="Configuration" />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

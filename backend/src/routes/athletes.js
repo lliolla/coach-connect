@@ -41,8 +41,11 @@ export default async function athleteRoutes(fastify, opts) {
         athletes_groupes(groupes(name)),
         athletes_objectifs(objectifs(label))
       `)
-    
-    if (error) return reply.status(500).send(error)
+
+    if (error) {
+      console.error("GET Athletes Error:", error)
+      return reply.status(500).send(error)
+    }
 
     // Format data for frontend (flattening relations)
     return data.map(athlete => ({
@@ -68,8 +71,11 @@ export default async function athleteRoutes(fastify, opts) {
       `)
       .eq('id', id)
       .single()
-    
-    if (error) return reply.status(404).send({ message: 'Athlete not found' })
+
+    if (error) {
+      console.error(`GET Athlete ${id} Error:`, error)
+      return reply.status(404).send({ message: 'Athlete not found', error })
+    }
 
     // Format for frontend
     return {
@@ -84,11 +90,11 @@ export default async function athleteRoutes(fastify, opts) {
   // CREATE new athlete
   fastify.post('/athletes', async (request, reply) => {
     const { 
-      sports, objectives, groupes, groupe, abonnement, mode_paiement,
+      objectives, groupes, groupe, abonnement, mode_paiement,
       abonnements, modes_paiement, athletes_groupes, athletes_objectifs,
       ...athleteData 
     } = request.body
-    
+
     // Merge single 'groupe' into 'groupes' array for M2M syncing
     const allGroupes = Array.isArray(groupes) ? groupes : (groupe ? [groupe] : [])
 
@@ -106,9 +112,13 @@ export default async function athleteRoutes(fastify, opts) {
       .from('athletes')
       .insert([athleteData])
       .select()
-    
-    if (error) return reply.status(400).send(error)
-    const newAthlete = data[0]
+
+    if (error) {
+      console.error("POST Athlete Error:", error)
+      return reply.status(400).send(error)
+    }
+
+2    const newAthlete = data[0]
 
     // Sync Many-to-Many
     if (allGroupes.length > 0) await syncManyToMany(newAthlete.id, 'athletes_groupes', 'groupes', 'name', allGroupes, 'groupe_id')
