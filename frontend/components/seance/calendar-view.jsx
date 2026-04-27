@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { IconActivity, IconClock } from "@tabler/icons-react"
+import Link from "next/link"
 
 const mockSessions = [
   { id: 1, date: new Date(), title: "Sortie Endurance", type: "Running", duration: "1h30" },
@@ -70,7 +71,9 @@ export function CalendarView({ searchTerm = "" }) {
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <IconActivity size={40} className="opacity-20 mb-2" />
               <p className="italic">Aucune séance planifiée pour ce jour.</p>
-              <Button variant="link" size="sm" className="mt-2">+ Ajouter une séance</Button>
+              <Button variant="link" size="sm" className="mt-2" asChild>
+                <Link href="/sessions/new">+ Ajouter une séance</Link>
+              </Button>
             </div>
           )}
         </CardContent>
