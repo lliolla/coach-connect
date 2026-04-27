@@ -97,7 +97,8 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
       sets: 3,
       reps: 10,
       weight: 0,
-      notes: ""
+      notes: "",
+      rest_time_seconds: 60 // Added default rest time
     }
     delete newExercise.id // We use template_id for the reference
     
@@ -155,7 +156,7 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
         body: JSON.stringify(payload),
       })
 
-      if (!response.ok) throw new Error('Erreur lors de l\'enregistrement')
+      if (!response.ok) throw new Error('Erreur lors de l'enregistrement')
 
       toast.dismiss(loadingToast)
       setShowSuccessModal(true)
@@ -177,14 +178,17 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
 
   return (
     <>
-      <Card className="w-full max-w-3xl mx-auto border-dashed border-2 border-primary/20 shadow-none">
+      <Card className="w-full max-w-3xl mx-auto border-dashed border-2 border-primary/20 shadow-none relative">
         <CardHeader>
           <CardTitle>{isCreation ? "Nouveau Programme" : "Modifier la séance"}</CardTitle>
-          <CardAction>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/suivis')}>
-              Annuler
-            </Button>
-          </CardAction>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute right-4 top-4 h-8 w-8 text-muted-foreground hover:text-foreground" 
+            onClick={() => router.push('/suivis')}
+          >
+            <X size={20} />
+          </Button>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Header Info */}
@@ -315,6 +319,16 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
                               className="h-8"
                             />
                           </div>
+                          {/* Rest Time Input */}
+                          <div className="space-y-1.5">
+                            <Label className="text-[10px] uppercase text-muted-foreground font-bold">Repos (sec)</Label>
+                            <Input 
+                              type="number" 
+                              value={ex.rest_time_seconds} 
+                              onChange={(e) => updateExerciseDetails(index, 'rest_time_seconds', parseInt(e.target.value))}
+                              className="h-8"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -324,8 +338,7 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between border-t p-6 mt-6 bg-muted/5 gap-4">
-          <Button variant="outline" onClick={() => router.push('/suivis')}>Annuler</Button>
+        <CardFooter className="flex justify-end border-t p-6 mt-6 bg-muted/5">
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => handleSubmit(true)}>Enregistrer comme modèle</Button>
             <Button className="px-8" onClick={() => handleSubmit(false)}>Valider le programme</Button>
