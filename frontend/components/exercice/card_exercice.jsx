@@ -273,6 +273,7 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
               {isCreation 
                 ? "L'exercice a été ajouté à la bibliothèque." 
                 : "Le modèle d'exercice a été mis à jour."}
+                
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">

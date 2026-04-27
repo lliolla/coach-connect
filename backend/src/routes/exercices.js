@@ -3,7 +3,12 @@
 
 
 
-celle des categorexport default async function exerciceRoutes(fastify, opts) {
+
+
+
+
+
+export default async function exerciceRoutes(fastify, opts) {
   const { supabase } = fastify
 
   // GET all exercices from library

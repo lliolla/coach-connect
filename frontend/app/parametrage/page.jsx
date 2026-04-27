@@ -25,7 +25,8 @@ const tables = {
   groupes: { label: "Groupes", endpoint: "groupes", field: "name" },
   abonnements: { label: "Abonnements", endpoint: "abonnements", field: "label" },
   objectifs: { label: "Objectifs", endpoint: "objectifs", field: "label" },
-  paiements: { label: "Modes de Paiement", endpoint: "modes_paiement", field: "label" }
+  paiements: { label: "Modes de Paiement", endpoint: "modes_paiement", field: "label" },
+  categories_exercices: { label: "Catégories d'Exercices", endpoint: "categories_exercices", field: "label" }
 }
 
 export default function ParametragePage() {
@@ -47,6 +48,7 @@ export default function ParametragePage() {
     try {
       setLoading(true)
       const table = tables[currentTab]
+      if (!table) return
       const response = await fetch(`http://127.0.0.1:3001/api/lookups/${table.endpoint}`)
       if (!response.ok) throw new Error("Erreur de chargement")
       const result = await response.json()
@@ -134,6 +136,7 @@ export default function ParametragePage() {
                 <TabsTrigger value="abonnements">Abonnements</TabsTrigger>
                 <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
                 <TabsTrigger value="paiements">Paiements</TabsTrigger>
+                <TabsTrigger value="categories_exercices">Catégories Exercices</TabsTrigger>
               </TabsList>
             </div>
 
@@ -147,7 +150,6 @@ export default function ParametragePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Add New Item */}
                     <div className="flex gap-2">
                       <Input 
                         placeholder={`Nouveau ${tables[tabKey].label.slice(0, -1)}...`} 
@@ -160,7 +162,6 @@ export default function ParametragePage() {
                       </Button>
                     </div>
 
-                    {/* List Items */}
                     <div className="space-y-2">
                       {loading ? (
                         <div className="flex justify-center py-8">

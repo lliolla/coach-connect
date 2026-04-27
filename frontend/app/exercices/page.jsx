@@ -10,8 +10,21 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Plus, Search, Dumbbell, Trash2, Edit2, Video, Image as ImageIcon } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  IconSearch, 
+  IconPlus, 
+  IconLoader2, 
+  IconBarbell, 
+  IconTrash, 
+  IconAlertTriangle, 
+  IconCheck, 
+  IconPencil, 
+  IconVideo, 
+  IconPhoto 
+} from "@tabler/icons-react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -21,8 +34,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const units = [
   { value: "reps", label: "Répétitions" },
@@ -34,23 +45,22 @@ const units = [
 
 export default function ExercicesPage() {
   const [exercices, setExercices] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [activeCategory, setActiveCategory] = React.useState("all")
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false)
+  
+  // States for Modals
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [exerciceToDelete, setExerciceToDelete] = React.useState(null)
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
 
   React.useEffect(() => {
     fetchExercices()
   }, [])
 
-  // Extraire les catégories uniques dynamiquement
-  const categories = React.useMemo(() => {
-    const cats = exercices.map(ex => ex.category).filter(Boolean)
-    return ["all", ...new Set(cats)]
-  }, [exercices])
-
   const fetchExercices = async () => {
     try {
+      setLoading(true)
       const response = await fetch('http://127.0.0.1:3001/api/exercices')
       if (!response.ok) throw new Error("Erreur lors du chargement")
       const data = await response.json()
@@ -58,32 +68,54 @@ export default function ExercicesPage() {
     } catch (error) {
       console.error(error)
       toast.error("Impossible de charger la bibliothèque d'exercices")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const confirmDelete = (exercice) => {
+  // Extraire les catégories uniques dynamiquement
+  const categories = React.useMemo(() => {
+    const cats = exercices.map(ex => ex.category).filter(Boolean)
+    return ["all", ...new Set(cats)]
+  }, [exercices])
+
+  const openDeleteConfirm = (e, exercice) => {
+    e.preventDefault()
+    e.stopPropagation()
     setExerciceToDelete(exercice)
-    setIsDeleteDialogOpen(true)
+    setDeleteConfirmOpen(true)
   }
 
   const handleDelete = async () => {
+    if (!exerciceToDelete) return
+
+    const loadingToast = toast.loading("Suppression en cours...")
     try {
       const response = await fetch(`http://127.0.0.1:3001/api/exercices/${exerciceToDelete.id}`, {
         method: 'DELETE'
       })
       if (!response.ok) throw new Error("Erreur lors de la suppression")
       
-      toast.success("Exercice supprimé")
-      setIsDeleteDialogOpen(false)
-      fetchExercices()
+      setExercices(prev => prev.filter(ex => ex.id !== exerciceToDelete.id))
+      toast.dismiss(loadingToast)
+      
+      setDeleteConfirmOpen(false)
+      setShowSuccessModal(true)
+      
+      setTimeout(() => {
+        setShowSuccessModal(false)
+        setExerciceToDelete(null)
+      }, 2500)
     } catch (error) {
-      toast.error("Erreur : " + error.message)
+      console.error(error)
+      toast.error("Erreur lors de la suppression", { id: loadingToast })
     }
   }
 
   const filteredExercices = exercices.filter(ex => {
-    const matchesSearch = ex.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         ex.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    const name = (ex.name || '').toLowerCase()
+    const category = (ex.category || '').toLowerCase()
+    const matchesSearch = name.includes(searchTerm.toLowerCase()) || category.includes(searchTerm.toLowerCase())
     const matchesCategory = activeCategory === "all" || ex.category === activeCategory
     return matchesSearch && matchesCategory
   })
@@ -98,21 +130,22 @@ export default function ExercicesPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Bibliothèque d'exercices</h1>
+              <h1 className="text-2xl font-bold">Bibliothèque d'Exercices</h1>
               <p className="text-muted-foreground text-sm">Gérez vos modèles d'exercices réutilisables.</p>
             </div>
-            <Button asChild className="gap-2">
+            <Button className="gap-2" asChild>
               <Link href="/exercices/new">
-                <Plus size={18} /> Ajouter un exercice
+                <IconPlus size={18} />
+                Nouvel Exercice
               </Link>
             </Button>
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div className="relative w-full max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               <Input 
                 placeholder="Rechercher un exercice..." 
                 className="pl-10"
@@ -136,80 +169,117 @@ export default function ExercicesPage() {
             </Tabs>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4">
-            {filteredExercices.map((exercice) => (
-              <Card key={exercice.id} className="group hover:border-primary/50 transition-colors shadow-none border-dashed border-2 overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <IconLoader2 className="animate-spin text-primary" size={40} />
+              <p className="text-muted-foreground">Chargement des exercices...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredExercices.map((exercice) => (
+                <Link key={exercice.id} href={`/exercices/${exercice.id}`}>
+                  <Card className="hover:border-primary transition-colors cursor-pointer h-full relative group overflow-hidden">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      onClick={(e) => openDeleteConfirm(e, exercice)}
+                    >
+                      <IconTrash size={16} />
+                    </Button>
+                    
+                    <CardHeader className="flex flex-row items-center gap-4 pb-2">
                       {exercice.image_data ? (
-                        <div className="h-10 w-10 rounded-lg border overflow-hidden">
+                        <div className="h-12 w-12 rounded-lg border overflow-hidden flex-shrink-0">
                           <img src={exercice.image_data} alt={exercice.name} className="h-full w-full object-cover" />
                         </div>
                       ) : (
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                          <Dumbbell size={20} />
+                        <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                          <IconBarbell size={24} />
                         </div>
                       )}
-                      <div>
-                        <CardTitle className="text-base">{exercice.name}</CardTitle>
-                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider mt-1">
-                          {exercice.category}
-                        </Badge>
+                      <div className="flex flex-col overflow-hidden">
+                        <CardTitle className="text-lg truncate">
+                          {exercice.name}
+                        </CardTitle>
+                        <CardDescription className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-[10px] uppercase px-1.5 py-0">
+                            {exercice.category}
+                          </Badge>
+                        </CardDescription>
                       </div>
-                    </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                        <Link href={`/exercices/${exercice.id}`}>
-                          <Edit2 size={14} />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => confirmDelete(exercice)}>
-                        <Trash2 size={14} />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                    {exercice.description || "Aucune description."}
-                  </p>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      Unité : {units.find(u => u.value === exercice.unit)?.label || exercice.unit}
-                    </span>
-                    <div className="flex items-center gap-2 ml-auto">
-                      {exercice.image_data && <ImageIcon size={14} className="text-primary" />}
-                      {exercice.video_url && <Video size={14} className="text-primary" />}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                        {exercice.description || "Aucune description renseignée."}
+                      </p>
+                      
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                        <span className="font-medium">
+                          Unité : {units.find(u => u.value === exercice.unit)?.label || exercice.unit}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          {exercice.video_url && <IconVideo size={14} className="text-primary" title="Vidéo disponible" />}
+                          {exercice.image_data && <IconPhoto size={14} className="text-primary" title="Image disponible" />}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          )}
 
-            {filteredExercices.length === 0 && (
-              <div className="col-span-full py-12 text-center border-2 border-dashed rounded-xl">
-                <Dumbbell className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-                <h3 className="text-lg font-medium">Aucun exercice trouvé</h3>
-                <p className="text-muted-foreground">Commencez par ajouter votre premier exercice à la bibliothèque.</p>
-              </div>
-            )}
-          </div>
+          {!loading && filteredExercices.length === 0 && (
+            <div className="text-center py-20 border-2 border-dashed rounded-xl">
+              <IconBarbell className="mx-auto h-12 w-12 text-muted-foreground/20 mb-4" />
+              <p className="text-muted-foreground font-medium">Aucun exercice trouvé.</p>
+              <p className="text-sm text-muted-foreground/60">Commencez par ajouter votre premier exercice.</p>
+            </div>
+          )}
         </div>
       </SidebarInset>
 
-      {/* Modal Confirmation Suppression */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      {/* Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-destructive">Supprimer l'exercice ?</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer "{exerciceToDelete?.name}" ? Cette action est irréversible.
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <IconAlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              Êtes-vous sûr de vouloir supprimer l'exercice <strong>{exerciceToDelete?.name}</strong> ? Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)} className="flex-1">Annuler</Button>
-            <Button type="button" variant="destructive" onClick={handleDelete} className="flex-1">Supprimer</Button>
+          <DialogFooter className="flex sm:justify-center gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none">
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <IconCheck className="h-6 w-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              L'exercice a été supprimé de la bibliothèque avec succès.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button type="button" onClick={() => setShowSuccessModal(false)} className="w-full sm:w-auto px-8">
+              Fermer
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

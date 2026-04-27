@@ -13,10 +13,14 @@ const mockSessions = [
   { id: 3, date: new Date(new Date().setDate(new Date().getDate() - 2)), title: "Sortie Longue", type: "VTT", duration: "3h00" },
 ]
 
-export function CalendarView() {
+export function CalendarView({ searchTerm = "" }) {
   const [date, setDate] = React.useState(new Date())
 
-  const sessionsForSelectedDate = mockSessions.filter(
+  const filteredSessions = searchTerm 
+    ? mockSessions.filter(s => s.title.toLowerCase().includes(searchTerm.toLowerCase()) || s.type.toLowerCase().includes(searchTerm.toLowerCase()))
+    : mockSessions
+
+  const sessionsForSelectedDate = filteredSessions.filter(
     (s) => s.date.toDateString() === date?.toDateString()
   )
 
