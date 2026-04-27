@@ -45,6 +45,7 @@ const initialFormState = {
   description: "",
   category: "Musculation",
   unit: "reps",
+  intensity: "", // Added intensity field
   video_url: "",
   image_data: ""
 }
@@ -99,7 +100,7 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Erreur lors de l\'enregistrement')
+      if (!response.ok) throw new Error('Erreur lors de l'enregistrement')
 
       toast.dismiss(loadingToast)
       setShowSuccessModal(true)
@@ -150,7 +151,7 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> {/* Changed to grid-cols-3 */}
             <div className="space-y-2">
               <Label htmlFor="category">Catégorie</Label>
               <Select 
@@ -182,6 +183,21 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            {/* Intensity Input */}
+            <div className="space-y-2">
+              <Label htmlFor="intensity">Intensité (1-10)</Label>
+              <Input 
+                id="intensity" 
+                name="intensity" 
+                type="number"
+                min="1"
+                max="10"
+                placeholder="ex: 8" 
+                value={formData.intensity || ""}
+                onChange={handleInputChange}
+                className="h-9"
+              />
             </div>
           </div>
 
@@ -274,7 +290,8 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
                 ? "L'exercice a été ajouté à la bibliothèque." 
                 : "Le modèle d'exercice a été mis à jour."}
 
-                
+                ger les
+                 a 10
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">
