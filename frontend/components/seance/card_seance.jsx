@@ -156,7 +156,7 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
         body: JSON.stringify(payload),
       })
 
-      if (!response.ok) throw new Error('Erreur lors de l'enregistrement')
+      if (!response.ok) throw new Error('Erreur lors de la sauvegarde')
 
       toast.dismiss(loadingToast)
       setShowSuccessModal(true)
@@ -307,15 +307,6 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
                               type="number" 
                               value={ex.reps} 
                               onChange={(e) => updateExerciseDetails(index, 'reps', parseInt(e.target.value))}
-                              className="h-8"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase text-muted-foreground font-bold">Poids (kg)</Label>
-                            <Input 
-                              type="number" 
-                              value={ex.weight} 
-                              onChange={(e) => updateExerciseDetails(index, 'weight', parseFloat(e.target.value))}
                               className="h-8"
                             />
                           </div>
