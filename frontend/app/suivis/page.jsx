@@ -11,11 +11,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CalendarView } from "@/components/seance/calendar-view"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { 
-  IconZzz, 
-  IconBatteryCharging, 
-  IconMoodSmile, 
   IconPlus, 
   IconSearch,
   IconCalendarEvent
@@ -38,7 +34,7 @@ export default function PlanPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Plan d'Entraînement</h1>
-              <p className="text-muted-foreground text-sm">Gérez les séances et suivez l'état de forme.</p>
+              <p className="text-muted-foreground text-sm">Gérez les séances et suivez votre planning.</p>
             </div>
             <Button className="gap-2" asChild>
               <Link href="/sessions/new">
@@ -58,45 +54,8 @@ export default function PlanPage() {
             />
           </div>
 
-          {/* Wellness Stats - Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-            <Card className="border-dashed border-2 shadow-none">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <IconZzz size={16} className="text-blue-500" /> Sommeil Moyen
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">7h 45min</div>
-                <p className="text-xs text-muted-foreground">+15min par rapport à la semaine dernière</p>
-              </CardContent>
-            </Card>
-            <Card className="border-dashed border-2 shadow-none">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <IconBatteryCharging size={16} className="text-orange-500" /> Niveau d'Énergie
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">82%</div>
-                <p className="text-xs text-muted-foreground">Récupération optimale</p>
-              </CardContent>
-            </Card>
-            <Card className="border-dashed border-2 shadow-none">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                  <IconMoodSmile size={16} className="text-green-500" /> État de Forme
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Excellent</div>
-                <p className="text-xs text-muted-foreground">Basé sur les 5 derniers suivis</p>
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Calendar and Sessions Section */}
-          <div className="mt-2">
+          <div className="mt-4">
             <div className="flex items-center gap-2 mb-4">
               <IconCalendarEvent size={20} className="text-primary" />
               <h2 className="text-lg font-semibold">Calendrier des séances</h2>
