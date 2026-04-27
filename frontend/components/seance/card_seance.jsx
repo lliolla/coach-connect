@@ -124,7 +124,7 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
     })
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (asModel = false) => {
     if (!formData.title) {
       toast.error("Veuillez donner un nom au programme")
       return
@@ -135,23 +135,24 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
       return
     }
 
-    const loadingToast = toast.loading(isCreation ? "Création du programme..." : "Mise à jour...")
+    const loadingToast = toast.loading(asModel ? "Enregistrement du modèle..." : (isCreation ? "Création du programme..." : "Mise à jour..."))
     
     try {
-      // For now, sessions might need an athlete_id in the DB. 
-      // If we're creating a general program, we might need a different table or a null athlete_id.
-      // Assuming for now it's a session that can be saved.
-      
       const url = isCreation 
         ? 'http://127.0.0.1:3001/api/sessions' 
         : `http://127.0.0.1:3001/api/sessions/${seanceId}`
       
       const method = isCreation ? 'POST' : 'PUT'
 
+      const payload = {
+        ...formData,
+        is_template: asModel
+      }
+
       const response = await fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) throw new Error('Erreur lors de l\'enregistrement')
@@ -323,9 +324,12 @@ export const CardSeance = ({ mode = "create", seanceId = null }) => {
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between border-t p-6 mt-6 bg-muted/5">
+        <CardFooter className="flex justify-between border-t p-6 mt-6 bg-muted/5 gap-4">
           <Button variant="outline" onClick={() => router.push('/suivis')}>Annuler</Button>
-          <Button className="px-8" onClick={handleSubmit}>Valider le programme</Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => handleSubmit(true)}>Enregistrer comme modèle</Button>
+            <Button className="px-8" onClick={() => handleSubmit(false)}>Valider le programme</Button>
+          </div>
         </CardFooter>
       </Card>
 
