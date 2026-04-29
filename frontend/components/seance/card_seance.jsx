@@ -279,22 +279,25 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   }
 
   const handleSubmit = async (asModel) => {
-    // Si asModel est passé, on l'utilise, sinon on garde la valeur actuelle de is_template
+    // Validation globale
+    if (!formData.title) { toast.error("Le nom du programme est obligatoire"); return; }
+    if (!formData.athlete_id) { toast.error("Veuillez sélectionner un athlète"); return; }
+    if (formData.exercises.length === 0) { toast.error("Ajoutez au moins un exercice"); return; }
+
+    // Validation détaillée des exercices
+    for (const [index, ex] of formData.exercises.entries()) {
+        if (!ex.exercise_id && !ex.template_id) {
+            toast.error(`Exercice ${index + 1} : ID manquant`); return;
+        }
+        if (!ex.sets || parseInt(ex.sets) <= 0) {
+            toast.error(`Exercice ${index + 1} : Le nombre de séries est obligatoire`); return;
+        }
+        if (!ex.reps || parseInt(ex.reps) <= 0) {
+            toast.error(`Exercice ${index + 1} : Les répétitions/secondes sont obligatoires`); return;
+        }
+    }
+
     const isTemplateToSave = typeof asModel === 'boolean' ? asModel : formData.is_template;
-
-    if (!formData.title) {
-      toast.error("Veuillez donner un nom au programme")
-      return
-    }
-    if (!formData.athlete_id) {
-      toast.error("Veuillez sélectionner un athlète")
-      return
-    }
-
-    if (formData.exercises.length === 0) {
-      toast.error("Veuillez ajouter au moins un exercice")
-      return
-    }
 
     const loadingToast = toast.loading(isTemplateToSave ? "Enregistrement du modèle..." : (isCreation ? "Création du programme..." : "Mise à jour..."))
     
@@ -305,9 +308,25 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       
       const method = isCreation ? 'POST' : 'PUT'
 
+      // Mapping propre des exercices
+      const mappedExercises = formData.exercises.map((ex, index) => ({
+        exercise_id: ex.exercise_id || ex.template_id,
+        sets: parseInt(ex.sets) || 0,
+        reps: parseInt(ex.reps) || 0,
+        weight: parseFloat(ex.weight) || 0,
+        rest_time: parseInt(ex.rest_time_seconds) || null,
+        order_index: index,
+        notes: ex.notes || ""
+      }))
+
       const payload = {
-        ...formData,
-        is_template: isTemplateToSave
+        title: formData.title,
+        description: formData.description,
+        athlete_id: formData.athlete_id,
+        date: formData.date,
+        duration: formData.duration,
+        is_template: isTemplateToSave,
+        exercises: mappedExercises
       }
 
       const response = await fetch(url, {
