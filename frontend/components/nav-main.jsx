@@ -3,6 +3,7 @@
 import { IconCirclePlusFilled } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 import {
   SidebarGroup,
@@ -21,20 +22,6 @@ export function NavMain({
     (<SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
-            <SidebarMenuButton
-              asChild
-              tooltip="Quick Create"
-              isActive={pathname === '/sessions/new'}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear">
-              <Link href="/sessions/new">
-                <IconCirclePlusFilled />
-                <span>Créer une séance</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton 
@@ -42,7 +29,8 @@ export function NavMain({
                 tooltip={item.title}
                 isActive={pathname === item.url}
                 className={cn(
-                    pathname === item.url && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                  "text-sidebar-foreground",
+                  pathname === item.url && "!bg-neutral-900 !text-white"
                 )}
               >
                 <Link href={item.url}>

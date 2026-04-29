@@ -2,6 +2,7 @@
 
 import { IconDots, IconFolder } from "@tabler/icons-react";
 import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -37,7 +38,8 @@ export function NavDocuments({
               asChild 
               isActive={pathname === item.url}
               className={cn(
-                  pathname === item.url && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                  "text-sidebar-foreground",
+                  pathname === item.url && "!bg-neutral-900 !text-white"
               )}
             >
               <Link href={item.url}>
