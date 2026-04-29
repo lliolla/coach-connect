@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -12,12 +12,12 @@ import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
 
-export default function NewSessionPage() {
+export default function EditSessionPage() {
+  const { id } = useParams()
   const searchParams = useSearchParams()
-  const mode = searchParams.get('mode') || 'create'
-  const duplicateId = searchParams.get('duplicateId')
+  const mode = searchParams.get('mode') || 'edit' // Par défaut 'edit' pour rétrocompatibilité
 
-  const title = mode === 'duplicate' ? "Dupliquer le programme" : "Créer un modèle"
+  const title = mode === 'view' ? "Voir la séance" : "Modifier la séance"
 
   return (
     <SidebarProvider
@@ -39,7 +39,7 @@ export default function NewSessionPage() {
           </div>
 
           <div className="max-w-4xl mx-auto w-full py-8">
-            <CardSeance mode={mode} duplicateId={duplicateId} />
+            <CardSeance mode={mode} seanceId={id} />
           </div>
         </div>
       </SidebarInset>

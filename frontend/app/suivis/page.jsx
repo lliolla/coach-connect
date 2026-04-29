@@ -17,7 +17,8 @@ import {
   IconCalendarEvent,
   IconLoader2, // Import loader icon
   IconUser, // Import user icon for person name
-  IconBarbell // Import barbell icon for exercise count
+  IconBarbell, // Import barbell icon for exercise count
+  IconActivity
 } from "@tabler/icons-react"
 import { toast } from "sonner" // Assuming sonner is available for notifications
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card" // In case we need cards for data display, or to match structure
@@ -32,25 +33,62 @@ export default function SuivisPage() {
   const [sessions, setSessions] = React.useState([]) // State to hold fetched sessions
   const [loading, setLoading] = React.useState(true) // Loading state for data fetching
 
+  // States for Modals
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [sessionToDelete, setSessionToDelete] = React.useState(null)
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+
   // Fetch sessions data
-  React.useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        setLoading(true)
-        // Assuming a similar API endpoint as sessions/page.jsx
-        const response = await fetch('http://127.0.0.1:3001/api/sessions')
-        if (!response.ok) throw new Error("Erreur lors du chargement des séances")
-        const data = await response.json()
-        setSessions(data)
-      } catch (error) {
-        console.error(error)
-        toast.error("Impossible de charger les séances pour le suivi")
-      } finally {
-        setLoading(false)
-      }
+  const fetchSessions = async () => {
+    try {
+      setLoading(true)
+      // Assuming a similar API endpoint as sessions/page.jsx
+      const response = await fetch('http://127.0.0.1:3001/api/sessions')
+      if (!response.ok) throw new Error("Erreur lors du chargement des séances")
+      const data = await response.json()
+      setSessions(data)
+    } catch (error) {
+      console.error(error)
+      toast.error("Impossible de charger les séances pour le suivi")
+    } finally {
+      setLoading(false)
     }
+  }
+
+  React.useEffect(() => {
     fetchSessions()
   }, [])
+
+  const openDeleteConfirm = (session) => {
+    setSessionToDelete(session)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!sessionToDelete) return
+
+    const loadingToast = toast.loading("Suppression en cours...")
+    try {
+      const response = await fetch(`http://127.0.0.1:3001/api/sessions/${sessionToDelete.id}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error("Erreur lors de la suppression")
+      
+      setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
+      toast.dismiss(loadingToast)
+      
+      setDeleteConfirmOpen(false)
+      setShowSuccessModal(true)
+      
+      setTimeout(() => {
+        setShowSuccessModal(false)
+        setSessionToDelete(null)
+      }, 2500)
+    } catch (error) {
+      console.error(error)
+      toast.error("Erreur lors de la suppression", { id: loadingToast })
+    }
+  }
 
   // Transform sessions data for ProgramTable
   // Filtered to only show actual sessions (is_template: false)
@@ -62,6 +100,7 @@ export default function SuivisPage() {
       })
       .map(session => ({
         id: session.id,
+        title: session.title, // Keep title for deletion modal
         // Use athlete_id as personName, or a placeholder if not available
         personName: session.athlete_id ? `Athlète ID: ${session.athlete_id.substring(0, 8)}...` : 'Athlète inconnu',
         programName: session.title, // Map session title to program name
@@ -121,7 +160,10 @@ export default function SuivisPage() {
                 <p className="text-muted-foreground">Chargement des séances...</p>
               </div>
             ) : (
-              <ProgramTable programs={programsForTable} />
+              <ProgramTable 
+                programs={programsForTable} 
+                onDelete={openDeleteConfirm}
+              />
             )}
           </div>
 
@@ -135,6 +177,49 @@ export default function SuivisPage() {
           </div>
         </div>
       </SidebarInset>
+
+      {/* Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <IconActivity className="h-6 w-6 text-red-600" /> {/* Reusing IconActivity for alert */}
+            </div>
+            <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              Êtes-vous sûr de vouloir supprimer la séance <strong>{sessionToDelete?.programName || sessionToDelete?.title}</strong> ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-center gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none">
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+              <IconPlus className="h-6 w-6 text-green-600 rotate-45" /> {/* Success check replacement */}
+            </div>
+            <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              La séance a été supprimée avec succès.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button type="button" onClick={() => setShowSuccessModal(false)} className="w-full sm:w-auto px-8">
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }
