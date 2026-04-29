@@ -1,12 +1,12 @@
 "use client"
 
-import { IconDots, IconFolder, IconShare3, IconTrash } from "@tabler/icons-react";
+import { IconDots, IconFolder } from "@tabler/icons-react";
+import { usePathname } from "next/navigation";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -18,12 +18,14 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import Link from "next/link";
 
 export function NavDocuments({
   items,
   label = "Documents"
 }) {
   const { isMobile } = useSidebar()
+  const pathname = usePathname();
 
   return (
     (<SidebarGroup className="group-data-[collapsible=icon]:hidden">
@@ -31,11 +33,17 @@ export function NavDocuments({
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuItem key={item.name}>
-            <SidebarMenuButton asChild>
-              <a href={item.url}>
+            <SidebarMenuButton 
+              asChild 
+              isActive={pathname === item.url}
+              className={cn(
+                  pathname === item.url && "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+              )}
+            >
+              <Link href={item.url}>
                 <item.icon />
                 <span>{item.name}</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -48,9 +56,11 @@ export function NavDocuments({
                 className="w-24 rounded-lg"
                 side={isMobile ? "bottom" : "right"}
                 align={isMobile ? "end" : "start"}>
-                <DropdownMenuItem onClick={() => window.location.href = item.url}>
-                  <IconFolder />
-                  <span>Ouvrir</span>
+                <DropdownMenuItem asChild>
+                  <Link href={item.url}>
+                    <IconFolder />
+                    <span>Ouvrir</span>
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
