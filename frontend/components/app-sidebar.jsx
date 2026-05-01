@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -41,7 +42,7 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Plan",
+      title: "Séances",
       url: "/suivis",
       icon: IconListDetails,
     },
@@ -61,6 +62,11 @@ const data = {
       name: "Bibliothèque d'exercices",
       url: "/exercices",
       icon: IconBarbell,
+    },
+    {
+      name: "Bibliothèque de séances",
+      url: "/sessions",
+      icon: IconLayoutGrid,
     },
   ],
   navSecondary: [

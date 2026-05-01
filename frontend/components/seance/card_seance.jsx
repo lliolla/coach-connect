@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Card,
   CardAction,
@@ -24,7 +24,9 @@ import {
   GripVertical,
   LayoutGrid,
   Clock,
-  RotateCcw
+  RotateCcw,
+  MessageSquare,
+  Zap
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -70,11 +72,18 @@ const initialFormState = {
   exercises: []
 }
 
-export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = null }) => {
+export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = null, isTracking = false }) => {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Déterminer si on est dans un contexte de suivi via prop ou URL
+  const context = searchParams.get('context')
+  const effectiveIsTracking = isTracking || context === 'suivis'
+  
   const isCreation = mode === "create" || mode === "duplicate"
   const isView = mode === "view"
   const isDuplicate = mode === "duplicate"
-  const router = useRouter()
+  
   const [openExercises, setOpenExercises] = React.useState(false)
   const [openTemplates, setOpenTemplates] = React.useState(false)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
@@ -108,22 +117,30 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       
       // Mapper les session_exercises pour le format attendu par le composant
       const mappedExercises = (data.session_exercises || []).map(se => ({
-        ...se,
+        // On ne spread pas se pour éviter de garder l'ID de la ligne d'exercice originale
         exercise_id: se.exercise_id,
-        name: se.exercices_library?.name,
-        category: se.exercices_library?.category,
-        unit: se.exercices_library?.unit
+        template_id: se.exercise_id, 
+        name: se.exercices_library?.name || "Exercice",
+        description: se.exercices_library?.description || "",
+        category: se.exercices_library?.category || "",
+        unit: se.exercices_library?.unit || "reps",
+        sets: se.sets || 3,
+        reps: se.reps || 10,
+        weight: se.weight || 0,
+        rest_time_seconds: se.rest_time_seconds || 60,
+        notes: se.notes || "",
+        intensity: se.intensity || ""
       })).sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
 
       setFormData({
         title: isDuplicate ? `${data.title} (Copie)` : (data.title || ""),
         description: data.description || "",
-        athlete_id: data.athlete_id?.toString() || null,
+        athlete_id: isDuplicate ? null : (data.athlete_id?.toString() || null),
         date: isDuplicate ? new Date().toISOString().split('T')[0] : (data.date || new Date().toISOString().split('T')[0]),
         status: isDuplicate ? "prévu" : (data.status || "prévu"),
         exercises: mappedExercises,
         duration: data.duration || 0,
-        is_template: data.is_template ?? false
+        is_template: isDuplicate ? true : (data.is_template ?? false)
       })
       if (data.duration) setIsManualDuration(true)
     } catch (error) {
@@ -222,14 +239,18 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   }
 
   const handleTemplateSelect = (template) => {
-    const mappedExercises = (template.exercises || []).map(ex => ({
+    const mappedExercises = (template.exercises || template.session_exercises || []).map(ex => ({
       ...ex,
-      template_id: ex.id_exercises || ex.template_id || ex.id,
+      exercise_id: ex.exercise_id || ex.template_id || ex.id,
+      template_id: ex.exercise_id || ex.id_exercises || ex.template_id || ex.id,
       sets: ex.serie || ex.sets || 3,
       reps: ex.rep || ex.reps || 10,
-      rest_time_seconds: ex.repos || ex.rest_time_seconds || 60,
+      rest_time_seconds: ex.repos || ex.rest_time || ex.rest_time_seconds || 60,
       name: ex.name || (ex.exercices_library ? ex.exercices_library.name : "Exercice"),
-      category: ex.category || (ex.exercices_library ? ex.exercices_library.category : "")
+      description: ex.description || (ex.exercices_library ? ex.exercices_library.description : ""),
+      category: ex.category || (ex.exercices_library ? ex.exercices_library.category : ""),
+      notes: ex.notes || "",
+      intensity: ex.intensity || ""
     }))
 
     setFormData(prev => ({
@@ -246,11 +267,13 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const addExerciseToSeance = (exerciseTemplate) => {
     const newExercise = {
       ...exerciseTemplate,
+      exercise_id: exerciseTemplate.id,
       template_id: exerciseTemplate.id,
       sets: 3,
       reps: 10,
       weight: 0,
       notes: "",
+      intensity: "",
       rest_time_seconds: 60
     }
     delete newExercise.id
@@ -278,13 +301,22 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     })
   }
 
-  const handleSubmit = async (asModel) => {
-    // Validation globale
+  const handleSubmit = async () => {
+    // LOGIQUE CRITIQUE : Étape 1
+    // Si c'est une création/duplication : on force selon le contexte (Suivi => false, Modèle => true)
+    // Si c'est une modification : on garde le type d'origine
+    const isTemplateToSave = isCreation ? !effectiveIsTracking : formData.is_template;
+
     if (!formData.title) { toast.error("Le nom du programme est obligatoire"); return; }
-    if (!formData.athlete_id) { toast.error("Veuillez sélectionner un athlète"); return; }
+    
+    // Athlète obligatoire UNIQUEMENT en mode suivi
+    if (effectiveIsTracking && !formData.athlete_id) { 
+      toast.error("Veuillez sélectionner un athlète"); return; 
+    }
+    
     if (formData.exercises.length === 0) { toast.error("Ajoutez au moins un exercice"); return; }
 
-    // Validation détaillée des exercices
+    // Validation des exercices
     for (const [index, ex] of formData.exercises.entries()) {
         if (!ex.exercise_id && !ex.template_id) {
             toast.error(`Exercice ${index + 1} : ID manquant`); return;
@@ -292,14 +324,9 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         if (!ex.sets || parseInt(ex.sets) <= 0) {
             toast.error(`Exercice ${index + 1} : Le nombre de séries est obligatoire`); return;
         }
-        if (!ex.reps || parseInt(ex.reps) <= 0) {
-            toast.error(`Exercice ${index + 1} : Les répétitions/secondes sont obligatoires`); return;
-        }
     }
 
-    const isTemplateToSave = typeof asModel === 'boolean' ? asModel : formData.is_template;
-
-    const loadingToast = toast.loading(isTemplateToSave ? "Enregistrement du modèle..." : (isCreation ? "Création du programme..." : "Mise à jour..."))
+    const loadingToast = toast.loading(isTemplateToSave ? "Enregistrement du modèle..." : "Enregistrement de la séance...")
     
     try {
       const url = isCreation 
@@ -308,21 +335,21 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       
       const method = isCreation ? 'POST' : 'PUT'
 
-      // Mapping propre des exercices
       const mappedExercises = formData.exercises.map((ex, index) => ({
         exercise_id: ex.exercise_id || ex.template_id,
         sets: parseInt(ex.sets) || 0,
         reps: parseInt(ex.reps) || 0,
         weight: parseFloat(ex.weight) || 0,
-        rest_time: parseInt(ex.rest_time_seconds) || null,
+        rest_time: parseInt(ex.rest_time_seconds) || 60,
         order_index: index,
-        notes: ex.notes || ""
+        notes: ex.notes || "",
+        intensity: ex.intensity || ""
       }))
 
       const payload = {
         title: formData.title,
         description: formData.description,
-        athlete_id: formData.athlete_id,
+        athlete_id: isTemplateToSave ? null : formData.athlete_id,
         date: formData.date,
         duration: formData.duration,
         is_template: isTemplateToSave,
@@ -335,11 +362,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         body: JSON.stringify(payload),
       })
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.message || errorData.error?.message || errorData.error || 'Erreur lors de la sauvegarde';
-        throw new Error(errorMessage);
-      }
+      if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
 
       const result = await response.json()
       toast.dismiss(loadingToast)
@@ -349,7 +372,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         setShowDuplicateModal(true)
       } else {
         setShowSuccessModal(true)
-        setTimeout(() => handleModalClose(), 2000)
+        setTimeout(() => handleModalClose(), 1500)
       }
 
     } catch (error) {
@@ -360,84 +383,55 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    router.push('/sessions')
+    router.push(effectiveIsTracking ? '/suivis' : '/sessions')
   }
 
   const handleDuplicateConfirm = (modify) => {
     setShowDuplicateModal(false)
+    const targetPath = effectiveIsTracking ? '/suivis' : '/sessions'
     if (modify && duplicatedId) {
-      router.push(`/sessions/${duplicatedId}?mode=edit`)
+      router.push(`${targetPath}/${duplicatedId}?mode=edit&context=${context || ''}`)
     } else {
-      router.push('/sessions')
+      router.push(targetPath)
     }
   }
 
   return (
     <>
-      <Card className="w-full max-w-3xl mx-auto border-dashed border-2 border-primary/20 shadow-none relative">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-          <CardTitle className="text-2xl font-bold">
-            {isView ? "Voir la séance" : (isCreation ? (isDuplicate ? "Dupliquer la séance" : "Nouveau Programme") : "Modifier la séance")}
+      <Card className="w-full max-w-3xl mx-auto border shadow-none relative">
+        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 pb-6">
+          <CardTitle className="text-xl font-bold">
+            {isView ? "Détails" : (isCreation ? (isDuplicate ? "Dupliquer" : (effectiveIsTracking ? "Nouvelle séance de suivi" : "Nouveau Modèle")) : "Modifier")}
           </CardTitle>
-          <div className="flex items-center gap-4">
-             {formData.duration > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                    <Clock size={16} />
-                    <span>~{formData.duration} min</span>
-                </div>
-            )}
-            <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-foreground" 
-                onClick={() => router.push('/sessions')}
-            >
-                <X size={20} />
-            </Button>
-          </div>
+          <Button variant="ghost" size="icon" onClick={() => router.push(effectiveIsTracking ? '/suivis' : '/sessions')}>
+            <X size={20} />
+          </Button>
         </CardHeader>
-        <CardContent className="space-y-6">
+        
+        <CardContent className="space-y-6 pt-6">
           {/* Header Info */}
-          <div className="flex flex-col items-center gap-4 pb-4 border-b">
-            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-              <CalendarCheck size={32} />
-            </div>
-            
-            <div className="w-full space-y-2">
-              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground block text-center">Nom du programme</Label>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Nom du programme / Modèle</Label>
               <Popover open={openTemplates} onOpenChange={isView ? () => {} : setOpenTemplates}>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="h-12 w-full justify-between font-bold text-lg" disabled={isView}>
-                    {formData.title || "Choisir un modèle ou taper un nom..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  <Button variant="outline" className="h-11 w-full justify-between font-bold" disabled={isView}>
+                    {formData.title || "Taper un nom ou choisir un modèle..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-[400px] p-0" align="start">
                   <Command>
                     <CommandInput 
-                      placeholder="Rechercher un modèle ou créer un nom..." 
+                      placeholder="Rechercher..." 
                       onValueChange={(v) => setFormData(prev => ({ ...prev, title: v }))}
-                      disabled={isView}
                     />
                     <CommandList>
                       <CommandEmpty>Appuyez sur Entrée pour utiliser ce nom.</CommandEmpty>
                       <CommandGroup heading="Modèles existants">
                         {availableTemplates.map((template) => (
-                          <CommandItem
-                            key={template.id}
-                            value={template.title}
-                            onSelect={() => handleTemplateSelect(template)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formData.title === template.title ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            <div className="flex flex-col">
-                              <span>{template.title}</span>
-                              {template.description && <span className="text-xs text-muted-foreground">{template.description}</span>}
-                            </div>
+                          <CommandItem key={template.id} onSelect={() => handleTemplateSelect(template)}>
+                            <span>{template.title}</span>
                           </CommandItem>
                         ))}
                       </CommandGroup>
@@ -447,86 +441,59 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               </Popover>
             </div>
 
-            <div className="w-full space-y-2">
-              <Label htmlFor="athlete_id" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground block text-center">Affectation</Label>
-              <Select 
-                name="athlete_id" 
-                value={formData.athlete_id || undefined} 
-                onValueChange={handleAthleteSelect}
-                disabled={isView}
-              >
-                <SelectTrigger className="w-full text-center h-12">
-                  <SelectValue placeholder="Sélectionner un athlète" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>Athlètes</SelectLabel>
-                    {loadingAthletes ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">Chargement...</div>
-                    ) : availableAthletes.length === 0 ? (
-                      <div className="p-2 text-sm text-muted-foreground text-center">Aucun athlète trouvé</div>
-                    ) : (
-                      availableAthletes.map((athlete) => (
-                        <SelectItem key={athlete.id} value={athlete.id.toString()}>
-                          {athlete.first_name} {athlete.last_name || ''}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Affectation : Uniquement si on est dans le contexte Suivi */}
+            {effectiveIsTracking && (
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Affectation Athlète</Label>
+                <Select value={formData.athlete_id || undefined} onValueChange={handleAthleteSelect} disabled={isView}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Sélectionner un athlète" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableAthletes.map((athlete) => (
+                      <SelectItem key={athlete.id} value={athlete.id.toString()}>
+                        {athlete.first_name} {athlete.last_name || ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
-            <div className="w-full space-y-2">
-              <Label htmlFor="description" className="text-sm font-semibold uppercase tracking-wider text-muted-foreground block text-center">Description</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Description globale</Label>
               <Input 
-                id="description"
-                name="description"
-                placeholder="Ajoutez une description pour le programme" 
-                className="text-center h-12"
+                placeholder="Notes générales sur la séance..." 
                 value={formData.description}
                 onChange={handleInputChange}
+                name="description"
                 disabled={isView}
               />
             </div>
           </div>
 
-          {/* Add Exercise Section */}
+          {/* Exercises Section */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-base font-semibold">Exercices du programme</Label>
+            <div className="flex items-center justify-between border-b pb-2">
+              <h3 className="font-bold">Exercices</h3>
               {!isView && (
                 <Popover open={openExercises} onOpenChange={setOpenExercises}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="gap-2 border-primary/50 text-primary hover:bg-primary/5">
-                      <Plus size={18} /> Ajouter un exercice
+                    <Button variant="outline" size="sm" className="gap-2 border-primary/50 text-primary hover:bg-primary/5">
+                      <Plus size={16} /> Ajouter
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-[400px] p-0" align="end">
                     <Command>
-                      <CommandInput placeholder="Rechercher un exercice dans la bibliothèque..." />
+                      <CommandInput placeholder="Chercher un exercice..." />
                       <CommandList>
-                        <CommandEmpty>
-                          {loadingExercises ? "Chargement..." : "Aucun exercice trouvé."}
-                        </CommandEmpty>
                         <CommandGroup>
                           {availableExercises.map((ex) => (
-                            <CommandItem
-                              key={ex.id}
-                              value={ex.name}
-                              onSelect={() => addExerciseToSeance(ex)}
-                              className="flex items-center justify-between py-3"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
-                                  <Dumbbell size={16} className="text-primary" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{ex.name}</span>
-                                  <span className="text-xs text-muted-foreground">{ex.category}</span>
-                                </div>
+                            <CommandItem key={ex.id} onSelect={() => addExerciseToSeance(ex)}>
+                              <div className="flex flex-col">
+                                <span className="font-medium">{ex.name}</span>
+                                <span className="text-xs text-muted-foreground">{ex.category}</span>
                               </div>
-                              <Plus size={16} className="text-muted-foreground" />
                             </CommandItem>
                           ))}
                         </CommandGroup>
@@ -537,87 +504,62 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               )}
             </div>
 
-            {/* Selected Exercises List */}
             <div className="space-y-3">
               {formData.exercises.length === 0 ? (
-                <div className="py-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/5">
-                  <Dumbbell size={40} className="opacity-10 mb-2" />
-                  <p className="text-sm">Aucun exercice sélectionné</p>
-                  {!isView && <p className="text-xs">Utilisez le bouton ci-dessus pour construire votre programme</p>}
+                <div className="text-center py-10 border-2 border-dashed rounded-lg text-muted-foreground text-sm">
+                  Aucun exercice sélectionné
                 </div>
               ) : (
                 formData.exercises.map((ex, index) => (
-                  <Card key={index} className="overflow-hidden border shadow-sm group">
-                    <div className="flex">
-                      <div className="w-10 bg-muted/30 flex items-center justify-center border-r">
-                        <GripVertical size={16} className="text-muted-foreground/50" />
+                  <Card key={index} className="p-4 bg-muted/5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                          <Dumbbell size={18} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-sm">{ex.name}</h4>
+                          <div className="flex gap-2 items-center">
+                            <Badge variant="secondary" className="text-[9px] uppercase px-1.5">{ex.category}</Badge>
+                            {ex.description && <span className="text-[10px] text-muted-foreground italic truncate max-w-[250px]">{ex.description}</span>}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 p-4">
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-primary/5 flex items-center justify-center text-primary border border-primary/10">
-                              <Dumbbell size={20} />
-                            </div>
-                            <div>
-                              <h4 className="font-bold">{ex.name}</h4>
-                              <Badge variant="secondary" className="text-[10px] uppercase h-5">{ex.category}</Badge>
-                            </div>
-                          </div>
-                          {!isView && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => removeExercise(index)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
-                          )}
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase text-muted-foreground font-bold">Séries</Label>
-                            <Input 
-                              type="number" 
-                              value={ex.sets} 
-                              onChange={(e) => updateExerciseDetails(index, 'sets', parseInt(e.target.value))}
-                              className="h-8"
-                              disabled={isView}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase text-muted-foreground font-bold">
-                              {ex.unit === 'reps' ? 'Répétitions' : ex.unit === 'secs' ? 'Secondes' : 'Volume'}
-                            </Label>
-                            <Input 
-                              type="number" 
-                              value={ex.reps} 
-                              onChange={(e) => updateExerciseDetails(index, 'reps', parseInt(e.target.value))}
-                              className="h-8"
-                              disabled={isView}
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label className="text-[10px] uppercase text-muted-foreground font-bold">Repos (sec)</Label>
-                            <Select 
-                              value={ex.rest_time_seconds?.toString()} 
-                              onValueChange={(value) => updateExerciseDetails(index, 'rest_time_seconds', parseInt(value))}
-                              disabled={isView}
-                            >
-                              <SelectTrigger className="h-8">
-                                <SelectValue placeholder="Sec" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {[...Array(31)].map((_, i) => (
-                                  <SelectItem key={i*10} value={(i*10).toString()}>
-                                    {i*10}s
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
+                      {!isView && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => removeExercise(index)}>
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-3 mb-3">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Séries</Label>
+                        <Input type="number" value={ex.sets} onChange={(e) => updateExerciseDetails(index, 'sets', e.target.value)} className="h-8 text-sm" disabled={isView} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Répétitions</Label>
+                        <Input type="number" value={ex.reps} onChange={(e) => updateExerciseDetails(index, 'reps', e.target.value)} className="h-8 text-sm" disabled={isView} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Repos (s)</Label>
+                        <Select value={ex.rest_time_seconds?.toString()} onValueChange={(v) => updateExerciseDetails(index, 'rest_time_seconds', v)} disabled={isView}>
+                          <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {[0, 15, 30, 45, 60, 90, 120, 180].map(s => <SelectItem key={s} value={s.toString()}>{s}s</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><MessageSquare size={10}/> Notes</Label>
+                        <Input placeholder="..." value={ex.notes} onChange={(e) => updateExerciseDetails(index, 'notes', e.target.value)} className="h-8 text-xs" disabled={isView} />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><Zap size={10}/> Intensité (RPE)</Label>
+                        <Input placeholder="0-10" value={ex.intensity} onChange={(e) => updateExerciseDetails(index, 'intensity', e.target.value)} className="h-8 text-xs" disabled={isView} />
                       </div>
                     </div>
                   </Card>
@@ -625,64 +567,18 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               )}
             </div>
           </div>
-          {/* Total Duration Display */}
-          {formData.exercises.length > 0 && (
-            <div className="pt-4 border-t">
-              <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Clock size={20} />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider">Durée totale de la séance (minutes)</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Input 
-                        type="number"
-                        value={formData.duration}
-                        onChange={handleDurationChange}
-                        className={cn(
-                          "w-24 h-9 text-lg font-bold text-primary bg-background border-primary/20 focus:border-primary",
-                          isManualDuration && "border-orange-400 focus:border-orange-500"
-                        )}
-                        disabled={isView}
-                      />
-                      {isManualDuration && !isView && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-primary"
-                          onClick={resetDuration}
-                          title="Réinitialiser au calcul automatique"
-                        >
-                          <RotateCcw size={16} />
-                        </Button>
-                      )}
-                    </div>
-                    {isManualDuration && (
-                      <p className="text-[10px] text-orange-500 font-medium mt-1">Modification manuelle activée</p>
-                    )}
-           </div>
-                </div>
-                <div className="text-right">
-                  <Badge variant="outline" className="bg-background">
-                    {formData.exercises.length} exercices
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          )}
         </CardContent>
+
         <CardFooter className="flex justify-end border-t p-6 mt-6 bg-muted/5">
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {isView ? (
-              <Button className="px-8" onClick={() => router.push('/sessions')}>Quitter</Button>
+              <Button className="px-8" onClick={() => router.push(effectiveIsTracking ? '/suivis' : '/sessions')}>Quitter</Button>
             ) : mode === "edit" ? (
-              <Button className="px-8" onClick={() => handleSubmit(formData.is_template)}>Valider & Quitter</Button>
+              <Button className="px-8" onClick={handleSubmit}>Valider les modifications</Button>
+            ) : effectiveIsTracking ? (
+              <Button className="px-8" onClick={handleSubmit}>Enregistrer la séance</Button>
             ) : (
-              <>
-                <Button variant="secondary" onClick={() => handleSubmit(true)}>Enregistrer comme modèle</Button>
-                <Button className="px-8" onClick={() => handleSubmit(false)}>Valider le programme</Button>
-              </>
+              <Button className="px-8" onClick={handleSubmit}>Enregistrer le modèle</Button>
             )}
           </div>
         </CardFooter>
@@ -695,9 +591,9 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <CalendarCheck className="h-6 w-6 text-green-600" />
             </div>
-            <DialogTitle className="text-xl">Programme validé !</DialogTitle>
+            <DialogTitle className="text-xl">Opération réussie !</DialogTitle>
             <DialogDescription className="text-base py-2">
-              Votre programme d'entraînement "<strong>{formData.title}</strong>" a été enregistré avec succès.
+              Le programme "<strong>{formData.title}</strong>" a été enregistré avec succès.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">

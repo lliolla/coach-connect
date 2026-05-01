@@ -98,15 +98,26 @@ export default function SuivisPage() {
         // Exclude if it's explicitly a template (boolean or string)
         return session.is_template !== true && session.is_template !== "true";
       })
-      .map(session => ({
-        id: session.id,
-        title: session.title, // Keep title for deletion modal
-        // Use athlete_id as personName, or a placeholder if not available
-        personName: session.athlete_id ? `Athlète ID: ${session.athlete_id.substring(0, 8)}...` : 'Athlète inconnu',
-        programName: session.title, // Map session title to program name
-        numberOfExercises: session.session_exercises?.length || 0, // Count exercises
-        thumbnailUrl: null, // No thumbnail URL available in the current session data structure
-      }));
+      .map(session => {
+        // Attempt to extract athlete name if available from joined data
+        // Assuming session.athletes join might exist or need to be fetched, 
+        // but for now, we rely on athlete info if the backend provides it,
+        // or just format the athlete_id if it's a profile.
+        // Let's assume for now we might need to add a join in the backend,
+        // but here we can try to look at the session object.
+        const athleteName = session.athletes 
+          ? `${session.athletes.first_name || ''} ${session.athletes.last_name || ''}`.trim() 
+          : (session.athlete_id ? `Athlète ID: ${session.athlete_id.substring(0, 8)}...` : 'Athlète inconnu');
+
+        return {
+          id: session.id,
+          title: session.title,
+          personName: athleteName || 'Athlète inconnu',
+          programName: session.title,
+          numberOfExercises: session.session_exercises?.length || 0,
+          thumbnailUrl: null,
+        };
+      });
   }, [sessions]);
 
   // Filter sessions for the calendar view based on search term
@@ -131,7 +142,7 @@ export default function SuivisPage() {
               <p className="text-muted-foreground text-sm">Visualisez et gérez l'historique de vos séances d'entraînement.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/sessions/new">
+              <Link href="/suivis/new">
                 <IconPlus size={18} />
                 Nouvelle séance
               </Link>
@@ -163,6 +174,7 @@ export default function SuivisPage() {
               <ProgramTable 
                 programs={programsForTable} 
                 onDelete={openDeleteConfirm}
+                context="suivis"
               />
             )}
           </div>
@@ -202,22 +214,17 @@ export default function SuivisPage() {
       </Dialog>
 
       {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader className="flex flex-col items-center justify-center text-center">
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <IconPlus className="h-6 w-6 text-green-600 rotate-45" /> {/* Success check replacement */}
+              <IconPlus className="h-6 w-6 text-green-600 rotate-45" />
             </div>
             <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
             <DialogDescription className="text-base py-2">
               La séance a été supprimée avec succès.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button type="button" onClick={() => setShowSuccessModal(false)} className="w-full sm:w-auto px-8">
-              Fermer
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </SidebarProvider>

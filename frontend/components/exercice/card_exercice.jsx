@@ -100,13 +100,14 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) throw new Error('Erreur lors de l'enregistrement')
+      if (!response.ok) throw new Error('Erreur lors de la sauvegarde')
 
       toast.dismiss(loadingToast)
       setShowSuccessModal(true)
 
       setTimeout(() => {
         handleModalClose()
+        
       }, 2000)
 
     } catch (error) {

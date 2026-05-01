@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -12,34 +12,30 @@ import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
 
-function SessionDetailsContent() {
-  const { id } = useParams()
+function NewTrackingContent() {
   const searchParams = useSearchParams()
-  const mode = searchParams.get('mode') || 'view'
-  const context = searchParams.get('context') || 'sessions'
-  
-  const title = mode === 'edit' ? "Modifier le programme" : "Détails du programme"
-  const backPath = context === 'suivis' ? '/suivis' : '/sessions'
+  const mode = searchParams.get('mode') || 'create'
+  const duplicateId = searchParams.get('duplicateId')
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href={backPath}>
+          <Link href="/suivis">
             <IconArrowLeft size={18} />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">{title}</h1>
+        <h1 className="text-2xl font-bold">Nouvelle séance de suivi</h1>
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardSeance mode={mode} seanceId={id} />
+        <CardSeance mode={mode} duplicateId={duplicateId} isTracking={true} />
       </div>
     </div>
   )
 }
 
-export default function SessionDetailsPage() {
+export default function NewSuiviPage() {
   return (
     <SidebarProvider
       style={{
@@ -50,7 +46,7 @@ export default function SessionDetailsPage() {
       <SidebarInset>
         <SiteHeader />
         <React.Suspense fallback={<div className="flex justify-center p-8">Chargement...</div>}>
-          <SessionDetailsContent />
+          <NewTrackingContent />
         </React.Suspense>
       </SidebarInset>
     </SidebarProvider>

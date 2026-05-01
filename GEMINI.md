@@ -21,17 +21,44 @@ This project is a web application for athlete preparation management. It consist
 - **athletes**: Profiles (id, email, first_name, last_name, sports, objectives, avatar_url, abonnement, groupe).
 - **abonnements**: List of available subscriptions.
 - **groupes**: List of athlete groups.
-- **sessions**: Training sessions (date, duration, intensity).
-- **exercises**: Details within sessions (sets, reps, weight).
+- **sessions**: Enveloppe de la séance (id, title, date, status, athlete_id, is_template).
+- **exercices_library**: Bibliothèque de modèles d'exercices (id, name, description, category, unit, video_url, image_data).
+- **session_exercises**: Table de liaison (id, session_id, exercise_id, sets, reps, weight, order_index, rest_time_seconds, notes).
 - **tracking**: Daily wellness metrics (sleep, fatigue, stress).
 
+## Target Query Schema (PostgREST)
+```javascript
+const { data } = await supabase
+  .from('sessions')
+  .select(`
+    *,
+    session_exercises (
+      id,
+      sets,
+      reps,
+      weight,
+      order_index,
+      rest_time_seconds,
+      notes,
+      exercices_library (
+        name,
+        category,
+        unit
+      )
+    )
+  `)
+  .eq('id', sessionId);
+```
+
 ## Workflow Rules (CRITICAL)
+- **Langue**: Toutes les communications et la documentation technique doivent être en français.
 - **Git Commits**: After each feature creation or modification, a git commit must be proposed.
 - **Validation**: **DO NOT** commit without explicit user validation of the proposed commit message and changes.
 - **UI/UX Standard**: 
     - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.
     - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.
     - **Toasts**: Prefer Success Modals over Toasts for critical validation messages.
+- **Database Consistency**: When creating a session, insert data into `sessions` first, then into `session_exercises`. Use the `exercices_library` IDs as references.
 
 ## Development
 - **Frontend:** `npm run dev` in `frontend` directory.

@@ -58,6 +58,7 @@ export default function SessionsPage() {
       const response = await fetch('http://127.0.0.1:3001/api/sessions')
       if (!response.ok) throw new Error("Erreur lors du chargement")
       const data = await response.json()
+      console.log("[DEBUG] Sessions reçues:", data);
       setSessions(data)
     } catch (error) {
       console.error(error)
@@ -104,8 +105,8 @@ export default function SessionsPage() {
     const title = (session.title || '').toLowerCase()
     const matchesSearch = title.includes(searchTerm.toLowerCase())
     
-    // Check for both boolean true and string "true"
-    const isTemplate = session.is_template === true || session.is_template === "true"
+    // Filtrage plus robuste (booléen ou chaîne "true")
+    const isTemplate = session.is_template === true || String(session.is_template) === "true"
     
     return matchesSearch && isTemplate
   })
@@ -114,14 +115,15 @@ export default function SessionsPage() {
   // Filtered to only show templates
   const programsForTable = React.useMemo(() => {
     return sessions
-      .filter(session => session.is_template === true || session.is_template === "true")
+      .filter(session => session.is_template === true || String(session.is_template) === "true")
       .map(session => ({
         id: session.id,
-        // Display athlete ID or a placeholder if not available
-        personName: session.athlete_id ? `Athlète ID: ${session.athlete_id.substring(0, 8)}...` : 'Modèle global',
         programName: session.title,
+        description: session.description, // Ajout de la description
         numberOfExercises: session.session_exercises?.length || 0,
-        thumbnailUrl: null, 
+        exercises: session.session_exercises?.map(se => ({
+            name: se.exercices_library?.name || "Exercice"
+        })) || [],
       }));
   }, [sessions]);
 
@@ -163,85 +165,16 @@ export default function SessionsPage() {
           {/* New Table Section */}
           <div className="mb-6"> 
             <h2 className="text-xl font-semibold mb-4">Liste des Modèles</h2> {/* Heading for the table */}
-            <ProgramTable programs={programsForTable} /> {/* Render the ProgramTable component */}
+            <ProgramTable 
+              programs={programsForTable} 
+              onDelete={(program) => openDeleteConfirm({ preventDefault: () => {}, stopPropagation: () => {} }, program)} 
+            /> {/* Render the ProgramTable component */}
           </div>
-
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <IconLoader2 className="animate-spin text-primary" size={40} />
-              <p className="text-muted-foreground">Chargement des séances...</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredSessions.map((session) => (
-                <Link key={session.id} href={`/sessions/${session.id}`}>
-                  <Card className="hover:border-primary transition-colors cursor-pointer h-full relative group overflow-hidden">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                      onClick={(e) => openDeleteConfirm(e, session)}
-                    >
-                      <IconTrash size={16} />
-                    </Button>
-                    
-                    <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-                        {session.is_template ? <IconBarbell size={24} /> : <IconCalendarEvent size={24} />}
-                      </div>
-                      <div className="flex flex-col overflow-hidden">
-                        <CardTitle className="text-lg truncate">
-                          {session.title}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2">
-                          {session.is_template ? (
-                            <Badge variant="outline" className="text-[10px] uppercase px-1.5 py-0 bg-blue-50 text-blue-600 border-blue-200">
-                              Modèle
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] uppercase px-1.5 py-0 bg-green-50 text-green-600 border-green-200">
-                              Séance
-                            </Badge>
-                          )}
-                          {session.status && (
-                             <Badge variant="secondary" className="text-[10px] uppercase px-1.5 py-0">
-                                {session.status}
-                             </Badge>
-                          )}
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <IconClock size={16} />
-                        <span>{session.date ? new Date(session.date).toLocaleDateString() : 'Date non définie'}</span>
-                      </div>
-
-                      {session.athlete_id && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <IconUser size={16} />
-                          <span>Athlète ID: {session.athlete_id.substring(0, 8)}...</span>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                        <span className="font-medium">
-                          {session.session_exercises?.length || 0} exercices
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-          )}
 
           {!loading && filteredSessions.length === 0 && (
             <div className="text-center py-20 border-2 border-dashed rounded-xl">
               <IconCalendarEvent className="mx-auto h-12 w-12 text-muted-foreground/20 mb-4" />
-              <p className="text-muted-foreground font-medium">Aucune séance trouvée.</p>
-              <p className="text-sm text-muted-foreground/60">Commencez par créer votre première séance.</p>
+              <p className="text-muted-foreground font-medium">Aucun modèle trouvé.</p>
             </div>
           )}
         </div>
