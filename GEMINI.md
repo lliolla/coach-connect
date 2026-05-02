@@ -56,6 +56,7 @@ const { data } = await supabase
 - **Validation**: **DO NOT** commit without explicit user validation of the proposed commit message and changes.
 - **UI/UX Standard**: 
     - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.
+    - **SUCCESS**: Success Modals MUST close automatically after 2 seconds and trigger the appropriate redirection. They MUST NOT contain a "Close" button to maintain a fluid experience.
     - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.
     - **Toasts**: Prefer Success Modals over Toasts for critical validation messages.
 - **Database Consistency**: When creating a session, insert data into `sessions` first, then into `session_exercises`. Use the `exercices_library` IDs as references.

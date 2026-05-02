@@ -360,7 +360,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
       if (!response.ok) throw new Error('Erreur lors de la sauvegarde');
 
-      const result = await response.json()
+      await response.json()
       toast.dismiss(loadingToast)
 
       setShowSuccessModal(true)
@@ -591,15 +591,6 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               }
             </DialogDescription>
           </DialogHeader>
-        </DialogContent>
-      </Dialog>
-    </>
-  )
-}
-ton" onClick={handleModalClose} className="w-full sm:w-auto px-8">
-              Fermer
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
