@@ -5,25 +5,41 @@ import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { IconActivity, IconClock } from "@tabler/icons-react"
+import { IconActivity, IconClock, IconUser } from "@tabler/icons-react"
 import Link from "next/link"
 
-const mockSessions = [
-  { id: 1, date: new Date(), title: "Sortie Endurance", type: "Running", duration: "1h30" },
-  { id: 2, date: new Date(new Date().setDate(new Date().getDate() + 1)), title: "Fractionné", type: "Running", duration: "45min" },
-  { id: 3, date: new Date(new Date().setDate(new Date().getDate() - 2)), title: "Sortie Longue", type: "VTT", duration: "3h00" },
-]
-
-export function CalendarView({ searchTerm = "" }) {
+export function CalendarView({ sessions = [], searchTerm = "" }) {
   const [date, setDate] = React.useState(new Date())
 
-  const filteredSessions = searchTerm 
-    ? mockSessions.filter(s => s.title.toLowerCase().includes(searchTerm.toLowerCase()) || s.type.toLowerCase().includes(searchTerm.toLowerCase()))
-    : mockSessions
+  // Filtrer les sessions réelles (pas les modèles) et appliquer la recherche
+  const realSessions = React.useMemo(() => {
+    return sessions.filter(s => s.is_template !== true && s.is_template !== "true")
+  }, [sessions])
+
+  const filteredSessions = React.useMemo(() => {
+    if (!searchTerm) return realSessions
+    const lowerSearch = searchTerm.toLowerCase()
+    return realSessions.filter(s => {
+      const athleteName = s.athletes ? `${s.athletes.first_name} ${s.athletes.last_name}`.toLowerCase() : ""
+      return s.title.toLowerCase().includes(lowerSearch) || athleteName.includes(lowerSearch)
+    })
+  }, [realSessions, searchTerm])
 
   const sessionsForSelectedDate = filteredSessions.filter(
-    (s) => s.date.toDateString() === date?.toDateString()
+    (s) => {
+        if (!s.date) return false;
+        const sessionDate = new Date(s.date);
+        return sessionDate.toDateString() === date?.toDateString()
+    }
   )
+
+  const formatDuration = (minutes) => {
+    if (!minutes) return "0min"
+    if (minutes < 60) return `${minutes}min`
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    return remainingMinutes > 0 ? `${hours}h${remainingMinutes}` : `${hours}h`
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -57,14 +73,23 @@ export function CalendarView({ searchTerm = "" }) {
                     <IconActivity size={20} />
                   </div>
                   <div>
-                    <p className="font-semibold">{session.title}</p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Badge variant="outline" className="text-[10px] h-5">{session.type}</Badge>
-                      <span className="flex items-center gap-1"><IconClock size={12} /> {session.duration}</span>
+                    <div className="flex items-center gap-2">
+                        <p className="font-semibold">{session.title}</p>
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 flex items-center gap-1 border-primary/20 text-primary bg-primary/5">
+                            <IconUser size={10} />
+                            {session.athletes ? `${session.athletes.first_name} ${session.athletes.last_name?.charAt(0)}.` : 'Inconnu'}
+                        </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                      <span className="flex items-center gap-1"><IconClock size={12} /> {formatDuration(session.duration)}</span>
+                      <span className="text-[10px] opacity-30">•</span>
+                      <span className="text-[10px]">{session.session_exercises?.length || 0} exercices</span>
                     </div>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm">Détails</Button>
+                <Button variant="ghost" size="sm" asChild>
+                    <Link href={`/sessions/${session.id}?mode=view&context=suivis`}>Détails</Link>
+                </Button>
               </div>
             ))
           ) : (
@@ -72,7 +97,7 @@ export function CalendarView({ searchTerm = "" }) {
               <IconActivity size={40} className="opacity-20 mb-2" />
               <p className="italic">Aucune séance planifiée pour ce jour.</p>
               <Button variant="link" size="sm" className="mt-2" asChild>
-                <Link href="/sessions/new">+ Ajouter une séance</Link>
+                <Link href="/suivis/new">+ Ajouter une séance</Link>
               </Button>
             </div>
           )}

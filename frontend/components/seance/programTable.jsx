@@ -150,7 +150,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
       {/* Footer / Pagination */}
       <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Affichage de <span className="text-foreground">{startItem}-{endItem}</span> sur <span className="text-foreground">{totalItems}</span> {context === "suivis" ? "séance" : "modèle"}{totalItems > 1 ? "s" : ""}
+          Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
         </p>
         <div className="flex items-center gap-2">
           <Button 

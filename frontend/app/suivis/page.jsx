@@ -14,10 +14,10 @@ import { CalendarView } from "@/components/seance/calendar-view"
 import { 
   IconPlus, 
   IconSearch,
-  IconCalendarEvent,
-  IconLoader2, // Import loader icon
-  IconUser, // Import user icon for person name
-  IconBarbell, // Import barbell icon for exercise count
+  IconCheck, 
+  IconClock,
+  IconUser,
+  IconBarbell,
   IconActivity
 } from "@tabler/icons-react"
 import { toast } from "sonner" // Assuming sonner is available for notifications
@@ -185,7 +185,7 @@ export default function SuivisPage() {
               <IconCalendarEvent size={20} className="text-primary" />
               <h2 className="text-lg font-semibold">Calendrier des séances</h2>
             </div>
-            <CalendarView searchTerm={searchTerm} />
+            <CalendarView sessions={sessions} searchTerm={searchTerm} />
           </div>
         </div>
       </SidebarInset>
@@ -214,17 +214,22 @@ export default function SuivisPage() {
       </Dialog>
 
       {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md [&>button]:hidden">
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader className="flex flex-col items-center justify-center text-center">
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <IconPlus className="h-6 w-6 text-green-600 rotate-45" />
+              <IconCheck className="h-6 w-6 text-green-600" />
             </div>
             <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
             <DialogDescription className="text-base py-2">
               La séance a été supprimée avec succès.
             </DialogDescription>
           </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button type="button" onClick={() => setShowSuccessModal(false)} className="w-full sm:w-auto px-8">
+              Fermer
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </SidebarProvider>
