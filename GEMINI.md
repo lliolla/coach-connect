@@ -52,7 +52,7 @@ const { data } = await supabase
 
 ## Workflow Rules (CRITICAL)
 - **Langue**: Toutes les communications et la documentation technique doivent être en français.
-- **Git Commits**: After each feature creation or modification, a git commit must be proposed.
+- **Git Commits**: After each feature creation or modification, a git commit must be proposed but never done alone .
 - **Validation**: **DO NOT** commit without explicit user validation of the proposed commit message and changes.
 - **UI/UX Standard**: 
     - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.

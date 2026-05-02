@@ -94,7 +94,7 @@ export default function SessionsPage() {
       setTimeout(() => {
         setShowSuccessModal(false)
         setSessionToDelete(null)
-      }, 2500)
+      }, 2000)
     } catch (error) {
       console.error(error)
       toast.error("Erreur lors de la suppression", { id: loadingToast })
@@ -204,8 +204,8 @@ export default function SessionsPage() {
       </Dialog>
 
       {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader className="flex flex-col items-center justify-center text-center">
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <IconCheck className="h-6 w-6 text-green-600" />
@@ -215,11 +215,6 @@ export default function SessionsPage() {
               La séance a été supprimée avec succès.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button type="button" onClick={() => setShowSuccessModal(false)} className="w-full sm:w-auto px-8">
-              Fermer
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </SidebarProvider>

@@ -5,6 +5,9 @@ Application moderne de gestion et de suivi de préparation physique pour athlèt
 ## 🚀 Fonctionnalités
 
 - **Gestion des Athlètes** : Profils complets, objectifs, abonnements et groupes.
+                                -Créer un athlète
+                                -Modifier un athelete
+                                -supprimer un athelete
 - **Bibliothèque d'Exercices** : Base de données centralisée d'exercices avec catégories et unités.
 - **Planification de Séances** : Création de séances personnalisées avec une structure normalisée (Many-to-Many).
 - **Suivi des Performances** : Monitoring des répétitions, charges, et temps de repos.

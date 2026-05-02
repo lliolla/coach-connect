@@ -363,11 +363,10 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       const result = await response.json()
       toast.dismiss(loadingToast)
 
-      if (isDuplicate) {
-        setShowSuccessModal(true)
-      } else {
-        setShowSuccessModal(true)
-      }
+      setShowSuccessModal(true)
+      setTimeout(() => {
+        handleModalClose()
+      }, 2000)
 
     } catch (error) {
       console.error("Erreur:", error)
@@ -569,8 +568,8 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       </Card>
 
       {/* Success Modal */}
-      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader className="flex flex-col items-center justify-center text-center">
             <div className={cn(
               "h-12 w-12 rounded-full flex items-center justify-center mb-4",
@@ -592,8 +591,12 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               }
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="sm:justify-center">
-            <Button type="button" onClick={handleModalClose} className="w-full sm:w-auto px-8">
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+ton" onClick={handleModalClose} className="w-full sm:w-auto px-8">
               Fermer
             </Button>
           </DialogFooter>
