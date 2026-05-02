@@ -365,10 +365,8 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
       if (isDuplicate) {
         setShowSuccessModal(true)
-        setTimeout(() => handleModalClose(), 2000)
       } else {
         setShowSuccessModal(true)
-        setTimeout(() => handleModalClose(), 1500)
       }
 
     } catch (error) {
