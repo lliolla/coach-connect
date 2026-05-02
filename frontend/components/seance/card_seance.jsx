@@ -96,10 +96,6 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const [loadingAthletes, setLoadingAthletes] = React.useState(false)
   const [loadingTemplates, setLoadingTemplates] = React.useState(false)
 
-  // States for Duplication Modal
-  const [showDuplicateModal, setShowDuplicateModal] = React.useState(false)
-  const [duplicatedId, setDuplicatedId] = React.useState(null)
-
   React.useEffect(() => {
     fetchAvailableExercises()
     fetchAthletes()
@@ -368,8 +364,8 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       toast.dismiss(loadingToast)
 
       if (isDuplicate) {
-        setDuplicatedId(result.id)
-        setShowDuplicateModal(true)
+        setShowSuccessModal(true)
+        setTimeout(() => handleModalClose(), 2000)
       } else {
         setShowSuccessModal(true)
         setTimeout(() => handleModalClose(), 1500)
@@ -384,16 +380,6 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const handleModalClose = () => {
     setShowSuccessModal(false)
     router.push(effectiveIsTracking ? '/suivis' : '/sessions')
-  }
-
-  const handleDuplicateConfirm = (modify) => {
-    setShowDuplicateModal(false)
-    const targetPath = effectiveIsTracking ? '/suivis' : '/sessions'
-    if (modify && duplicatedId) {
-      router.push(`${targetPath}/${duplicatedId}?mode=edit&context=${context || ''}`)
-    } else {
-      router.push(targetPath)
-    }
   }
 
   return (
@@ -588,40 +574,29 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="flex flex-col items-center justify-center text-center">
-            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <CalendarCheck className="h-6 w-6 text-green-600" />
+            <div className={cn(
+              "h-12 w-12 rounded-full flex items-center justify-center mb-4",
+              isDuplicate ? "bg-blue-100" : "bg-green-100"
+            )}>
+              {isDuplicate ? (
+                <LayoutGrid className="h-6 w-6 text-blue-600" />
+              ) : (
+                <CalendarCheck className="h-6 w-6 text-green-600" />
+              )}
             </div>
-            <DialogTitle className="text-xl">Opération réussie !</DialogTitle>
+            <DialogTitle className="text-xl">
+              {isDuplicate ? "Modèle dupliqué !" : "Opération réussie !"}
+            </DialogTitle>
             <DialogDescription className="text-base py-2">
-              Le programme "<strong>{formData.title}</strong>" a été enregistré avec succès.
+              {isDuplicate 
+                ? `Le programme "${formData.title}" a été dupliqué avec succès.`
+                : `Le programme "${formData.title}" a été enregistré avec succès.`
+              }
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center">
             <Button type="button" onClick={handleModalClose} className="w-full sm:w-auto px-8">
               Fermer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Duplicate Options Modal */}
-      <Dialog open={showDuplicateModal} onOpenChange={setShowDuplicateModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="flex flex-col items-center justify-center text-center">
-            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-              <LayoutGrid className="h-6 w-6 text-blue-600" />
-            </div>
-            <DialogTitle className="text-xl">Modèle dupliqué !</DialogTitle>
-            <DialogDescription className="text-base py-2">
-              Le programme a été dupliqué avec succès. Souhaitez-vous le modifier maintenant ?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex sm:justify-center gap-2">
-            <Button variant="outline" onClick={() => handleDuplicateConfirm(false)} className="flex-1 sm:flex-none">
-              Seulement dupliquer
-            </Button>
-            <Button onClick={() => handleDuplicateConfirm(true)} className="flex-1 sm:flex-none">
-              Modifier le programme
             </Button>
           </DialogFooter>
         </DialogContent>
