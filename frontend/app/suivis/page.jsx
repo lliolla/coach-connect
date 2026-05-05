@@ -18,7 +18,9 @@ import {
   IconClock,
   IconUser,
   IconBarbell,
-  IconActivity
+  IconActivity,
+  IconLoader2,
+  IconCalendarEvent
 } from "@tabler/icons-react"
 import { toast } from "sonner" // Assuming sonner is available for notifications
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card" // In case we need cards for data display, or to match structure
