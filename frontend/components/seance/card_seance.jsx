@@ -29,7 +29,10 @@ import {
   Zap,
   Flame,
   Target,
-  Wind
+  Wind,
+  ChevronDown,
+  ChevronRight,
+  Info
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -157,7 +160,7 @@ const SortableExerciseCard = ({
                   size="icon" 
                   className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-95 z-10" 
                   onClick={(e) => {
-                    e.stopPropagation(); // Empêcher le déclenchement du DND lors de la suppression
+                    e.stopPropagation(); 
                     removeExercise(index);
                   }}
                 >
@@ -246,11 +249,23 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const [loadingTemplates, setLoadingTemplates] = React.useState(false)
   const [activeId, setActiveId] = React.useState(null);
 
+  // État des accordéons (tous ouverts par défaut)
+  const [expandedSections, setExpandedSections] = React.useState({
+    info: true,
+    warmup: true,
+    main: true,
+    cooldown: true
+  });
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
   // Configuration des capteurs DND
   const sensors = useSensors(
     useSensor(PointerSensor, {
         activationConstraint: {
-            distance: 5, // Nécessaire pour permettre le clic sur mobile
+            distance: 5, 
         },
     }),
     useSensor(KeyboardSensor, {
@@ -274,7 +289,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       const data = await response.json()
       
       const mappedExercises = (data.session_exercises || []).map((se, idx) => ({
-        sortId: `ex-${Date.now()}-${idx}`, // Stable ID pour DND
+        sortId: `ex-${Date.now()}-${idx}`, 
         exercise_id: se.exercise_id,
         template_id: se.exercise_id, 
         name: se.exercices_library?.name || "Exercice",
@@ -464,7 +479,6 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         const oldIndex = prev.exercises.findIndex((ex) => ex.sortId === active.id);
         const newIndex = prev.exercises.findIndex((ex) => ex.sortId === over.id);
 
-        // Si on change de section pendant le drag, on met à jour la section de l'élément déplacé
         const updatedExercises = [...prev.exercises];
         const activeEx = updatedExercises[oldIndex];
         const overEx = updatedExercises[newIndex];
@@ -559,11 +573,15 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   const renderExerciseSection = (sectionId, title, icon, colorClass) => {
     const sectionExercises = formData.exercises.filter(ex => ex.section === sectionId);
+    const isExpanded = expandedSections[sectionId];
     
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between border-b pb-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1 cursor-pointer select-none group" onClick={() => toggleSection(sectionId)}>
+            <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+            </div>
             <div className={cn("p-1.5 rounded-lg", colorClass)}>
               {icon}
             </div>
@@ -571,64 +589,71 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
             <Badge variant="secondary" className="text-[10px] h-5 px-1.5 ml-1">{sectionExercises.length}</Badge>
           </div>
           
-          <div className="flex items-center gap-3">
-            {sectionId === 'main' && (
-              <div className="flex items-center gap-2 bg-muted/20 px-3 py-1 rounded-full border border-primary/10">
-                <Label className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Répéter le bloc</Label>
-                <div className="flex items-center gap-1.5">
-                  <RotateCcw size={12} className="text-primary" />
-                  <Input 
-                    type="number" 
-                    min="1"
-                    value={formData.main_rounds} 
-                    onChange={(e) => setFormData(prev => ({ ...prev, main_rounds: Math.max(1, parseInt(e.target.value) || 1) }))} 
-                    className="h-6 w-12 text-xs text-center p-0 bg-transparent border-none font-bold text-violet-600"
-                    disabled={isView}
-                  />
-                  <span className="text-[10px] font-bold text-muted-foreground">Tours</span>
+          {isExpanded && (
+            <div className="flex items-center gap-3 animate-in fade-in duration-300">
+              {sectionId === 'main' && (
+                <div className="flex items-center gap-2 bg-muted/20 px-3 py-1 rounded-full border border-primary/10">
+                  <Label className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Répéter le bloc</Label>
+                  <div className="flex items-center gap-1.5">
+                    <RotateCcw size={12} className="text-primary" />
+                    <Input 
+                      type="number" 
+                      min="1"
+                      value={formData.main_rounds} 
+                      onChange={(e) => setFormData(prev => ({ ...prev, main_rounds: Math.max(1, parseInt(e.target.value) || 1) }))} 
+                      className="h-6 w-12 text-xs text-center p-0 bg-transparent border-none font-bold text-violet-600"
+                      disabled={isView}
+                    />
+                    <span className="text-[10px] font-bold text-muted-foreground">Tours</span>
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {!isView && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="h-7 gap-1 border-primary/30 text-[10px] font-bold uppercase hover:bg-primary/5"
-                onClick={() => setOpenExercises({ open: true, section: sectionId })}
-              >
-                <Plus size={12} /> Ajouter
-              </Button>
-            )}
-          </div>
+              )}
+              
+              {!isView && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-7 gap-1 border-primary/30 text-[10px] font-bold uppercase hover:bg-primary/5"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenExercises({ open: true, section: sectionId });
+                  }}
+                >
+                  <Plus size={12} /> Ajouter
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
-        <SortableContext 
-          items={sectionExercises.map(ex => ex.sortId)} 
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="min-h-[50px]">
-            {sectionExercises.length === 0 ? (
-              <div className="text-center py-6 border-2 border-dashed rounded-xl text-muted-foreground text-[10px] uppercase font-semibold opacity-40">
-                Aucun exercice dans cette section
-              </div>
-            ) : (
-              formData.exercises.map((ex, originalIndex) => {
-                if (ex.section !== sectionId) return null;
-                return (
-                  <SortableExerciseCard 
-                    key={ex.sortId}
-                    ex={ex}
-                    index={originalIndex}
-                    isView={isView}
-                    updateExerciseDetails={updateExerciseDetails}
-                    removeExercise={removeExercise}
-                  />
-                )
-              })
-            )}
-          </div>
-        </SortableContext>
+        {isExpanded && (
+          <SortableContext 
+            items={sectionExercises.map(ex => ex.sortId)} 
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="min-h-[50px] animate-in slide-in-from-top-2 duration-300">
+              {sectionExercises.length === 0 ? (
+                <div className="text-center py-6 border-2 border-dashed rounded-xl text-muted-foreground text-[10px] uppercase font-semibold opacity-40">
+                  Aucun exercice dans cette section
+                </div>
+              ) : (
+                formData.exercises.map((ex, originalIndex) => {
+                  if (ex.section !== sectionId) return null;
+                  return (
+                    <SortableExerciseCard 
+                      key={ex.sortId}
+                      ex={ex}
+                      index={originalIndex}
+                      isView={isView}
+                      updateExerciseDetails={updateExerciseDetails}
+                      removeExercise={removeExercise}
+                    />
+                  )
+                })
+              )}
+            </div>
+          </SortableContext>
+        )}
       </div>
     );
   };
@@ -656,53 +681,76 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         </CardHeader>
         
         <CardContent className="space-y-8 pt-6">
-          {/* Header Info */}
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom du programme / Modèle</Label>
-                    <Input 
-                        value={formData.title} 
-                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Nom du programme"
-                        className="h-12 border-2 font-bold"
-                        disabled={isView}
-                    />
+          {/* Section Accordéon : INFOS SÉANCE */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b pb-2 cursor-pointer group select-none" onClick={() => toggleSection('info')}>
+                <div className="flex items-center gap-2">
+                    <div className="text-muted-foreground group-hover:text-primary transition-colors">
+                        {expandedSections.info ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                    </div>
+                    <div className="p-1.5 rounded-lg bg-muted">
+                        <Info size={16} className="text-foreground" />
+                    </div>
+                    <h3 className="font-bold text-sm uppercase tracking-tight">Informations & Statistiques</h3>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight bg-background/50 px-2 py-1 rounded-full border border-border/50">
+                        <span className="flex items-center gap-1"><Clock size={10} className="text-primary"/> {formData.duration} durée estimée</span>
+                        <span className="opacity-20">|</span>
+                        <span className="flex items-center gap-1"><Dumbbell size={10} className="text-primary"/> {formData.exercises.length} ex.</span>
+                    </div>
+                </div>
+            </div>
+
+            {expandedSections.info && (
+              <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom du programme / Modèle</Label>
+                        <Input 
+                            value={formData.title} 
+                            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                            placeholder="Nom du programme"
+                            className="h-12 border-2 font-bold"
+                            disabled={isView}
+                        />
+                    </div>
+
+                    {effectiveIsTracking && (
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Athlète assigné</Label>
+                            <Select value={formData.athlete_id || undefined} onValueChange={handleAthleteSelect} disabled={isView}>
+                            <SelectTrigger className="h-12 border-2 font-bold">
+                                <SelectValue placeholder="Sélectionner un athlète" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {availableAthletes.map((athlete) => (
+                                <SelectItem key={athlete.id} value={athlete.id.toString()}>
+                                    {athlete.first_name} {athlete.last_name || ''}
+                                </SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </div>
 
-                {effectiveIsTracking && (
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Athlète assigné</Label>
-                        <Select value={formData.athlete_id || undefined} onValueChange={handleAthleteSelect} disabled={isView}>
-                        <SelectTrigger className="h-12 border-2 font-bold">
-                            <SelectValue placeholder="Sélectionner un athlète" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {availableAthletes.map((athlete) => (
-                            <SelectItem key={athlete.id} value={athlete.id.toString()}>
-                                {athlete.first_name} {athlete.last_name || ''}
-                            </SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Description globale</Label>
-              <Input 
-                placeholder="Objectifs de la séance, focus particulier..." 
-                value={formData.description}
-                onChange={handleInputChange}
-                name="description"
-                className="h-12 border-primary/10 bg-muted/5 italic"
-                disabled={isView}
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Description globale</Label>
+                  <Input 
+                    placeholder="Objectifs de la séance, focus particulier..." 
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    name="description"
+                    className="h-12 border-primary/10 bg-muted/5 italic"
+                    disabled={isView}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* DND Context */}
+          {/* DND Context avec sections accordéons */}
           <DndContext 
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -746,13 +794,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
           </DndContext>
         </CardContent>
 
-        <CardFooter className="flex flex-col sm:flex-row justify-between items-center gap-4 border-t p-6 mt-10 bg-muted/5 sticky bottom-0 z-10 backdrop-blur-md">
-          <div className="flex items-center gap-4 text-xs text-muted-foreground font-bold uppercase tracking-tight">
-            <span className="flex items-center gap-1.5"><Clock size={14} className="text-primary"/> {formData.duration} min estimées</span>
-            <span className="opacity-20">|</span>
-            <span className="flex items-center gap-1.5"><Dumbbell size={14} className="text-primary"/> {formData.exercises.length} exercices</span>
-          </div>
-
+        <CardFooter className="flex justify-end border-t p-6 mt-10 bg-muted/5 sticky bottom-0 z-10 backdrop-blur-md">
           <div className="flex gap-3 w-full sm:w-auto">
             {isView ? (
               <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(effectiveIsTracking ? '/suivis' : '/sessions')}>Quitter</Button>
