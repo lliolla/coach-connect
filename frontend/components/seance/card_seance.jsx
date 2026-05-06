@@ -249,12 +249,12 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const [loadingTemplates, setLoadingTemplates] = React.useState(false)
   const [activeId, setActiveId] = React.useState(null);
 
-  // État des accordéons (tous ouverts par défaut)
+  // État des accordéons (Info ouvert par défaut, les autres fermés)
   const [expandedSections, setExpandedSections] = React.useState({
     info: true,
-    warmup: true,
-    main: true,
-    cooldown: true
+    warmup: false,
+    main: false,
+    cooldown: false
   });
 
   const toggleSection = (section) => {
