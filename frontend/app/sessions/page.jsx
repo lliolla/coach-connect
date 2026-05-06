@@ -83,21 +83,26 @@ export default function SessionsPage() {
       const response = await fetch(`http://127.0.0.1:3001/api/sessions/${sessionToDelete.id}`, {
         method: 'DELETE'
       })
-      if (!response.ok) throw new Error("Erreur lors de la suppression")
-      
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({ message: "Erreur lors de la suppression" }));
+        const detailedError = result.error ? ` : ${result.error}` : '';
+        throw new Error((result.message || "Erreur lors de la suppression") + detailedError);
+      }
+
       setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
       toast.dismiss(loadingToast)
-      
+
       setDeleteConfirmOpen(false)
       setShowSuccessModal(true)
-      
+
       setTimeout(() => {
         setShowSuccessModal(false)
         setSessionToDelete(null)
       }, 2000)
     } catch (error) {
       console.error(error)
-      toast.error("Erreur lors de la suppression", { id: loadingToast })
+      toast.error(error.message, { id: loadingToast })
     }
   }
 

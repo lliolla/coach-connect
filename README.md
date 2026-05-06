@@ -5,14 +5,17 @@
 ## 🚀 Fonctionnalités
 
 ### 👤 Gestion des Athlètes
-- **Profils complets** : Gestion des informations personnelles, sports pratiqués et objectifs.
+- **Profils complets** : Gestion des informations personnelles, sports pratiqués et objectifs.BonjouBonojur
 - **CRUD Intégral** : Création, modification et suppression sécurisée des athlètes via des interfaces dédiées.
 - **Organisation** : Attribution aux groupes et suivi des types d'abonnements.
 
 ### 📋 Gestion des Modèles (Templates)
 - **Bibliothèque de séances** : Création et gestion de modèles de séances réutilisables.
+- **Structure Granulaire** : Organisation des séances en 3 blocs (Échauffement, Corps de séance, Retour au calme) pour une meilleure clarté.
+- **Gestion des Tours** : Définition du nombre de rounds/tours global pour le corps de séance.
 - **Duplication intelligente** : Dupliquer un modèle existant en un clic pour une adaptation rapide.
 - **Éditeur dynamique** : Ajout d'exercices, gestion des séries, répétitions et temps de repos au sein d'une interface fluide.
+- **Drag & Drop** : Réorganisation intuitive des exercices par glisser-déposer, optimisée pour le mobile.
 
 ### 📅 Planification & Suivi des Séances
 - **Calendrier interactif** : Visualisation globale des séances réelles planifiées par date.

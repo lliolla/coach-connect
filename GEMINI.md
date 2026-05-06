@@ -57,6 +57,8 @@ const { data } = await supabase
 - **UI/UX Standard**: 
     - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.
     - **SUCCESS**: Success Modals MUST close automatically after 2 seconds and trigger the appropriate redirection. They MUST NOT contain a "Close" button to maintain a fluid experience.
+    - **SESSION STRUCTURE**: Sessions MUST be divided into 3 distinct blocks: Warmup (optional), Main Body (with a "Rounds/Tours" setting), and Cooldown (optional).
+    - **DRAG & DROP**: Exercise reordering MUST be implemented using a fluid Drag & Drop interface, optimized for mobile usage (large touch targets, visual feedback).
     - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.
     - **Toasts**: Prefer Success Modals over Toasts for critical validation messages.
 - **Database Consistency**: When creating a session, insert data into `sessions` first, then into `session_exercises`. Use the `exercices_library` IDs as references.
