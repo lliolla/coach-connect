@@ -1,85 +1,65 @@
-# 🏟️ Prep Athlete - Application de Suivi pour Athlètes
+﻿# 🏟️ Prep Athlete - Application de Suivi pour Athlètes
 
 > Application moderne de gestion et de préparation physique pour athlètes, construite avec une stack performante et une interface utilisateur soignée.
 
 ## 🚀 Fonctionnalités
 
 ### 👤 Gestion des Athlètes
-- **Profils complets** : Gestion des informations personnelles, sports pratiqués et objectifs.BonjouBonojur
+- **Profils complets** : Gestion des informations personnelles, sports pratiqués et objectifs.
 - **CRUD Intégral** : Création, modification et suppression sécurisée des athlètes via des interfaces dédiées.
-- **Organisation** : Attribution aux groupes et suivi des types d'abonnements.
+- **Organisation** : Attribution aux groupes et suivi des types d''abonnements.
 
 ### 📋 Gestion des Modèles (Templates)
 - **Bibliothèque de séances** : Création et gestion de modèles de séances réutilisables.
-- **Structure Granulaire** : Organisation des séances en 3 blocs (Échauffement, Corps de séance, Retour au calme) pour une meilleure clarté.
+- **Structure Granulaire** : Organisation des séances en 3 blocs (Échauffement, Corps de séance, Retour au calme).
 - **Gestion des Tours** : Définition du nombre de rounds/tours global pour le corps de séance.
-- **Duplication intelligente** : Dupliquer un modèle existant en un clic pour une adaptation rapide.
-- **Éditeur dynamique** : Ajout d'exercices, gestion des séries, répétitions et temps de repos au sein d'une interface fluide.
-- **Drag & Drop** : Réorganisation intuitive des exercices par glisser-déposer, optimisée pour le mobile.
+- **Éditeur dynamique** : Ajout d''exercices, gestion des répétitions et temps de repos.
+- **Drag & Drop** : Réorganisation intuitive des exercices, optimisée pour le mobile.
 
-### 📅 Planification & Suivi des Séances
-- **Calendrier interactif** : Visualisation globale des séances réelles planifiées par date.
-- **Affectation Athlète** : Assignation précise des séances aux athlètes avec suivi de l'intensité (RPE) et des notes.
-- **Interface de Suivi** : Liste paginée des séances réalisées avec filtrage par athlète ou titre.
-
-### 🏋️ Bibliothèque d'Exercices
-- **Référentiel centralisé** : Base de données d'exercices structurée par catégorie (Force, Cardio, Souplesse, etc.).
-- **Unités flexibles** : Support de différentes unités de mesure selon le type d'exercice.
+### 🏋️ Bibliothèque d''Exercices
+- **Référentiel centralisé** : Base de données d''exercices structurée par catégorie (Force, Cardio, Souplesse, etc.).
 
 ### 📊 Tableau de Bord
-- **Statistiques clés** : Vue d'ensemble de l'activité hebdomadaire et des objectifs validés.
+- **Statistiques clés** : Vue d''ensemble de l''activité hebdomadaire.
 - **Graphiques de progression** : Visualisation interactive des performances via Recharts.
 
 ## 🛠️ Stack Technique
 
-- **Frontend** : [Next.js 15](https://nextjs.org/) (App Router), [React 19](https://react.dev/), [Tailwind CSS 4](https://tailwindcss.com/).
-- **Backend** : [Fastify 5](https://fastify.dev/) (Node.js, ESM), optimisé pour le déploiement sur Vercel.
-- **Base de données** : [Supabase](https://supabase.com/) (PostgreSQL) avec Row Level Security (RLS).
-- **Icônes & UI** : [Lucide React](https://lucide.dev/), [Tabler Icons](https://tabler-icons.io/), Radix UI / Shadcn UI.
+- **Framework** : [Next.js 15](https://nextjs.org/) (App Router, Server Actions).
+- **Langage** : [React 19](https://react.dev/), TypeScript / JavaScript.
+- **Styling** : [Tailwind CSS 4](https://tailwindcss.com/).
+- **Base de données** : [Supabase](https://supabase.com/) (PostgreSQL) avec @supabase/ssr.
+- **Icônes & UI** : [Lucide React](https://lucide.dev/), [Tabler Icons](https://tabler-icons.io/), Radix UI.
 
 ## 🎨 Standard UI/UX
 
+- **Architecture** : Architecture sans backend séparé (Full-stack Next.js). Les Server Actions communiquent directement avec Supabase via `@supabase/ssr`.
 - **Automatisation** : Modales de succès avec fermeture et redirection automatique après 2 secondes.
-- **Sécurité des actions** : Toutes les suppressions requièrent une confirmation via une modale stylisée (pas d'alertes natives).
-- **Feedback visuel** : États de chargement (loaders) et notifications (Toasts) intégrés.
+- **Sécurité des actions** : Toutes les suppressions requièrent une confirmation via une modale stylisée.
 - **Design Adaptatif** : Interface entièrement responsive avec sidebar interactive.
 
 ## 🗄️ Schéma de la Base de Données
 
-### Table: `sessions` (Enveloppe de séance)
-| Colonne | Type | Description |
-| --- | --- | --- |
-| `id` | uuid | Clé primaire |
-| `title` | text | Titre de la séance ou du modèle |
-| `date` | date | Date de réalisation prévue |
-| `athlete_id` | uuid | FK vers `athletes` |
-| `is_template` | boolean | Identifie s'il s'agit d'un modèle réutilisable |
-| `duration` | integer | Durée estimée en minutes |
-
-### Table: `session_exercises` (Liaison)
-| Colonne | Type | Description |
-| --- | --- | --- |
-| `id` | uuid | Clé primaire |
-| `session_id` | uuid | FK vers `sessions` |
-| `exercise_id` | uuid | FK vers `exercices_library` |
-| `sets` | integer | Nombre de séries |
-| `reps` | integer | Nombre de répétitions |
-| `weight` | numeric | Charge utilisée |
-| `rest_time` | integer | Temps de repos (secondes) |
-| `intensity` | text | Intensité ressentie (RPE) |
+L''application utilise les tables Supabase suivantes :
+- `athletes` : Profils des sportifs.
+- `sessions` : Enveloppes de séances (modèles ou réelles).
+- `session_exercises` : Détails des exercices au sein d''une séance.
+- `exercices_library` : Bibliothèque d''exercices de référence.
+- `abonnements`, `groupes`, `objectifs` : Tables de lookups.
 
 ## 📦 Installation & Développement
 
-### Backend
-```bash
-cd backend
-npm install
-npm run dev
-```
+L''application est désormais unifiée dans le dossier `frontend`.
 
-### Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
+```
+
+### Configuration
+Créez un fichier `.env.local` dans le dossier `frontend` avec vos clés Supabase :
+```env
+NEXT_PUBLIC_SUPABASE_URL=votre_url_supabase
+NEXT_PUBLIC_SUPABASE_ANON_KEY=votre_cle_anonyme_supabase
 ```

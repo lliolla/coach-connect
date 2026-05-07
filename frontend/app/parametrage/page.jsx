@@ -29,7 +29,7 @@ const tables = {
   categories_exercices: { label: "Catégories d'Exercices", endpoint: "categories_exercices", field: "label" }
 }
 
-export default function ParametragePage() {
+function ParametrageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const currentTab = searchParams.get("tab") || "groupes"
@@ -116,6 +116,111 @@ export default function ParametragePage() {
   }
 
   return (
+    <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Administration</h1>
+      </div>
+
+      <Tabs value={currentTab} onValueChange={setTab} className="w-full">
+        <div className="overflow-x-auto pb-2 scrollbar-hide">
+          <TabsList className="inline-flex w-full md:w-auto justify-start">
+            <TabsTrigger value="groupes">Groupes</TabsTrigger>
+            <TabsTrigger value="abonnements">Abonnements</TabsTrigger>
+            <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
+            <TabsTrigger value="paiements">Paiements</TabsTrigger>
+            <TabsTrigger value="categories_exercices">Catégories Exercices</TabsTrigger>
+          </TabsList>
+        </div>
+
+        {Object.keys(tables).map((tabKey) => (
+          <TabsContent key={tabKey} value={tabKey} className="mt-4">
+            <Card className="border-dashed border-2 shadow-none">
+              <CardHeader>
+                <CardTitle>Gestion des {tables[tabKey].label}</CardTitle>
+                <CardDescription>
+                  Ajoutez, modifiez ou supprimez les options disponibles dans les formulaires.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input 
+                    placeholder={`Nouveau ${tables[tabKey].label.slice(0, -1)}...`} 
+                    value={newValue}
+                    onChange={(e) => setNewValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  />
+                  <Button onClick={handleCreate} size="icon">
+                    <IconPlus size={18} />
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <IconLoader2 className="animate-spin text-primary" size={32} />
+                    </div>
+                  ) : (
+                    data.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+                        {editingId === item.id ? (
+                          <div className="flex flex-1 gap-2 mr-2">
+                            <Input 
+                              value={editValue} 
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              className="h-8"
+                              autoFocus
+                            />
+                            <Button size="icon" className="h-8 w-8" onClick={() => handleUpdate(item.id)}>
+                              <IconCheck size={14} />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
+                              <IconX size={14} />
+                            </Button>
+                          </div>
+                        ) : (
+                          <>
+                            <span className="font-medium">{item[tables[tabKey].field]}</span>
+                            <div className="flex gap-1">
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                onClick={() => {
+                                  setEditingId(item.id)
+                                  setEditingValue(item[tables[tabKey].field])
+                                }}
+                              >
+                                <IconEdit size={16} />
+                              </Button>
+                              <Button 
+                                size="icon" 
+                                variant="ghost" 
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                onClick={() => handleDelete(item.id)}
+                              >
+                                <IconTrash size={16} />
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))
+                  )}
+                  {!loading && data.length === 0 && (
+                    <p className="text-center py-8 text-muted-foreground italic">Aucun élément trouvé.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  )
+}
+
+export default function ParametragePage() {
+  return (
     <SidebarProvider
       style={{
         "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -124,106 +229,9 @@ export default function ParametragePage() {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Administration</h1>
-          </div>
-
-          <Tabs value={currentTab} onValueChange={setTab} className="w-full">
-            <div className="overflow-x-auto pb-2 scrollbar-hide">
-              <TabsList className="inline-flex w-full md:w-auto justify-start">
-                <TabsTrigger value="groupes">Groupes</TabsTrigger>
-                <TabsTrigger value="abonnements">Abonnements</TabsTrigger>
-                <TabsTrigger value="objectifs">Objectifs</TabsTrigger>
-                <TabsTrigger value="paiements">Paiements</TabsTrigger>
-                <TabsTrigger value="categories_exercices">Catégories Exercices</TabsTrigger>
-              </TabsList>
-            </div>
-
-            {Object.keys(tables).map((tabKey) => (
-              <TabsContent key={tabKey} value={tabKey} className="mt-4">
-                <Card className="border-dashed border-2 shadow-none">
-                  <CardHeader>
-                    <CardTitle>Gestion des {tables[tabKey].label}</CardTitle>
-                    <CardDescription>
-                      Ajoutez, modifiez ou supprimez les options disponibles dans les formulaires.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex gap-2">
-                      <Input 
-                        placeholder={`Nouveau ${tables[tabKey].label.slice(0, -1)}...`} 
-                        value={newValue}
-                        onChange={(e) => setNewValue(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                      />
-                      <Button onClick={handleCreate} size="icon">
-                        <IconPlus size={18} />
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2">
-                      {loading ? (
-                        <div className="flex justify-center py-8">
-                          <IconLoader2 className="animate-spin text-primary" size={32} />
-                        </div>
-                      ) : (
-                        data.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
-                            {editingId === item.id ? (
-                              <div className="flex flex-1 gap-2 mr-2">
-                                <Input 
-                                  value={editValue} 
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  className="h-8"
-                                  autoFocus
-                                />
-                                <Button size="icon" className="h-8 w-8" onClick={() => handleUpdate(item.id)}>
-                                  <IconCheck size={14} />
-                                </Button>
-                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
-                                  <IconX size={14} />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <span className="font-medium">{item[tables[tabKey].field]}</span>
-                                <div className="flex gap-1">
-                                  <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    className="h-8 w-8 text-muted-foreground hover:text-primary"
-                                    onClick={() => {
-                                      setEditingId(item.id)
-                                      setEditingValue(item[tables[tabKey].field])
-                                    }}
-                                  >
-                                    <IconEdit size={16} />
-                                  </Button>
-                                  <Button 
-                                    size="icon" 
-                                    variant="ghost" 
-                                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                    onClick={() => handleDelete(item.id)}
-                                  >
-                                    <IconTrash size={16} />
-                                  </Button>
-                                </div>
-                              </>
-                            )}
-                          </div>
-                        ))
-                      )}
-                      {!loading && data.length === 0 && (
-                        <p className="text-center py-8 text-muted-foreground italic">Aucun élément trouvé.</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            ))}
-          </Tabs>
-        </div>
+        <React.Suspense fallback={<div className="flex justify-center p-8">Chargement...</div>}>
+          <ParametrageContent />
+        </React.Suspense>
       </SidebarInset>
     </SidebarProvider>
   )
