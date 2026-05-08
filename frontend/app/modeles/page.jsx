@@ -29,7 +29,7 @@ import {
 import ProgramTable from "@/components/seance/programTable"
 import { getSessions, deleteSession } from "@/app/actions/sessions"
 
-export default function SessionsPage() {
+export default function ModelesPage() {
   const [sessions, setSessions] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -127,7 +127,7 @@ export default function SessionsPage() {
               <p className="text-muted-foreground text-sm">Gérez vos modèles d'entraînement réutilisables.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/sessions/new">
+              <Link href="/modeles/new">
                 <IconPlus size={18} />
                 Nouveau modèle
               </Link>
@@ -171,7 +171,7 @@ export default function SessionsPage() {
             </div>
             <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
             <DialogDescription className="text-base py-2">
-              Êtes-vous sûr de vouloir supprimer la séance <strong>{sessionToDelete?.title}</strong> ? Cette action est irréversible.
+              Êtes-vous sûr de vouloir supprimer le modèle <strong>{sessionToDelete?.programName || sessionToDelete?.title}</strong> ? Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex sm:justify-center gap-2">
@@ -193,7 +193,7 @@ export default function SessionsPage() {
             </div>
             <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
             <DialogDescription className="text-base py-2">
-              La séance a été supprimée avec succès.
+              Le modèle a été supprimé avec succès.
             </DialogDescription>
           </DialogHeader>
         </DialogContent>

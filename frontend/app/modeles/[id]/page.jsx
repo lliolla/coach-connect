@@ -16,10 +16,9 @@ function SessionDetailsContent() {
   const { id } = useParams()
   const searchParams = useSearchParams()
   const mode = searchParams.get('mode') || 'view'
-  const context = searchParams.get('context') || 'sessions'
-  
+  const context = searchParams.get('context') || 'modeles'
   const title = mode === 'edit' ? "Modifier le programme" : "Détails du programme"
-  const backPath = context === 'seances' ? '/seances' : '/sessions'
+  const backPath = context === 'seances' ? '/seances' : '/modeles'
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
