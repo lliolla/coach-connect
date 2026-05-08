@@ -55,6 +55,7 @@ export async function createSession(formData) {
     }
     
     revalidatePath('/sessions')
+    revalidatePath('/seances')
     return { success: true, data: session }
   } catch (err) {
     return { success: false, error: err.message }
@@ -88,7 +89,9 @@ export async function updateSession(id, formData) {
     }
     
     revalidatePath('/sessions')
+    revalidatePath('/seances')
     revalidatePath(`/sessions/${id}`)
+    revalidatePath(`/seances/${id}`)
     return { success: true, data: sessions[0] }
   } catch (err) {
     return { success: false, error: err.message }
@@ -102,6 +105,7 @@ export async function deleteSession(id) {
     if (error) throw error
     
     revalidatePath('/sessions')
+    revalidatePath('/seances')
     return { success: true }
   } catch (err) {
     return { success: false, error: err.message }

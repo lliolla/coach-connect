@@ -43,7 +43,7 @@ const data = {
     },
     {
       title: "Séances",
-      url: "/suivis",
+      url: "/seances",
       icon: IconListDetails,
     },
     {

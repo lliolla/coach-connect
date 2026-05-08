@@ -234,7 +234,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const searchParams = useSearchParams()
   
   const context = searchParams.get('context')
-  const effectiveIsTracking = isTracking || context === 'suivis'
+  const effectiveIsTracking = isTracking || context === 'seances' || context === 'seances'
   
   const isCreation = mode === "create" || mode === "duplicate"
   const isView = mode === "view"
@@ -556,7 +556,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    router.push(effectiveIsTracking ? '/suivis' : '/sessions')
+    router.push(effectiveIsTracking ? '/seances' : '/sessions')
   }
 
   const renderExerciseSection = (sectionId, title, icon, colorClass) => {
@@ -660,10 +660,10 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                 <span className="block text-[10px] uppercase tracking-widest text-muted-foreground font-black mb-1">
                     {isView ? "Visualisation" : (isCreation ? (isDuplicate ? "Duplication" : "Édition") : "Modification")}
                 </span>
-                {isView ? "Détails de la séance" : (isCreation ? (isDuplicate ? "Dupliquer le programme" : (effectiveIsTracking ? "Nouvelle séance de suivi" : "Nouveau Modèle")) : "Modifier le programme")}
+                {isView ? "Détails de la séance" : (isCreation ? (isDuplicate ? "Dupliquer le programme" : (effectiveIsTracking ? "Nouvelle séance" : "Nouveau Modèle")) : "Modifier le programme")}
             </div>
           </CardTitle>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(effectiveIsTracking ? '/suivis' : '/sessions')}>
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/sessions')}>
             <X size={20} />
           </Button>
         </CardHeader>
@@ -694,7 +694,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom du programme / Modèle</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom du programme / Modèle (Obligatoire)</Label>
                         <Input 
                             value={formData.title} 
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
@@ -706,7 +706,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
                     {effectiveIsTracking && (
                         <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Athlète assigné</Label>
+                            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Athlète assigné (Obligatoire)</Label>
                             <Select value={formData.athlete_id || undefined} onValueChange={handleAthleteSelect} disabled={isView}>
                             <SelectTrigger className="h-12 border-2 font-bold">
                                 <SelectValue placeholder="Sélectionner un athlète" />
@@ -724,7 +724,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Description globale</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Description globale (Facultatif)</Label>
                   <Input 
                     placeholder="Objectifs de la séance, focus particulier..." 
                     value={formData.description}
@@ -785,7 +785,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         <CardFooter className="flex justify-end border-t p-6 mt-10 bg-muted/5 sticky bottom-0 z-10 backdrop-blur-md">
           <div className="flex gap-3 w-full sm:w-auto">
             {isView ? (
-              <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(effectiveIsTracking ? '/suivis' : '/sessions')}>Quitter</Button>
+              <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/sessions')}>Quitter</Button>
             ) : (
               <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20 active:scale-[0.98] transition-all" onClick={handleSubmit}>
                 {mode === "edit" ? "Mettre à jour" : (effectiveIsTracking ? "Enregistrer la séance" : "Créer le modèle")}

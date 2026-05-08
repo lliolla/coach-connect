@@ -22,23 +22,23 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [transmittedPrograms, setTransmittedPrograms] = useState({});
 
-  const isTracking = context === "suivis";
+  const isTracking = context === "seances" || context === "seances";
   const showAthlete = context !== "sessions";
 
   // Pagination logic
   const totalItems = programs?.length || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
+  
   const paginatedPrograms = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return programs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [programs, currentPage]);
 
   const handleDuplicate = (programId) => {
-    const targetPath = context === "suivis" ? "/suivis/new" : "/sessions/new"
+    const targetPath = isTracking ? "/seances/new" : "/sessions/new"
     router.push(`${targetPath}?mode=duplicate&duplicateId=${programId}`);
   };
-
+  
   const handleDelete = (program) => {
     if (onDelete) {
       onDelete(program);
@@ -52,7 +52,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   };
 
   const getBasePath = (id) => {
-    return context === "suivis" ? `/suivis/${id}` : `/sessions/${id}`
+    return isTracking ? `/seances/${id}` : `/sessions/${id}`
   }
 
   const handlePrevPage = () => {
@@ -128,12 +128,12 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                 </td>
                 {isTracking && (
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <Mail
-                      size={16}
+                    <Mail 
+                      size={16} 
                       className={cn(
-                        "mx-auto transition-colors duration-300",
+                        "mx-auto transition-colors duration-300", 
                         transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
-                      )}
+                      )} 
                     />
                   </td>
                 )}
@@ -148,7 +148,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
                       <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14}/></Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">       
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
                       <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14}/></Link>
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleDuplicate(program.id)} title="Dupliquer">
@@ -189,19 +189,19 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
           Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
         </p>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40" 
             onClick={handlePrevPage}
             disabled={currentPage === 1}
           >
             <ChevronLeft size={12} className="mr-1" /> Précédent
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40" 
             onClick={handleNextPage}
             disabled={currentPage === totalPages || totalPages === 0}
           >

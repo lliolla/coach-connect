@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import ProgramTable from "@/components/seance/programTable"
 import { getSessions, deleteSession } from "@/app/actions/sessions"
 
-export default function SuivisPage() {
+export default function SeancesPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
   const [sessions, setSessions] = React.useState([])
   const [loading, setLoading] = React.useState(true)
@@ -43,7 +43,7 @@ export default function SuivisPage() {
       setSessions(data)
     } catch (error) {
       console.error(error)
-      toast.error("Impossible de charger les séances pour le suivi")
+      toast.error("Impossible de charger les séances")
     } finally {
       setLoading(false)
     }
@@ -122,11 +122,11 @@ export default function SuivisPage() {
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Suivi des Séances</h1>
+              <h1 className="text-2xl font-bold">Séances</h1>
               <p className="text-muted-foreground text-sm">Visualisez et gérez l'historique de vos séances d'entraînement.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/suivis/new">
+              <Link href="/seances/new">
                 <IconPlus size={18} />
                 Nouvelle séance
               </Link>
@@ -157,7 +157,7 @@ export default function SuivisPage() {
               <ProgramTable 
                 programs={programsForTable} 
                 onDelete={openDeleteConfirm}
-                context="suivis"
+                context="seances"
               />
             )}
           </div>

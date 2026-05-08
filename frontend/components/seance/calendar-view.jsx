@@ -88,7 +88,7 @@ export function CalendarView({ sessions = [], searchTerm = "" }) {
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/sessions/${session.id}?mode=view&context=suivis`}>Détails</Link>
+                    <Link href={`/sessions/${session.id}?mode=view&context=seances`}>Détails</Link>
                 </Button>
               </div>
             ))
@@ -97,7 +97,7 @@ export function CalendarView({ sessions = [], searchTerm = "" }) {
               <IconActivity size={40} className="opacity-20 mb-2" />
               <p className="italic">Aucune séance planifiée pour ce jour.</p>
               <Button variant="link" size="sm" className="mt-2" asChild>
-                <Link href="/suivis/new">+ Ajouter une séance</Link>
+                <Link href="/seances/new">+ Ajouter une séance</Link>
               </Button>
             </div>
           )}
