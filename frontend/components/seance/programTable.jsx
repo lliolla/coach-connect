@@ -22,8 +22,8 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [transmittedPrograms, setTransmittedPrograms] = useState({});
 
-  const isTracking = context === "seances" || context === "seances";
-  const showAthlete = context !== "modeles";
+  const isTracking = context === "seances";
+  const showAthlete = context === "seances";
 
   // Pagination logic
   const totalItems = programs?.length || 0;
