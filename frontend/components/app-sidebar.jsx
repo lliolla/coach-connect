@@ -65,7 +65,7 @@ const data = {
     },
     {
       name: "Bibliothèque de séances",
-      url: "/sessions",
+      url: "/modeles",
       icon: IconLayoutGrid,
     },
   ],

@@ -88,7 +88,7 @@ export function CalendarView({ sessions = [], searchTerm = "" }) {
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/sessions/${session.id}?mode=view&context=seances`}>Détails</Link>
+                    <Link href={`/modeles/${session.id}?mode=view&context=seances`}>Détails</Link>
                 </Button>
               </div>
             ))

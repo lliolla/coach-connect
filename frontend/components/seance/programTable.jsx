@@ -23,7 +23,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const [transmittedPrograms, setTransmittedPrograms] = useState({});
 
   const isTracking = context === "seances" || context === "seances";
-  const showAthlete = context !== "sessions";
+  const showAthlete = context !== "modeles";
 
   // Pagination logic
   const totalItems = programs?.length || 0;
@@ -35,7 +35,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   }, [programs, currentPage]);
 
   const handleDuplicate = (programId) => {
-    const targetPath = isTracking ? "/seances/new" : "/sessions/new"
+    const targetPath = isTracking ? "/seances/new" : "/modeles/new"
     router.push(`${targetPath}?mode=duplicate&duplicateId=${programId}`);
   };
   
@@ -52,7 +52,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   };
 
   const getBasePath = (id) => {
-    return isTracking ? `/seances/${id}` : `/sessions/${id}`
+    return isTracking ? `/seances/${id}` : `/modeles/${id}`
   }
 
   const handlePrevPage = () => {

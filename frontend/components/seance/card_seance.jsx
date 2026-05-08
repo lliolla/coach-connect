@@ -556,7 +556,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    router.push(effectiveIsTracking ? '/seances' : '/sessions')
+    router.push(effectiveIsTracking ? '/seances' : '/modeles')
   }
 
   const renderExerciseSection = (sectionId, title, icon, colorClass) => {
@@ -663,7 +663,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                 {isView ? "Détails de la séance" : (isCreation ? (isDuplicate ? "Dupliquer le programme" : (effectiveIsTracking ? "Nouvelle séance" : "Nouveau Modèle")) : "Modifier le programme")}
             </div>
           </CardTitle>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/sessions')}>
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/modeles')}>
             <X size={20} />
           </Button>
         </CardHeader>
@@ -785,7 +785,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         <CardFooter className="flex justify-end border-t p-6 mt-10 bg-muted/5 sticky bottom-0 z-10 backdrop-blur-md">
           <div className="flex gap-3 w-full sm:w-auto">
             {isView ? (
-              <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/sessions')}>Quitter</Button>
+              <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/modeles')}>Quitter</Button>
             ) : (
               <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20 active:scale-[0.98] transition-all" onClick={handleSubmit}>
                 {mode === "edit" ? "Mettre à jour" : (effectiveIsTracking ? "Enregistrer la séance" : "Créer le modèle")}
