@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { getAthletes } from "@/app/actions/athletes"
 
 export function SectionCards() {
   const [stats, setStats] = React.useState({
@@ -26,16 +27,13 @@ export function SectionCards() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/athletes')
-      if (response.ok) {
-        const athletes = await response.json()
-        setStats(prev => ({
-          ...prev,
-          totalAthletes: athletes.length,
-          newThisMonth: Math.floor(athletes.length * 0.2), // Mock logic for demo
-          activeSessions: Math.floor(athletes.length * 1.5)
-        }))
-      }
+      const athletes = await getAthletes()
+      setStats(prev => ({
+        ...prev,
+        totalAthletes: athletes.length,
+        newThisMonth: Math.floor(athletes.length * 0.2), // Mock logic for demo
+        activeSessions: Math.floor(athletes.length * 1.5)
+      }))
     } catch (error) {
       console.error(error)
     }

@@ -90,6 +90,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { restrictToVerticalAxis, restrictToWindowEdges } from '@dnd-kit/modifiers';
 
+import { getSessionById, getSessions, createSession, updateSession } from "@/app/actions/sessions"
+import { getExercices } from "@/app/actions/exercices"
+import { getAthletes } from "@/app/actions/athletes"
+
 const initialFormState = {
   title: "",
   description: "",
@@ -284,9 +288,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   const fetchSeance = async (idToFetch) => {
     try {
-      const response = await fetch(`http://127.0.0.1:3001/api/sessions/${idToFetch}`)
-      if (!response.ok) throw new Error("Erreur lors du chargement de la séance")
-      const data = await response.json()
+      const data = await getSessionById(idToFetch)
       
       const mappedExercises = (data.session_exercises || []).map((se, idx) => ({
         sortId: `ex-${Date.now()}-${idx}`, 
@@ -346,9 +348,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const fetchAvailableExercises = async () => {
     try {
       setLoadingExercises(true)
-      const response = await fetch('http://127.0.0.1:3001/api/exercices')
-      if (!response.ok) throw new Error("Erreur lors du chargement des exercices")
-      const data = await response.json()
+      const data = await getExercices()
       setAvailableExercises(data)
     } catch (error) {
       console.error(error)
@@ -361,9 +361,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const fetchAthletes = async () => {
     try {
       setLoadingAthletes(true)
-      const response = await fetch('http://127.0.0.1:3001/api/athletes')
-      if (!response.ok) throw new Error("Erreur lors du chargement des athlètes")
-      const data = await response.json()
+      const data = await getAthletes()
       setAvailableAthletes(data)
     } catch (error) {
       console.error(error)
@@ -376,9 +374,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const fetchTemplates = async () => {
     try {
       setLoadingTemplates(true)
-      const response = await fetch('http://127.0.0.1:3001/api/sessions')
-      if (!response.ok) throw new Error("Erreur lors du chargement des modèles")
-      const data = await response.json()
+      const data = await getSessions()
       const templates = data.filter(s => s.is_template)
       setAvailableTemplates(templates)
     } catch (error) {
@@ -511,12 +507,6 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     const loadingToast = toast.loading(isTemplateToSave ? "Enregistrement du modèle..." : "Enregistrement de la séance...")
     
     try {
-      const url = isCreation 
-        ? 'http://127.0.0.1:3001/api/sessions' 
-        : `http://127.0.0.1:3001/api/sessions/${seanceId}`
-      
-      const method = isCreation ? 'POST' : 'PUT'
-
       const mappedExercises = formData.exercises.map((ex, index) => ({
         exercise_id: ex.exercise_id || ex.template_id,
         sets: 1,
@@ -540,17 +530,15 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         exercises: mappedExercises
       }
 
-      const response = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
+      let result;
+      if (isCreation) {
+        result = await createSession(payload)
+      } else {
+        result = await updateSession(seanceId, payload)
+      }
 
-      const result = await response.json()
-
-      if (!response.ok) {
-        const detailedError = result.error ? ` : ${result.error}` : '';
-        throw new Error((result.message || 'Erreur lors de la sauvegarde') + detailedError);
+      if (!result.success) {
+        throw new Error(result.error || 'Erreur lors de la sauvegarde');
       }
 
       toast.dismiss(loadingToast)

@@ -15,39 +15,31 @@ import {
   IconPlus, 
   IconSearch,
   IconCheck, 
-  IconClock,
-  IconUser,
   IconBarbell,
   IconActivity,
   IconLoader2,
   IconCalendarEvent
 } from "@tabler/icons-react"
-import { toast } from "sonner" // Assuming sonner is available for notifications
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card" // In case we need cards for data display, or to match structure
-import { Badge } from "@/components/ui/badge" // For status badges
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog" // For modals
-
-// Import the ProgramTable component
+import { toast } from "sonner"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import ProgramTable from "@/components/seance/programTable"
+import { getSessions, deleteSession } from "@/app/actions/sessions"
 
 export default function SuivisPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [sessions, setSessions] = React.useState([]) // State to hold fetched sessions
-  const [loading, setLoading] = React.useState(true) // Loading state for data fetching
+  const [sessions, setSessions] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
 
   // States for Modals
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] = React.useState(null)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
 
-  // Fetch sessions data
+  // Fetch sessions data using server actions
   const fetchSessions = async () => {
     try {
       setLoading(true)
-      // Assuming a similar API endpoint as sessions/page.jsx
-      const response = await fetch('http://127.0.0.1:3001/api/sessions')
-      if (!response.ok) throw new Error("Erreur lors du chargement des séances")
-      const data = await response.json()
+      const data = await getSessions()
       setSessions(data)
     } catch (error) {
       console.error(error)
@@ -71,15 +63,9 @@ export default function SuivisPage() {
 
     const loadingToast = toast.loading("Suppression en cours...")
     try {
-      const response = await fetch(`http://127.0.0.1:3001/api/sessions/${sessionToDelete.id}`, {
-        method: 'DELETE'
-      })
+      const result = await deleteSession(sessionToDelete.id)
       
-      if (!response.ok) {
-        const result = await response.json().catch(() => ({ message: "Erreur lors de la suppression" }));
-        const detailedError = result.error ? ` : ${result.error}` : '';
-        throw new Error((result.message || "Erreur lors de la suppression") + detailedError);
-      }
+      if (!result.success) throw new Error(result.error || "Erreur lors de la suppression")
       
       setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
       toast.dismiss(loadingToast)
@@ -102,35 +88,27 @@ export default function SuivisPage() {
   const programsForTable = React.useMemo(() => {
     return sessions
       .filter(session => {
-        // Exclude if it's explicitly a template (boolean or string)
-        return session.is_template !== true && session.is_template !== "true";
+        return session.is_template !== true && String(session.is_template) !== "true";
       })
       .map(session => {
-        // Attempt to extract athlete name if available from joined data
-        // Assuming session.athletes join might exist or need to be fetched, 
-        // but for now, we rely on athlete info if the backend provides it,
-        // or just format the athlete_id if it's a profile.
-        // Let's assume for now we might need to add a join in the backend,
-        // but here we can try to look at the session object.
         const athleteName = session.athletes 
           ? `${session.athletes.first_name || ''} ${session.athletes.last_name || ''}`.trim() 
-          : (session.athlete_id ? `Athlète ID: ${session.athlete_id.substring(0, 8)}...` : 'Athlète inconnu');
+          : '-';
 
         return {
           id: session.id,
           title: session.title,
-          personName: athleteName || 'Athlète inconnu',
+          description: session.description,
+          personName: athleteName,
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
+          exercises: session.session_exercises?.map(se => ({
+            name: se.exercices_library?.name || "Exercice"
+          })) || [],
           thumbnailUrl: null,
         };
       });
   }, [sessions]);
-
-  // Filter sessions for the calendar view based on search term
-  // For simplicity, let's assume CalendarView handles its own filtering or receives a subset
-  // If CalendarView needs filtering, we might need to pass a filtered list.
-  // For now, we pass the raw searchTerm.
 
   return (
     <SidebarProvider
@@ -142,7 +120,6 @@ export default function SuivisPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          {/* Header Section */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Suivi des Séances</h1>
@@ -166,11 +143,10 @@ export default function SuivisPage() {
             />
           </div>
 
-          {/* Program Table Section */}
           <div className="mt-4">
             <div className="flex items-center gap-2 mb-4">
-              <IconBarbell size={20} className="text-primary" /> {/* Using barbell icon for programs */}
-              <h2 className="text-lg font-semibold">Liste des Séances</h2> {/* Title for the table */}
+              <IconBarbell size={20} className="text-primary" />
+              <h2 className="text-lg font-semibold">Liste des Séances</h2>
             </div>
             {loading ? (
               <div className="flex flex-col items-center justify-center py-10 gap-4">
@@ -186,8 +162,7 @@ export default function SuivisPage() {
             )}
           </div>
 
-          {/* Calendar Section (remains as is) */}
-          <div className="mt-8"> {/* Add some margin above calendar */}
+          <div className="mt-8">
             <div className="flex items-center gap-2 mb-4">
               <IconCalendarEvent size={20} className="text-primary" />
               <h2 className="text-lg font-semibold">Calendrier des séances</h2>
@@ -197,12 +172,11 @@ export default function SuivisPage() {
         </div>
       </SidebarInset>
 
-      {/* Confirmation Modal */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader className="flex flex-col items-center justify-center text-center">
             <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <IconActivity className="h-6 w-6 text-red-600" /> {/* Reusing IconActivity for alert */}
+              <IconActivity className="h-6 w-6 text-red-600" />
             </div>
             <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
             <DialogDescription className="text-base py-2">
@@ -220,7 +194,6 @@ export default function SuivisPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md [&>button]:hidden">
           <DialogHeader className="flex flex-col items-center justify-center text-center">

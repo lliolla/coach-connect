@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
+import { getExerciceById, createExercice, updateExercice } from "@/app/actions/exercices"
+
 const categories = ["Musculation", "Cardio", "Trail", "Natation", "Gainage", "Souplesse", "Autre"]
 const units = [
   { value: "reps", label: "Répétitions" },
@@ -65,9 +67,7 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
 
   const fetchExerciceData = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:3001/api/exercices/${exerciceId}`)
-      if (!response.ok) throw new Error("Impossible de charger les données")
-      const data = await response.json()
+      const data = await getExerciceById(exerciceId)
       setFormData(data)
     } catch (error) {
       console.error(error)
@@ -88,19 +88,14 @@ export const CardExercice = ({ mode = "edit", exerciceId = null }) => {
     const loadingToast = toast.loading(isCreation ? "Création de l'exercice..." : "Mise à jour...")
     
     try {
-      const url = isCreation 
-        ? 'http://127.0.0.1:3001/api/exercices' 
-        : `http://127.0.0.1:3001/api/exercices/${exerciceId}`
-      
-      const method = isCreation ? 'POST' : 'PUT'
+      let result;
+      if (isCreation) {
+        result = await createExercice(formData)
+      } else {
+        result = await updateExercice(exerciceId, formData)
+      }
 
-      const response = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      if (!response.ok) throw new Error('Erreur lors de la sauvegarde')
+      if (!result.success) throw new Error(result.error || 'Erreur lors de la sauvegarde')
 
       toast.dismiss(loadingToast)
       setShowSuccessModal(true)

@@ -22,10 +22,13 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [transmittedPrograms, setTransmittedPrograms] = useState({});
 
+  const isTracking = context === "suivis";
+  const showAthlete = context !== "sessions";
+
   // Pagination logic
   const totalItems = programs?.length || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  
+
   const paginatedPrograms = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return programs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -35,7 +38,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
     const targetPath = context === "suivis" ? "/suivis/new" : "/sessions/new"
     router.push(`${targetPath}?mode=duplicate&duplicateId=${programId}`);
   };
-  
+
   const handleDelete = (program) => {
     if (onDelete) {
       onDelete(program);
@@ -49,7 +52,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   };
 
   const getBasePath = (id) => {
-    return `/sessions/${id}`
+    return context === "suivis" ? `/suivis/${id}` : `/sessions/${id}`
   }
 
   const handlePrevPage = () => {
@@ -77,21 +80,23 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
             <tr>
-              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Athlète</th>
+              {showAthlete && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Athlète</th>}
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Exercices</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
-              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Transmission</th>
+              {isTracking && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Transmission</th>}
               <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-transparent divide-y divide-border">
             {paginatedPrograms.map((program) => (
               <tr key={program.id} className="hover:bg-muted/5 transition-colors group">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">
-                  {program.personName || '-'}
-                </td>
+                {showAthlete && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">
+                    {program.personName || '-'}
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
                   {program.programName}
                 </td>
@@ -121,24 +126,29 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                     {program.numberOfExercises} ex.
                    </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                  <Mail 
-                    size={16} 
-                    className={cn(
-                      "mx-auto transition-colors duration-300", 
-                      transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
-                    )} 
-                  />
-                </td>
+                {isTracking && (
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                    <Mail
+                      size={16}
+                      className={cn(
+                        "mx-auto transition-colors duration-300",
+                        transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
+                      )}
+                    />
+                  </td>
+                )}
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                   {/* Desktop Actions */}
                   <div className="hidden md:flex justify-end gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleTransmit(program)} title="Transmettre">
-                      <Send size={14}/></Button>
+                    {isTracking && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleTransmit(program)} title="Transmettre">
+                        <Send size={14}/>
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
                       <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14}/></Link>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">       
                       <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14}/></Link>
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleDuplicate(program.id)} title="Dupliquer">
@@ -155,7 +165,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleTransmit(program)}><Send size={14} className="mr-2"/> Transmettre</DropdownMenuItem>
+                        {isTracking && <DropdownMenuItem onSelect={() => handleTransmit(program)}><Send size={14} className="mr-2"/> Transmettre</DropdownMenuItem>}
                         <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
                         <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}><Copy size={14} className="mr-2"/> Dupliquer</DropdownMenuItem>
@@ -179,19 +189,19 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
           Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
         </p>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
             onClick={handlePrevPage}
             disabled={currentPage === 1}
           >
             <ChevronLeft size={12} className="mr-1" /> Précédent
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
             onClick={handleNextPage}
             disabled={currentPage === totalPages || totalPages === 0}
           >

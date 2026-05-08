@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { IconArrowRight, IconActivity } from "@tabler/icons-react"
 import Link from "next/link"
+import { getAthletes } from "@/app/actions/athletes"
 
 export default function DashboardPage() {
   const [recentAthletes, setRecentAthletes] = React.useState([])
@@ -25,11 +26,8 @@ export default function DashboardPage() {
 
   const fetchRecentAthletes = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:3001/api/athletes')
-      if (response.ok) {
-        const data = await response.json()
-        setRecentAthletes(data.slice(0, 5))
-      }
+      const athletes = await getAthletes()
+      setRecentAthletes(athletes.slice(0, 5))
     } catch (error) {
       console.error(error)
     }

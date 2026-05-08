@@ -17,9 +17,23 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconLoader2 } from "@tabler/icons-react"
+import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconLoader2, IconAlertTriangle } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { useSearchParams, useRouter } from "next/navigation"
+import { 
+  getLookupTable, 
+  createLookupItem, 
+  updateLookupItem, 
+  deleteLookupItem 
+} from "@/app/actions/lookups"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const tables = {
   groupes: { label: "Groupes", endpoint: "groupes", field: "name" },
@@ -33,12 +47,16 @@ function ParametrageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const currentTab = searchParams.get("tab") || "groupes"
-  
+
   const [data, setData] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [editingId, setEditingId] = React.useState(null)
   const [editValue, setEditingValue] = React.useState("")
   const [newValue, setNewValue] = React.useState("")
+
+  // Deletion modal state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [itemToDelete, setItemToDelete] = React.useState(null)
 
   React.useEffect(() => {
     fetchData()
@@ -49,11 +67,10 @@ function ParametrageContent() {
       setLoading(true)
       const table = tables[currentTab]
       if (!table) return
-      const response = await fetch(`http://127.0.0.1:3001/api/lookups/${table.endpoint}`)
-      if (!response.ok) throw new Error("Erreur de chargement")
-      const result = await response.json()
+      const result = await getLookupTable(table.endpoint)
       setData(result)
     } catch (error) {
+      console.error(error)
       toast.error("Impossible de charger les données")
     } finally {
       setLoading(false)
@@ -64,12 +81,8 @@ function ParametrageContent() {
     if (!newValue.trim()) return
     const table = tables[currentTab]
     try {
-      const response = await fetch(`http://127.0.0.1:3001/api/lookups/${table.endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [table.field]: newValue })
-      })
-      if (!response.ok) throw new Error("Erreur de création")
+      const result = await createLookupItem(table.endpoint, { [table.field]: newValue })
+      if (!result.success) throw new Error(result.error)
       setNewValue("")
       fetchData()
       toast.success("Élément ajouté")
@@ -82,12 +95,8 @@ function ParametrageContent() {
     if (!editValue.trim()) return
     const table = tables[currentTab]
     try {
-      const response = await fetch(`http://127.0.0.1:3001/api/lookups/${table.endpoint}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [table.field]: editValue })
-      })
-      if (!response.ok) throw new Error("Erreur de mise à jour")
+      const result = await updateLookupItem(table.endpoint, id, { [table.field]: editValue })
+      if (!result.success) throw new Error(result.error)
       setEditingId(null)
       fetchData()
       toast.success("Élément mis à jour")
@@ -96,18 +105,24 @@ function ParametrageContent() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Supprimer cet élément ?")) return
+  const confirmDelete = (item) => {
+    setItemToDelete(item)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!itemToDelete) return
     const table = tables[currentTab]
     try {
-      const response = await fetch(`http://127.0.0.1:3001/api/lookups/${table.endpoint}/${id}`, {
-        method: "DELETE"
-      })
-      if (!response.ok) throw new Error("Erreur de suppression")
+      const result = await deleteLookupItem(table.endpoint, itemToDelete.id)
+      if (!result.success) throw new Error(result.error)
       fetchData()
       toast.success("Élément supprimé")
     } catch (error) {
       toast.error("Erreur lors de la suppression")
+    } finally {
+      setDeleteConfirmOpen(false)
+      setItemToDelete(null)
     }
   }
 
@@ -143,8 +158,8 @@ function ParametrageContent() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
-                  <Input 
-                    placeholder={`Nouveau ${tables[tabKey].label.slice(0, -1)}...`} 
+                  <Input
+                    placeholder={`Nouveau ${tables[tabKey].label.slice(0, -1)}...`}
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
@@ -164,8 +179,8 @@ function ParametrageContent() {
                       <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
                         {editingId === item.id ? (
                           <div className="flex flex-1 gap-2 mr-2">
-                            <Input 
-                              value={editValue} 
+                            <Input
+                              value={editValue}
                               onChange={(e) => setEditingValue(e.target.value)}
                               className="h-8"
                               autoFocus
@@ -181,9 +196,9 @@ function ParametrageContent() {
                           <>
                             <span className="font-medium">{item[tables[tabKey].field]}</span>
                             <div className="flex gap-1">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
+                              <Button
+                                size="icon"
+                                variant="ghost"
                                 className="h-8 w-8 text-muted-foreground hover:text-primary"
                                 onClick={() => {
                                   setEditingId(item.id)
@@ -192,11 +207,11 @@ function ParametrageContent() {
                               >
                                 <IconEdit size={16} />
                               </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
+                              <Button
+                                size="icon"
+                                variant="ghost"
                                 className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                                onClick={() => handleDelete(item.id)}
+                                onClick={() => confirmDelete(item)}
                               >
                                 <IconTrash size={16} />
                               </Button>
@@ -215,6 +230,28 @@ function ParametrageContent() {
           </TabsContent>
         ))}
       </Tabs>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <IconAlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              Voulez-vous vraiment supprimer cet élément ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-center gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none">
+              Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
