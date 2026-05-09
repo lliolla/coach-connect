@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -28,13 +27,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { getUser } from "@/app/actions/auth"
 
-const data = {
-  user: {
-    name: "Admin",
-    email: "admin@prepathlete.com",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
-  },
+const menuData = {
   navMain: [
     {
       title: "Tableau de bord",
@@ -80,17 +75,33 @@ const data = {
       url: "#",
       icon: IconHelp,
     },
-    {
-      title: "Déconnexion",
-      url: "#",
-      icon: IconLogout,
-    },
   ],
 }
 
 export function AppSidebar({
   ...props
 }) {
+  const [user, setUser] = React.useState({
+    name: "Chargement...",
+    email: "",
+    avatar: "",
+  })
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      const data = await getUser()
+      if (data) {
+        const fullName = data.user_metadata?.full_name || data.athlete_profile?.first_name + ' ' + data.athlete_profile?.last_name || data.email
+        setUser({
+          name: fullName,
+          email: data.email,
+          avatar: data.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.email}`,
+        })
+      }
+    }
+    fetchUser()
+  }, [])
+
   return (
     (<Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -106,12 +117,12 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.configuration} label="Configuration" />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={menuData.navMain} />
+        <NavDocuments items={menuData.configuration} label="Configuration" />
+        <NavSecondary items={menuData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>)
   );

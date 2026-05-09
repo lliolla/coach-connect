@@ -21,14 +21,94 @@ export async function login(email, password) {
     .eq('email', email)
     .single()
 
-  if (athleteError) {
-    return { success: false, error: "Erreur lors de la vérification du profil" }
+  // Si l'athlète n'existe pas encore dans la table (cas rare pour un login), on considère success: true mais isAdmin: false
+  return { success: true, isAdmin: athlete?.admin || false }
+}
+
+export async function signup(email, password, fullName) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: fullName,
+      },
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+    },
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
   }
 
-  return { success: true, isAdmin: athlete.admin }
+  // Créer l'entrée dans la table athletes
+  const { error: athleteError } = await supabase
+    .from('athletes')
+    .insert([
+      { 
+        email, 
+        first_name: fullName.split(' ')[0] || '', 
+        last_name: fullName.split(' ').slice(1).join(' ') || '',
+        admin: false // Par défaut, un nouvel inscrit n'est pas admin
+      }
+    ])
+
+  if (athleteError) {
+    console.error("Erreur création profil athlète:", athleteError)
+  }
+
+  return { success: true }
 }
 
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+}
+
+export async function getUser() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return null
+
+  const { data: athlete } = await supabase
+    .from('athletes')
+    .select('*')
+    .eq('email', user.email)
+    .single()
+
+  return {
+    ...user,
+    athlete_profile: athlete
+  }
+}
+
+export async function resetPasswordForEmail(email) {
+  const supabase = await createClient()
+  
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback?next=/update-password`,
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function updatePassword(newPassword) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword
+  })
+
+  if (error) {
+    return { success: false, error: error.message }
+  }
+
+  return { success: true }
 }

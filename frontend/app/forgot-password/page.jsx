@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { resetPasswordForEmail } from "@/app/actions/auth"
 
 export default function ForgotPasswordPage({ className }) {
   const [loading, setLoading] = React.useState(false)
@@ -17,8 +18,14 @@ export default function ForgotPasswordPage({ className }) {
     e.preventDefault()
     setLoading(true)
     
-    // TODO: Implémenter l'appel à Supabase pour envoyer le mail de récupération
-    toast.success("Si cet email existe, un lien de réinitialisation a été envoyé.")
+    const result = await resetPasswordForEmail(email)
+    
+    if (result.success) {
+      toast.success("Si cet email existe, un lien de réinitialisation a été envoyé.")
+    } else {
+      toast.error(result.error || "Une erreur est survenue lors de l'envoi de l'email.")
+    }
+    
     setLoading(false)
   }
 
