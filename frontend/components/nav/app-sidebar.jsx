@@ -8,7 +8,6 @@ import {
   IconSettings,
   IconHelp,
   IconInnerShadowTop,
-  IconLogout,
   IconLayoutGrid,
   IconBarbell,
   IconAdjustments
@@ -85,6 +84,7 @@ export function AppSidebar({
     name: "Chargement...",
     email: "",
     avatar: "",
+    isAdmin: false
   })
 
   React.useEffect(() => {
@@ -96,6 +96,7 @@ export function AppSidebar({
           name: fullName,
           email: data.email,
           avatar: data.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.email}`,
+          isAdmin: data.app_metadata?.role === 'admin' || data.user_metadata?.is_admin === true
         })
       }
     }
@@ -118,7 +119,9 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={menuData.navMain} />
-        <NavDocuments items={menuData.configuration} label="Configuration" />
+        {user.isAdmin && (
+          <NavDocuments items={menuData.configuration} label="Configuration" />
+        )}
         <NavSecondary items={menuData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
