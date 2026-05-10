@@ -43,22 +43,6 @@ export async function signup(email, password, fullName) {
     return { success: false, error: error.message }
   }
 
-  // Créer l'entrée dans la table athletes
-  const { error: athleteError } = await supabase
-    .from('athletes')
-    .insert([
-      { 
-        email, 
-        first_name: fullName.split(' ')[0] || '', 
-        last_name: fullName.split(' ').slice(1).join(' ') || '',
-        admin: false // Par défaut, un nouvel inscrit n'est pas admin
-      }
-    ])
-
-  if (athleteError) {
-    console.error("Erreur création profil athlète:", athleteError)
-  }
-
   return { success: true }
 }
 

@@ -161,7 +161,7 @@ export default function AthletesPage() {
               <p className="text-muted-foreground text-sm">Gérez les profils et les abonnements de vos athlètes.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/athletes/new">
+              <Link href="/users/new">
                 <IconUserPlus size={18} />
                 Nouvel Athlète
               </Link>
@@ -210,7 +210,7 @@ export default function AthletesPage() {
                       asChild
                       title="Modifier"
                     >
-                      <Link href={`/athletes/${athlete.id}`}>
+                      <Link href={`/users/${athlete.id}`}>
                         <IconPencil size={16} />
                       </Link>
                     </Button>
@@ -224,7 +224,7 @@ export default function AthletesPage() {
                       <IconTrash size={16} />
                     </Button>
                   </div>
-                  <Link href={`/athletes/${athlete.id}`}>
+                  <Link href={`/users/${athlete.id}`}>
                     <Card className="hover:border-primary transition-colors cursor-pointer h-full border shadow-sm">
                       <CardHeader className="flex flex-row items-center gap-4 pb-2">
                         <Avatar className="h-12 w-12 border border-primary/10 shadow-sm">
@@ -287,7 +287,7 @@ export default function AthletesPage() {
                     {paginatedAthletes.map((athlete) => (
                       <tr key={athlete.id} className="hover:bg-muted/5 transition-colors group">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <Link href={`/athletes/${athlete.id}`} className="flex items-center gap-3">
+                          <Link href={`/users/${athlete.id}`} className="flex items-center gap-3">
                             <Avatar className="h-8 w-8 border border-primary/10 shadow-sm">
                               <AvatarImage src={athlete.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${athlete.first_name || 'default'}`} />
                               <AvatarFallback>{athlete.first_name?.[0]}{athlete.last_name?.[0]}</AvatarFallback>
@@ -332,7 +332,7 @@ export default function AthletesPage() {
                               asChild
                               title="Voir"
                             >
-                              <Link href={`/athletes/${athlete.id}`}>
+                              <Link href={`/users/${athlete.id}`}>
                                 <IconEye size={14} />
                               </Link>
                             </Button>
@@ -343,7 +343,7 @@ export default function AthletesPage() {
                               asChild
                               title="Modifier"
                             >
-                              <Link href={`/athletes/${athlete.id}`}>
+                              <Link href={`/users/${athlete.id}`}>
                                 <IconPencil size={14} />
                               </Link>
                             </Button>

@@ -81,7 +81,7 @@ export async function createAthlete(formData) {
       await syncManyToMany(supabase, newAthlete.id, 'athletes_objectifs', 'objectifs', 'label', objectives, 'objectif_id')
     }
 
-    revalidatePath('/athletes')
+    revalidatePath('/users')
     return { success: true, data: newAthlete }
   } catch (err) {
     console.error('Error creating athlete:', err)
@@ -124,8 +124,8 @@ export async function updateAthlete(id, formData) {
       await syncManyToMany(supabase, id, 'athletes_objectifs', 'objectifs', 'label', objectives, 'objectif_id')
     }
 
-    revalidatePath('/athletes')
-    revalidatePath(`/athletes/${id}`)
+    revalidatePath('/users')
+    revalidatePath(`/users/${id}`)
     return { success: true, data: data[0] }
   } catch (err) {
     console.error('Error updating athlete:', err)
@@ -139,7 +139,7 @@ export async function deleteAthlete(id) {
     const { error } = await supabase.from('athletes').delete().eq('id', id)
     if (error) throw error
     
-    revalidatePath('/athletes')
+    revalidatePath('/users')
     return { success: true }
   } catch (err) {
     console.error('Error deleting athlete:', err)

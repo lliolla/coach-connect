@@ -54,7 +54,7 @@ export async function createSession(formData) {
       if (exError) return { success: true, warning: "Séance créée mais erreur exercices", session }
     }
     
-    revalidatePath('/sessions')
+    revalidatePath('/modeles')
     revalidatePath('/seances')
     return { success: true, data: session }
   } catch (err) {
@@ -88,9 +88,9 @@ export async function updateSession(id, formData) {
       }
     }
     
-    revalidatePath('/sessions')
+    revalidatePath('/modeles')
     revalidatePath('/seances')
-    revalidatePath(`/sessions/${id}`)
+    revalidatePath(`/modeles/${id}`)
     revalidatePath(`/seances/${id}`)
     return { success: true, data: sessions[0] }
   } catch (err) {
@@ -104,7 +104,7 @@ export async function deleteSession(id) {
     const { error } = await supabase.from('sessions').delete().eq('id', id)
     if (error) throw error
     
-    revalidatePath('/sessions')
+    revalidatePath('/modeles')
     revalidatePath('/seances')
     return { success: true }
   } catch (err) {

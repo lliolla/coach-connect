@@ -19,12 +19,13 @@ import * as React from "react"
 
 const routeLabels = {
   "dashboard": "Tableau de bord",
-  "athletes": "Athlètes",
-  "sessions": "Bibliothèque de séances",
+  "users": "Athlètes",
+  "modeles": "Bibliothèque de séances",
   "seances": "Séances",
   "exercices": "Exercices",
   "parametrage": "Paramétrage",
   "new": "Nouveau",
+  "profile": "Mon Profil",
 }
 
 export function SiteHeader() {

@@ -229,7 +229,19 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    router.push('/athletes')
+    if (window.location.pathname === '/profile') {
+      router.refresh()
+    } else {
+      router.push('/users')
+    }
+  }
+
+  const handleCancel = () => {
+    if (window.location.pathname === '/profile') {
+      router.push('/dashboard')
+    } else {
+      router.push('/users')
+    }
   }
 
   return (
@@ -239,9 +251,11 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
           <CardTitle>{isCreation ? "Nouvel Athlète" : "Profil de l'athlète"}</CardTitle>
           <CardAction>
             <div className="flex flex-wrap items-center gap-2 md:flex-row">
-              <Button variant="ghost" size="sm" onClick={() => router.push('/athletes')}>
-                Retour à la liste
-              </Button>
+              {window.location.pathname !== '/profile' && (
+                <Button variant="ghost" size="sm" onClick={() => router.push('/users')}>
+                  Retour à la liste
+                </Button>
+              )}
             </div>
           </CardAction>
         </CardHeader>
@@ -512,7 +526,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
           </div>
         </CardContent>
         <CardFooter className="flex justify-between border-t p-6 mt-6">
-          <Button variant="outline" onClick={() => router.push('/athletes')}>Annuler</Button>
+          <Button variant="outline" onClick={handleCancel}>Annuler</Button>
           <Button onClick={handleSubmit}>{isCreation ? "Créer l'athlète" : "Sauvegarder les modifications"}</Button>
         </CardFooter>
       </Card>

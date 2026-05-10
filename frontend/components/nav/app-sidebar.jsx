@@ -43,7 +43,7 @@ const menuData = {
     },
     {
       title: "Athlètes",
-      url: "/athletes",
+      url: "/users",
       icon: IconUsers,
     },
   ],
