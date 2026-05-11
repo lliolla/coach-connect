@@ -1,49 +1,56 @@
 'use client'
 
 import * as React from "react"
-import Link from "next/link"
-import { AppSidebar } from "@/components/nav/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
   SidebarProvider,
+  SidebarTrigger, // Optionnel si tu l'utilises
 } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/nav/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { CalendarView } from "@/components/seance/calendar-view"
+import { Input } from "@/components/ui/input" 
+import { Link } from "lucide-react"
 import { 
   IconPlus, 
-  IconSearch,
+  IconSearch, 
   IconCheck, 
-  IconBarbell,
-  IconActivity,
-  IconLoader2,
-  IconCalendarEvent
+  IconBarbell, 
+  IconActivity, 
+  IconLoader2, 
+  IconCalendarEvent 
 } from "@tabler/icons-react"
-import { toast } from "sonner"
+ 
+import { CalendarView } from "@/components/seance/calendar-view"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+import { toast } from "sonner"
 import ProgramTable from "@/components/seance/programTable"
-import { getSessions, deleteSession } from "@/app/actions/sessions"
+import { getSessions } from "@/app/actions/sessions"
+
+
 
 export default function SeancesPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [sessions, setSessions] = React.useState([])
+  const [sessions, setSessions] = React.useState([]) // Initialisé en tableau vide : BIEN
   const [loading, setLoading] = React.useState(true)
-
-  // States for Modals
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] = React.useState(null)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+  const [handleDelete, setHandleDelete] = React.useState(false)
+  const[openDeleteConfirm, setOpenDeleteConfirm] = React.useState(false)
+  // ... (modals states inchangés)
 
-  // Fetch sessions data using server actions
   const fetchSessions = async () => {
     try {
       setLoading(true)
       const data = await getSessions()
-      setSessions(data)
+      // SÉCURITÉ : On s'assure que data est bien un tableau
+      setSessions(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error(error)
+      console.error("Erreur fetch:", error)
       toast.error("Impossible de charger les séances")
+      setSessions([]) // Évite que sessions devienne undefined
     } finally {
       setLoading(false)
     }
@@ -53,46 +60,22 @@ export default function SeancesPage() {
     fetchSessions()
   }, [])
 
-  const openDeleteConfirm = (session) => {
-    setSessionToDelete(session)
-    setDeleteConfirmOpen(true)
-  }
+  // ... (handleDelete inchangé)
 
-  const handleDelete = async () => {
-    if (!sessionToDelete) return
-
-    const loadingToast = toast.loading("Suppression en cours...")
-    try {
-      const result = await deleteSession(sessionToDelete.id)
-      
-      if (!result.success) throw new Error(result.error || "Erreur lors de la suppression")
-      
-      setSessions(prev => prev.filter(s => s.id !== sessionToDelete.id))
-      toast.dismiss(loadingToast)
-      
-      setDeleteConfirmOpen(false)
-      setShowSuccessModal(true)
-      
-      setTimeout(() => {
-        setShowSuccessModal(false)
-        setSessionToDelete(null)
-      }, 2000)
-    } catch (error) {
-      console.error(error)
-      toast.error(error.message, { id: loadingToast })
-    }
-  }
-
-  // Transform sessions data for ProgramTable
-  // Filtered to only show actual sessions (is_template: false)
   const programsForTable = React.useMemo(() => {
+    // SÉCURITÉ CRITIQUE : Si sessions n'est pas prêt ou n'est pas un tableau
+    if (!sessions || !Array.isArray(sessions)) return [];
+
     return sessions
       .filter(session => {
+        // Double sécurité sur le type de is_template
         return session.is_template !== true && String(session.is_template) !== "true";
       })
       .map(session => {
-        const athleteName = session.athletes 
-          ? `${session.athletes.first_name || ''} ${session.athletes.last_name || ''}`.trim() 
+        // Vérifie si Supabase renvoie 'athletes' ou 'athlete' (selon ta relation)
+        const athleteData = session.athletes || session.athlete; 
+        const athleteName = athleteData 
+          ? `${athleteData.first_name || ''} ${athleteData.last_name || ''}`.trim() 
           : '-';
 
         return {
@@ -102,8 +85,9 @@ export default function SeancesPage() {
           personName: athleteName,
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
+          // Correction ici : vérifie le nom de la table jointe (exercice vs exercices_library)
           exercises: session.session_exercises?.map(se => ({
-            name: se.exercices_library?.name || "Exercice"
+            name: se.exercise?.name || se.exercice_library?.name || "Exercice"
           })) || [],
           thumbnailUrl: null,
         };

@@ -8,7 +8,7 @@ export default async function AdminLayout({ children }) {
     redirect("/login")
   }
 
-  if (!user.athlete_profile?.admin) {
+  if (!user.isAdmin) {
     redirect("/profile")
   }
 

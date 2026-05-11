@@ -91,12 +91,14 @@ export function AppSidebar({
     const fetchUser = async () => {
       const data = await getUser()
       if (data) {
-        const fullName = data.user_metadata?.full_name || data.athlete_profile?.first_name + ' ' + data.athlete_profile?.last_name || data.email
+        const fullName = data.user_metadata?.full_name || 
+                        (data.athlete_profile?.first_name ? `${data.athlete_profile.first_name} ${data.athlete_profile.last_name || ''}` : null) || 
+                        data.email
         setUser({
           name: fullName,
           email: data.email,
           avatar: data.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.email}`,
-          isAdmin: data.app_metadata?.role === 'admin' || data.user_metadata?.is_admin === true
+          isAdmin: data.isAdmin
         })
       }
     }

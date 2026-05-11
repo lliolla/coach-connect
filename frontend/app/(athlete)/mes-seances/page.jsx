@@ -28,21 +28,55 @@ export default function AthleteSeancesPage() {
     try {
       setLoading(true)
       const user = await getUser()
-      if (!user || !user.athlete_profile) throw new Error("Profil non trouvé")
-      
-      setUserId(user.athlete_profile.id)
-      const allSessions = await getSessions()
-      // Filter sessions for the current athlete
-      const userSessions = allSessions.filter(s => s.athlete_id === user.athlete_profile.id)
-      setSessions(userSessions)
-    } catch (error) {
-      console.error(error)
-      toast.error("Impossible de charger vos séances")
-    } finally {
-      setLoading(false)
-    }
-  }
+      if (!user || !user.athlete_profile) {
+        console.error("User profile not found.");
+        toast.error("Profil utilisateur non trouvé.");
+        throw new Error("Profil non trouvé");
+      }
 
+      const currentUserId = user.athlete_profile.id;
+      setUserId(currentUserId); 
+
+      console.log("Current logged-in user ID:", currentUserId); // Log user ID
+
+      const result = await getSessions(); // Gets the response object
+
+      console.log("Fetched all sessions from server:", result.data); // Log all fetched sessions
+
+      if (result.success) {
+        const allSessions = result.data || []; // Ensure it's an array, default to empty array if null/undefined
+        // Filter sessions for the current athlete
+        const userSessions = allSessions.filter(s => {
+          // Log details for debugging the filter condition
+          const sessionAthleteId = s.athlete_id;
+          const trimmedSessionAthleteId = sessionAthleteId ? sessionAthleteId.trim() : null;
+          const trimmedCurrentUserId = currentUserId ? currentUserId.trim() : null;
+
+          console.log(`Checking session ID: ${s.id}`);
+          console.log(`  - Session athlete_id: ${sessionAthleteId} (Type: ${typeof sessionAthleteId})`);
+          console.log(`  - Trimmed session athlete_id: ${trimmedSessionAthleteId}`);
+          console.log(`  - Current user ID: ${currentUserId} (Type: ${typeof currentUserId})`);
+          console.log(`  - Trimmed current user ID: ${trimmedCurrentUserId}`);
+
+          const areIdsMatching = trimmedSessionAthleteId === trimmedCurrentUserId;
+          console.log(`  - Comparison result (trimmed IDs match): ${areIdsMatching}`);
+
+          return areIdsMatching;
+        });
+
+      console.log("Filtered user sessions:", userSessions); // Log filtered sessions
+      setSessions(userSessions);
+    } else {
+      console.error("Error fetching sessions from server action:", result.error);
+      toast.error("Impossible de charger vos séances: " + result.error);
+    }
+  } catch (error) {
+    console.error("Error in fetchSessions:", error);
+    toast.error("Impossible de charger vos séances");
+  } finally {
+    setLoading(false)
+  }
+  }
   React.useEffect(() => {
     fetchSessions()
   }, [])
