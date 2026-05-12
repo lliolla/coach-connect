@@ -98,6 +98,8 @@ export default function ModelesPage() {
   })
 
   const programsForTable = React.useMemo(() => {
+    if (!sessions || !Array.isArray(sessions)) return [];
+    
     return sessions
       .filter(session => session.is_template === true || String(session.is_template) === "true")
       .map(session => ({
@@ -106,7 +108,7 @@ export default function ModelesPage() {
         description: session.description,
         numberOfExercises: session.session_exercises?.length || 0,
         exercises: session.session_exercises?.map(se => ({
-            name: se.exercices_library?.name || "Exercice"
+            name: se.exercise?.name || se.exercices_library?.name || "Exercice"
         })) || [],
       }));
   }, [sessions]);

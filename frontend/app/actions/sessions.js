@@ -4,13 +4,13 @@ import { createClient } from '@/lib/supabase/server'
 import { toNumeric, mapExercises } from '@/lib/actions-utils'
 import { revalidatePath } from 'next/cache'
 
-// On définit ce qu'on veut récupérer par défaut (avec les exercices liés)
 const SESSION_SELECT = `
   *,
   session_exercises (
     *,
     exercise:exercices_library(*)
-  )
+  ),
+  athletes (id, first_name, last_name, email, avatar_url)
 `
 
 export async function getSessions() {
@@ -20,8 +20,8 @@ export async function getSessions() {
     .select(SESSION_SELECT)
     .order('date', { ascending: false })
     
-  if (error) return { success: false, error: error.message }
-  return { success: true, data: data }
+  if (error) throw new Error(error.message)
+  return data
 }
 
 export async function getSessionById(id) {
@@ -32,19 +32,17 @@ export async function getSessionById(id) {
     .eq('id', id)
     .single()
     
-  if (error) return { success: false, error: error.message }
-  return { success: true, data: data }
+  if (error) throw new Error(error.message)
+  return data
 }
 
 export async function createSession(formData) {
   const supabase = await createClient()
   
-  // Gestion si formData est une instance de FormData ou un objet simple
   const dataRaw = formData instanceof FormData ? Object.fromEntries(formData) : formData
   const { exercises, ...rawData } = dataRaw
 
   try {
-    // Récupérer l'ID de l'utilisateur connecté pour l'associer à la séance
     const { data: { user } } = await supabase.auth.getUser()
 
     const sessionData = {
@@ -52,7 +50,6 @@ export async function createSession(formData) {
       description: rawData.description || "",
       date: rawData.date || new Date().toISOString().split('T')[0],
       status: rawData.status || 'prévu',
-      // Si athlete_id n'est pas fourni, on prend l'user actuel
       athlete_id: rawData.athlete_id || user?.id, 
       is_template: rawData.is_template === true || rawData.is_template === 'true',
       duration: toNumeric(rawData.duration, 0),
@@ -68,7 +65,6 @@ export async function createSession(formData) {
     
     const session = sessions[0]
 
-    // Insertion des exercices si présents
     if (exercises && Array.isArray(exercises) && exercises.length > 0) {
       const formattedExercises = mapExercises(exercises, session.id)
       const { error: exError } = await supabase
@@ -78,9 +74,8 @@ export async function createSession(formData) {
       if (exError) return { success: true, warning: "Séance créée sans exercices", session }
     }
     
-    // Revalidation des chemins (pense à tes nouveaux noms de dossiers !)
     revalidatePath('/mes-seances')
-    revalidatePath('/gestion-seances')
+    revalidatePath('/seances')
     revalidatePath('/modeles')
     
     return { success: true, data: session }
@@ -114,7 +109,6 @@ export async function updateSession(id, formData) {
 
     if (sessionError) throw sessionError
 
-    // Mise à jour simplifiée des exercices (Delete then Insert)
     if (exercises && Array.isArray(exercises)) {
       await supabase.from('session_exercises').delete().eq('session_id', id)
       
@@ -127,8 +121,9 @@ export async function updateSession(id, formData) {
     }
     
     revalidatePath('/mes-seances')
-    revalidatePath('/gestion-seances')
+    revalidatePath('/seances')
     revalidatePath(`/mes-seances/${id}`)
+    revalidatePath(`/seances/${id}`)
     
     return { success: true, data: sessions[0] }
   } catch (err) {
@@ -143,7 +138,8 @@ export async function deleteSession(id) {
     if (error) throw error
     
     revalidatePath('/mes-seances')
-    revalidatePath('/gestion-seances')
+    revalidatePath('/seances')
+    revalidatePath('/modeles')
     return { success: true }
   } catch (err) {
     return { success: false, error: err.message }

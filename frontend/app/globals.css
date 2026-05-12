@@ -119,4 +119,12 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Masquer le badge de développement Next.js / Vercel */
+  next-portal,
+  #next-static-hot-reload-error-container,
+  .nextjs-static-indicator-base,
+  [data-nextjs-scroll-focus-boundary] {
+    display: none !important;
+  }
 }

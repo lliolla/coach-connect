@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from "react"
+import Link from "next/link"
 import {
   SidebarInset,
   SidebarProvider,
@@ -10,7 +11,6 @@ import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input" 
-import { Link } from "lucide-react"
 import { 
   IconPlus, 
   IconSearch, 
