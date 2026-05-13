@@ -1,4 +1,3 @@
-'use client'
 import * as React from "react"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
@@ -8,27 +7,10 @@ import {
 } from "@/components/ui/sidebar"
 import { CardAthlete } from "@/components/athlete/card_athlete"
 import { getUser } from "@/app/actions/auth"
-import { IconLoader2 } from "@tabler/icons-react"
 
-export default function ProfilPage() {
-  const [athleteId, setAthleteId] = React.useState(null)
-  const [loading, setLoading] = React.useState(true)
-
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await getUser()
-        if (user && user.athlete_profile) {
-          setAthleteId(user.athlete_profile.id)
-        }
-      } catch (error) {
-        console.error("Erreur lors de la récupération de l'utilisateur:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchUser()
-  }, [])
+export default async function ProfilPage() {
+  const user = await getUser()
+  const athleteId = user?.athlete_profile?.id
 
   return (
     <SidebarProvider
@@ -45,17 +27,16 @@ export default function ProfilPage() {
           </div>
 
           <div className="max-w-3xl mx-auto w-full">
-            {loading ? (
-              <div className="flex justify-center py-20">
-                <IconLoader2 className="animate-spin text-primary" size={40} />
-              </div>
-            ) : athleteId ? (
-              <CardAthlete athleteId={athleteId} mode="edit" />
-            ) : (
-              <div className="text-center py-20 bg-muted/20 rounded-xl border-2 border-dashed">
-                <p className="text-muted-foreground">Impossible de charger votre profil athlète.</p>
-              </div>
-            )}
+            <CardAthlete 
+              athleteId={athleteId || user?.id} 
+              mode={athleteId ? "edit" : "create"}
+              initialData={{ 
+                id: user?.id,
+                email: user?.email || "", 
+                first_name: user?.user_metadata?.full_name?.split(' ')[0] || "",
+                last_name: user?.user_metadata?.full_name?.split(' ').slice(1).join(' ') || ""
+              }} 
+            />
           </div>
         </div>
       </SidebarInset>

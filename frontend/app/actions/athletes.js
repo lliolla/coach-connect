@@ -46,8 +46,9 @@ export async function getAthleteById(id) {
 export async function createAthlete(formData) {
   const supabase = await createClient()
   
+  // Si un ID est passé (cas du profil utilisateur), on l'utilise
   const { 
-    objectives, groupes, groupe, abonnement, mode_paiement,
+    id, objectives, groupes, groupe, abonnement, mode_paiement,
     ...athleteData 
   } = formData
 
@@ -64,12 +65,20 @@ export async function createAthlete(formData) {
       if (mp) athleteData.mode_paiement_id = mp.id
     }
 
+    // On ajoute l'ID si présent
+    const dataToInsert = id ? { ...athleteData, id } : athleteData
+
     const { data, error } = await supabase
       .from('athletes')
-      .insert([athleteData])
+      .insert([dataToInsert])
       .select()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error("Un athlète avec cet email existe déjà.")
+      }
+      throw error
+    }
 
     const newAthlete = data[0]
     
@@ -110,13 +119,23 @@ export async function updateAthlete(id, formData) {
       if (mp) athleteData.mode_paiement_id = mp.id
     }
 
-    const { data, error } = await supabase
+    // 1. Tenter la mise à jour
+    let { data, error } = await supabase
       .from('athletes')
       .update(athleteData)
       .eq('id', id)
       .select()
-    
-    if (error) throw error
+
+    // 2. Si aucune donnée retournée (ID inexistant) ou erreur, tenter l'insertion
+    if (error || !data || data.length === 0) {
+      const { data: insertData, error: insertError } = await supabase
+        .from('athletes')
+        .insert([{ ...athleteData, id }])
+        .select()
+      
+      if (insertError) throw insertError
+      data = insertData
+    }
 
     // Synchronisation M2M
     await syncManyToMany(supabase, id, 'athletes_groupes', 'groupes', 'name', allGroupes, 'groupe_id')
@@ -137,7 +156,12 @@ export async function deleteAthlete(id) {
   const supabase = await createClient()
   try {
     const { error } = await supabase.from('athletes').delete().eq('id', id)
-    if (error) throw error
+    if (error) {
+      if (error.code === '23505') {
+        throw new Error("Un athlète avec cet email existe déjà.")
+      }
+      throw error
+    }
     
     revalidatePath('/users')
     return { success: true }
