@@ -38,7 +38,7 @@ import {
 const tables = {
   groupes: { label: "Groupes", endpoint: "groupes", field: "name" },
   abonnements: { label: "Abonnements", endpoint: "abonnements", field: "label" },
-  objectifs: { label: "Objectifs", endpoint: "objectifs", field: "label" },
+  objectifs: { label: "Programmes", endpoint: "objectifs", field: "label" },
   paiements: { label: "Modes de Paiement", endpoint: "modes_paiement", field: "label" },
   categories_exercices: { label: "Catégories d'Exercices", endpoint: "categories_exercices", field: "label" }
 }
