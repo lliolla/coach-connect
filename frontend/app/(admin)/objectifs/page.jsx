@@ -28,14 +28,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { getObjectifs, deleteObjectif } from "@/app/actions/objectifs"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { MoreHorizontal, Eye, Edit2, Trash2, Calendar } from "lucide-react"
 import {
   DropdownMenu,
@@ -43,6 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils"
 
 export default function ObjectifsPage() {
   const [objectifs, setObjectifs] = React.useState([])
@@ -157,67 +150,71 @@ export default function ObjectifsPage() {
               </div>
             ) : (
               <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
-                <Table>
-                  <TableHeader className="bg-muted/30">
-                    <TableRow>
-                      <TableHead className="font-bold">Libellé</TableHead>
-                      <TableHead className="font-bold">Description</TableHead>
-                      <TableHead className="font-bold">Séances liées</TableHead>
-                      <TableHead className="text-right font-bold">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredObjectifs.map((obj) => (
-                      <TableRow key={obj.id} className="hover:bg-muted/5 transition-colors group">
-                        <TableCell className="font-bold text-foreground">{obj.label}</TableCell>
-                        <TableCell className="text-muted-foreground max-w-md truncate">
-                          {obj.description || '-'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-muted-foreground" />
-                            <span className="text-sm font-medium">
-                              {obj.sessions?.length || 0} séances
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="hidden md:flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild>
-                              <Link href={`/objectifs/${obj.id}?mode=view`}><Eye size={14}/></Link>
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild>
-                              <Link href={`/objectifs/${obj.id}?mode=edit`}><Edit2 size={14}/></Link>
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={(e) => openDeleteConfirm(e, obj)}>
-                              <Trash2 size={14}/></Button>
-                          </div>
-                          <div className="md:hidden">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild><Link href={`/objectifs/${obj.id}?mode=view`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
-                                <DropdownMenuItem asChild><Link href={`/objectifs/${obj.id}?mode=edit`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
-                                <DropdownMenuItem onSelect={(e) => openDeleteConfirm(null, obj)} className="text-red-600 font-medium">
-                                  <Trash2 size={14} className="mr-2"/> Supprimer
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredObjectifs.length === 0 && (
-                  <div className="text-center py-20 text-muted-foreground italic border-t">
-                    Aucun objectif trouvé.
-                  </div>
-                )}
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-border">
+                    <thead className="bg-muted/30">
+                      <tr>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Libellé</th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</th>
+                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Séances</th>
+                        <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-transparent divide-y divide-border">
+                      {filteredObjectifs.map((obj) => (
+                        <tr key={obj.id} className="hover:bg-muted/5 transition-colors group">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
+                            {obj.label}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-muted-foreground max-w-md truncate">
+                            {obj.description || '-'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <Calendar size={14} className="text-muted-foreground" />
+                              <span className="text-sm font-medium">
+                                {obj.sessions?.length || 0} séances
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                            <div className="hidden md:flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
+                                <Link href={`/objectifs/${obj.id}?mode=view`}><Eye size={14}/></Link>
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
+                                <Link href={`/objectifs/${obj.id}?mode=edit`}><Edit2 size={14}/></Link>
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={(e) => openDeleteConfirm(e, obj)} title="Supprimer">
+                                <Trash2 size={14}/></Button>
+                            </div>
+                            <div className="md:hidden">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem asChild><Link href={`/objectifs/${obj.id}?mode=view`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
+                                  <DropdownMenuItem asChild><Link href={`/objectifs/${obj.id}?mode=edit`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={(e) => openDeleteConfirm(null, obj)} className="text-red-600 font-medium">
+                                    <Trash2 size={14} className="mr-2"/> Supprimer
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {filteredObjectifs.length === 0 && (
+                    <div className="text-center py-20 text-muted-foreground italic border-t">
+                      Aucun objectif trouvé.
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -262,4 +259,3 @@ export default function ObjectifsPage() {
     </SidebarProvider>
   )
 }
-2

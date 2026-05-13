@@ -80,15 +80,18 @@ const initialFormState = {
   mode_paiement: "Carte Bancaire",
 }
 
-export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
-  const isCreation = mode === "create"
+export const CardAthlete = ({ mode = "edit", athleteId = null, initialData = null }) => {
+  const isCreation = !athleteId
   const router = useRouter()
   const [openSports, setOpenSports] = React.useState(false)
   const [openObjectives, setOpenObjectives] = React.useState(false)
   const [openGroupes, setOpenGroupes] = React.useState(false)
   const [objectiveSearch, setObjectiveSearch] = React.useState("")
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
-  const [formData, setFormData] = React.useState(initialFormState)
+  const [formData, setFormData] = React.useState({
+    ...initialFormState,
+    ...(initialData || {})
+  })
   const [availableGroups, setAvailableGroups] = React.useState([])
   const [availableAbonnements, setAvailableAbonnements] = React.useState([])
   const [availableModesPaiement, setAvailableModesPaiement] = React.useState([])
@@ -248,7 +251,7 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
     <>
       <Card className="w-full max-w-2xl mx-auto border-dashed border-2 border-primary/20 shadow-none">
         <CardHeader>
-          <CardTitle>{isCreation ? "Nouvel Athlète" : "Profil de l'athlète"}</CardTitle>
+          <CardTitle>{isCreation ? "Nouvel Athlète" : "Profile"}</CardTitle>
           <CardAction>
             <div className="flex flex-wrap items-center gap-2 md:flex-row">
               {window.location.pathname !== '/profile' && (
@@ -527,12 +530,12 @@ export const CardAthlete = ({ mode = "edit", athleteId = null }) => {
         </CardContent>
         <CardFooter className="flex justify-between border-t p-6 mt-6">
           <Button variant="outline" onClick={handleCancel}>Annuler</Button>
-          <Button onClick={handleSubmit}>{isCreation ? "Créer l'athlète" : "Sauvegarder les modifications"}</Button>
+          <Button onClick={handleSubmit}>Mettre à jour le profil</Button>
         </CardFooter>
       </Card>
 
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md" showCloseButton={false}>
           <DialogHeader className="flex flex-col items-center justify-center text-center">
             <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
               <UserCheck className="h-6 w-6 text-green-600" />

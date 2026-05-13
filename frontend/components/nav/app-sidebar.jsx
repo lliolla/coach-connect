@@ -55,12 +55,12 @@ const menuData = {
     },
     {
       title: "Statistiques",
-      url: "/profile?tab=stats",
+      url: "/stats",
       icon: TrendingUp,
     },
     {
       title: "Mes Objectifs",
-      url: "/profile?tab=objectives",
+      url: "/mes-objectifs",
       icon: Target,
     },
   ],
