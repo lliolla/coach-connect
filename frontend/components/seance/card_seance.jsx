@@ -294,16 +294,17 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         sortId: `ex-${Date.now()}-${idx}`, 
         exercise_id: se.exercise_id,
         template_id: se.exercise_id, 
-        name: se.exercices_library?.name || "Exercice",
-        description: se.exercices_library?.description || "",
-        category: se.exercices_library?.category || "",
-        unit: se.exercices_library?.unit || "reps",
+        name: se.exercise?.name || "Exercice",
+        description: se.exercise?.description || "",
+        category: se.exercise?.category || "",
+        unit: se.exercise?.unit || "reps",
         reps: se.reps || 10,
         weight: se.weight || 0,
         rest_time_seconds: se.rest_time || se.rest_time_seconds || 60,
         notes: se.notes || "",
         intensity: se.intensity || "",
-        section: se.section || 'main'
+        section: se.section || 'main',
+        order_index: se.order_index
       })).sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
 
       setFormData({
@@ -317,6 +318,15 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         main_rounds: data.main_rounds || 1,
         is_template: isDuplicate ? true : (data.is_template ?? false)
       })
+
+      // Ouvrir les sections qui contiennent des exercices
+      const sectionsToExpand = { info: true };
+      if (mappedExercises.some(ex => ex.section === 'warmup')) sectionsToExpand.warmup = true;
+      if (mappedExercises.some(ex => ex.section === 'main')) sectionsToExpand.main = true;
+      if (mappedExercises.some(ex => ex.section === 'cooldown')) sectionsToExpand.cooldown = true;
+      
+      setExpandedSections(prev => ({ ...prev, ...sectionsToExpand }));
+
       if (data.duration) setIsManualDuration(true)
     } catch (error) {
       console.error(error)
