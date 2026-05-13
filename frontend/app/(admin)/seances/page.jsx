@@ -145,14 +145,6 @@ export default function SeancesPage() {
               />
             )}
           </div>
-
-          <div className="mt-8">
-            <div className="flex items-center gap-2 mb-4">
-              <IconCalendarEvent size={20} className="text-primary" />
-              <h2 className="text-lg font-semibold">Calendrier des séances</h2>
-            </div>
-            <CalendarView sessions={sessions} searchTerm={searchTerm} />
-          </div>
         </div>
       </SidebarInset>
 
