@@ -135,11 +135,7 @@ export default function SeancesPage() {
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Séances</h1>
-              <p className="text-muted-foreground text-sm">Visualisez et gérez l'historique de vos séances d'entraînement.</p>
-            </div>
+          <div className="flex items-center justify-end">
             <Button className="gap-2" asChild>
               <Link href="/seances/new">
                 <IconPlus size={18} />
@@ -148,7 +144,7 @@ export default function SeancesPage() {
             </Button>
           </div>
 
-          <div className="mt-4">
+          {/* Recherche & Filtres */}
             <div className="flex flex-col gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <IconBarbell size={20} className="text-primary" />
