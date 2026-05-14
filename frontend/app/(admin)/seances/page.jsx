@@ -148,67 +148,70 @@ export default function SeancesPage() {
             </Button>
           </div>
 
-          {/* Recherche & Filtres */}
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input 
-                placeholder="Rechercher une séance..." 
-                className="pl-10"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <IconFilter size={18} />
-                  Filtres
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 p-4 space-y-4">
-                <div className="space-y-2">
-                  <Label>Athlète</Label>
-                  <Select value={athleteFilter} onValueChange={setAthleteFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les athlètes" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les athlètes</SelectItem>
-                      {availableAthletes.map(a => (
-                        <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Statut</Label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Tous les statuts" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tous les statuts</SelectItem>
-                      <SelectItem value="en attente">En attente</SelectItem>
-                      <SelectItem value="transmis">Transmis</SelectItem>
-                      <SelectItem value="prévu">Prévu</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                {(athleteFilter !== "all" || statusFilter !== "all") && (
-                  <Button variant="ghost" className="w-full gap-2" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); }}>
-                    <IconX size={16} /> Réinitialiser
-                  </Button>
-                )}
-              </PopoverContent>
-            </Popover>
-          </div>
-
           <div className="mt-4">
-            <div className="flex items-center gap-2 mb-4">
-              <IconBarbell size={20} className="text-primary" />
-              <h2 className="text-lg font-semibold">Liste des Séances</h2>
+            <div className="flex flex-col gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <IconBarbell size={20} className="text-primary" />
+                <h2 className="text-lg font-semibold">Liste des Séances</h2>
+              </div>
+              
+              {/* Recherche & Filtres déplacés ici */}
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Input 
+                    placeholder="Rechercher une séance..." 
+                    className="pl-10"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="gap-2">
+                      <IconFilter size={18} />
+                      Filtres
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label>Athlète</Label>
+                      <Select value={athleteFilter} onValueChange={setAthleteFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tous les athlètes" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les athlètes</SelectItem>
+                          {availableAthletes.map(a => (
+                            <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Statut</Label>
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Tous les statuts" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Tous les statuts</SelectItem>
+                          <SelectItem value="en attente">En attente</SelectItem>
+                          <SelectItem value="transmis">Transmis</SelectItem>
+                          <SelectItem value="prévu">Prévu</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(athleteFilter !== "all" || statusFilter !== "all") && (
+                      <Button variant="ghost" className="w-full gap-2" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); }}>
+                        <IconX size={16} /> Réinitialiser
+                      </Button>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
+
             {loading ? (
               <div className="flex flex-col items-center justify-center py-10 gap-4">
                 <IconLoader2 className="animate-spin text-primary" size={40} />
