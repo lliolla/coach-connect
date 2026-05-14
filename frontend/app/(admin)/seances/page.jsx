@@ -162,42 +162,46 @@ export default function SeancesPage() {
                       Filtres
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 p-4 space-y-4">
-                    <div className="space-y-2">
-                      <Label>Athlète</Label>
-                      <Select value={athleteFilter} onValueChange={setAthleteFilter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tous les athlètes" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tous les athlètes</SelectItem>
-                          {availableAthletes.map(a => (
-                            <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <PopoverContent className="w-80 p-0 shadow-lg border-muted/20" align="end">
+                    <div className="p-4 border-b bg-muted/30">
+                      <h4 className="font-bold uppercase tracking-widest text-xs">Options de filtrage</h4>
                     </div>
-                    <div className="space-y-2">
-                      <Label>Statut</Label>
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tous les statuts" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tous les statuts</SelectItem>
-                          <SelectItem value="en attente">En attente</SelectItem>
-                          <SelectItem value="transmis">Transmis</SelectItem>
-                          <SelectItem value="prévu">Prévu</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="p-4 space-y-5">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Athlète</Label>
+                        <Select value={athleteFilter} onValueChange={setAthleteFilter}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Tous les athlètes" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous les athlètes</SelectItem>
+                            {availableAthletes.map(a => (
+                              <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Statut</Label>
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Tous les statuts" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tous les statuts</SelectItem>
+                            <SelectItem value="en attente">En attente</SelectItem>
+                            <SelectItem value="transmis">Transmis</SelectItem>
+                            <SelectItem value="prévu">Prévu</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {(athleteFilter !== "all" || statusFilter !== "all") && (
+                        <Button variant="ghost" className="w-full h-9 gap-2 text-xs font-bold text-destructive hover:text-destructive/90 hover:bg-destructive/5" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); }}>
+                          <IconX size={14} /> Réinitialiser
+                        </Button>
+                      )}
                     </div>
-                    {(athleteFilter !== "all" || statusFilter !== "all") && (
-                      <Button variant="ghost" className="w-full gap-2" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); }}>
-                        <IconX size={16} /> Réinitialiser
-                      </Button>
-                    )}
-                  </PopoverContent>
-                </Popover>
+                  </PopoverContent>                </Popover>
               </div>
             </div>
 
