@@ -121,13 +121,12 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   {isTracking && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                       <Mail 
-                        size={16} 
-                        className={cn(
-                          "mx-auto transition-colors duration-300", 
-                          program.status === 'transmis' ? "text-green-500" : "text-red-500"
-                        )} 
-                      />
-                    </td>
+                      size={16} 
+                      className={cn(
+                        "mx-auto transition-colors duration-300", 
+                        program.status === 'transmis' ? "text-green-500" : "text-amber-500"
+                      )} 
+                      />                    </td>
                   )}
                   {showAthlete && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">

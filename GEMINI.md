@@ -36,6 +36,10 @@ This project is a web application for athlete preparation management. It is a fu
         - Les objectifs incluent un champ `total_sessions` (ex: 20).
         - Les séances liées à un objectif affichent un badge de progression (ex: "Séance 5 / 20").
         - Le rang est calculé dynamiquement par un tri chronologique des séances rattachées au même objectif.
+    - **STATUTS DES SÉANCES**: 
+        - Par défaut, une nouvelle séance est créée avec le statut `en attente`.
+        - Une fois transmise à l'athlète, le statut passe à `transmis` (icône verte).
+        - `en attente` (icône orange) signifie que la séance n'a pas encore été transmise.
     - **SESSION STRUCTURE**: Sessions MUST be divided into 3 distinct blocks: Warmup (optional), Main Body (with a "Rounds/Tours" setting), and Cooldown (optional).
     - **DRAG & DROP**: Exercise reordering MUST be implemented using a fluid Drag & Drop interface, optimized for mobile usage (large touch targets, visual feedback).
     - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.

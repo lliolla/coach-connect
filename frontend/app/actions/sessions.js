@@ -104,7 +104,7 @@ export async function createSession(formData) {
       title: rawData.title,
       description: rawData.description || "",
       date: rawData.date || new Date().toISOString().split('T')[0],
-      status: rawData.status || 'prévu',
+      status: rawData.status || 'en attente',
       athlete_id: rawData.athlete_id || user?.id, 
       objectif_id: rawData.objectif_id || null,
       is_template: rawData.is_template === true || rawData.is_template === 'true',
