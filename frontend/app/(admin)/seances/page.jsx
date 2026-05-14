@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
   SidebarInset,
   SidebarProvider,
-  SidebarTrigger, // Optionnel si tu l'utilises
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
@@ -18,7 +17,6 @@ import {
   IconBarbell, 
   IconActivity, 
   IconLoader2, 
-  IconCalendarEvent,
   IconFilter,
   IconX
 } from "@tabler/icons-react"
@@ -26,15 +24,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { getAthletes } from "@/app/actions/athletes"
- 
-import { CalendarView } from "@/components/seance/calendar-view"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 import { toast } from "sonner"
 import ProgramTable from "@/components/seance/programTable"
-import { getSessions } from "@/app/actions/sessions"
-
-
+import { getSessions, deleteSession } from "@/app/actions/sessions"
 
 export default function SeancesPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -44,7 +38,7 @@ export default function SeancesPage() {
   const [sessions, setSessions] = React.useState([]) 
   const [loading, setLoading] = React.useState(true)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
-  const [sessionToDelete, setSessionToDelete] = React.useState(null) // <-- Réinitialisé ici
+  const [sessionToDelete, setSessionToDelete] = React.useState(null)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
 
   const handleDeleteSession = async () => {
@@ -144,14 +138,13 @@ export default function SeancesPage() {
             </Button>
           </div>
 
-          {/* Recherche & Filtres */}
+          <div className="mt-4">
             <div className="flex flex-col gap-4 mb-4">
               <div className="flex items-center gap-2">
                 <IconBarbell size={20} className="text-primary" />
                 <h2 className="text-lg font-semibold">Liste des Séances</h2>
               </div>
               
-              {/* Recherche & Filtres déplacés ici */}
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
