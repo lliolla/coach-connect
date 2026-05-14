@@ -82,10 +82,11 @@ export default function SeancesPage() {
           id: session.id,
           title: session.title,
           description: session.description,
+          status: session.status, // S'assurer que le statut est bien passé
           personName: athleteName,
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
-          rawObjectif: session.objectif, // Ajouté pour le calcul de progression
+          rawObjectif: session.objectif, 
           exercises: session.session_exercises?.map(se => ({
             name: se.exercise?.name || se.exercice_library?.name || "Exercice"
           })) || [],
