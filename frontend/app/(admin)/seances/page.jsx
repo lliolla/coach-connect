@@ -142,6 +142,7 @@ export default function SeancesPage() {
                 programs={programsForTable} 
                 onDelete={openDeleteConfirm}
                 context="seances"
+                searchTerm={searchTerm}
               />
             )}
           </div>

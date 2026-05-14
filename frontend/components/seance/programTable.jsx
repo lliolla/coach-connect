@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 
 const ITEMS_PER_PAGE = 10;
 
-const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
+const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "" }) => {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [transmittedPrograms, setTransmittedPrograms] = useState({});
@@ -25,14 +25,30 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const isTracking = context === "seances" || context === "athlete-seances";
   const showAthlete = context === "seances";
 
+  // Filtrage par Search Term
+  const filteredPrograms = useMemo(() => {
+    if (!searchTerm) return programs;
+    const lowerTerm = searchTerm.toLowerCase();
+    return programs.filter(p => 
+      p.programName.toLowerCase().includes(lowerTerm) ||
+      p.description?.toLowerCase().includes(lowerTerm) ||
+      p.personName?.toLowerCase().includes(lowerTerm)
+    );
+  }, [programs, searchTerm]);
+
   // Pagination logic
-  const totalItems = programs?.length || 0;
+  const totalItems = filteredPrograms?.length || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   
   const paginatedPrograms = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return programs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [programs, currentPage]);
+    return filteredPrograms.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredPrograms, currentPage]);
+
+  // Reset page when search term changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const handleDuplicate = (programId) => {
     const targetPath = isTracking ? "/seances/new" : "/modeles/new"
@@ -48,7 +64,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const handleTransmit = (program) => {
     setTransmittedPrograms(prev => ({ ...prev, [program.id]: true }));
     toast.success("Programme transmit");
-    // Ici l'appel API pour l'automatisation pourra être ajouté
   };
 
   const getBasePath = (id) => {
@@ -65,16 +80,13 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
     setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
 
-  if (!programs || programs.length === 0) {
+  if (!filteredPrograms || filteredPrograms.length === 0) {
     return (
       <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/5 text-muted-foreground">
-        <p className="text-sm font-medium">Aucun programme trouvé.</p>
+        <p className="text-sm font-medium">Aucun programme ne correspond à votre recherche.</p>
       </div>
     );
   }
-
-  const startItem = (currentPage - 1) * ITEMS_PER_PAGE + 1;
-  const endItem = Math.min(currentPage * ITEMS_PER_PAGE, totalItems);
 
   return (
     <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
@@ -152,7 +164,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                    {/* Desktop Actions */}
                     <div className="hidden md:flex justify-end gap-1">
                       {isTracking && context !== "athlete-seances" && (
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleTransmit(program)} title="Transmettre">
@@ -170,7 +181,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={() => handleDelete(program)} title="Supprimer">
                         <Trash2 size={14}/></Button>
                     </div>
-                    {/* Mobile Actions */}
                     <div className="md:hidden">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -198,7 +208,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
         </table>
       </div>
 
-      {/* Footer / Pagination */}
       <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
