@@ -2,9 +2,9 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send } from 'lucide-react';
+import { MoreHorizontal, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target } from 'lucide-react';
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getSessionProgression } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -22,7 +22,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [transmittedPrograms, setTransmittedPrograms] = useState({});
 
-  const isTracking = context === "seances";
+  const isTracking = context === "seances" || context === "athlete-seances";
   const showAthlete = context === "seances";
 
   // Pagination logic
@@ -52,6 +52,8 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
   };
 
   const getBasePath = (id) => {
+    const isAthlete = context === "athlete-seances";
+    if (isAthlete) return `/mes-seances/${id}`;
     return isTracking ? `/seances/${id}` : `/modeles/${id}`
   }
 
@@ -90,95 +92,107 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
             </tr>
           </thead>
           <tbody className="bg-transparent divide-y divide-border">
-            {paginatedPrograms.map((program) => (
-              <tr key={program.id} className="hover:bg-muted/5 transition-colors group">
-                {showAthlete && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">
-                    {program.personName || '-'}
+            {paginatedPrograms.map((program) => {
+              const progression = getSessionProgression(program.id, program.rawObjectif);
+              
+              return (
+                <tr key={program.id} className="hover:bg-muted/5 transition-colors group">
+                  {showAthlete && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">
+                      {program.personName || '-'}
+                    </td>
+                  )}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
+                    <div className="flex flex-col gap-1">
+                      <span>{program.programName}</span>
+                      {progression && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded-full w-fit border border-primary/10">
+                          <Target size={10} />
+                          Séance {progression}
+                        </div>
+                      )}
+                    </div>
                   </td>
-                )}
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
-                  {program.programName}
-                </td>
-                <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
-                  {program.description || '-'}
-                </td>
-                <td className="px-6 py-4 text-sm text-muted-foreground">
-                  <div className="flex flex-wrap gap-1.5">
-                    {program.exercises && program.exercises.length > 0 ? (
-                      program.exercises.slice(0, 3).map((ex, i) => (
-                        <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/5 text-primary border border-primary/10 text-[10px] font-medium">
-                          {ex.name}
+                  <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
+                    {program.description || '-'}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">
+                    <div className="flex flex-wrap gap-1.5">
+                      {program.exercises && program.exercises.length > 0 ? (
+                        program.exercises.slice(0, 3).map((ex, i) => (
+                          <span key={i} className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/5 text-primary border border-primary/10 text-[10px] font-medium">
+                            {ex.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs italic opacity-50">Vide</span>
+                      )}
+                      {program.exercises?.length > 3 && (
+                        <span className="text-[10px] text-muted-foreground font-medium flex items-center">
+                          +{program.exercises.length - 3}
                         </span>
-                      ))
-                    ) : (
-                      <span className="text-xs italic opacity-50">Vide</span>
-                    )}
-                    {program.exercises?.length > 3 && (
-                      <span className="text-[10px] text-muted-foreground font-medium flex items-center">
-                        +{program.exercises.length - 3}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                   <div className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-bold">
-                    {program.numberOfExercises} ex.
-                   </div>
-                </td>
-                {isTracking && (
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                    <Mail 
-                      size={16} 
-                      className={cn(
-                        "mx-auto transition-colors duration-300", 
-                        transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
-                      )} 
-                    />
+                      )}
+                    </div>
                   </td>
-                )}
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                  {/* Desktop Actions */}
-                  <div className="hidden md:flex justify-end gap-1">
-                    {isTracking && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleTransmit(program)} title="Transmettre">
-                        <Send size={14}/>
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
-                      <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14}/></Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
-                      <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14}/></Link>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleDuplicate(program.id)} title="Dupliquer">
-                      <Copy size={14}/></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={() => handleDelete(program)} title="Supprimer">
-                      <Trash2 size={14}/></Button>
-                  </div>
-                  {/* Mobile Actions */}
-                  <div className="md:hidden">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-bold">
+                      {program.numberOfExercises} ex.
+                    </div>
+                  </td>
+                  {isTracking && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <Mail 
+                        size={16} 
+                        className={cn(
+                          "mx-auto transition-colors duration-300", 
+                          transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
+                        )} 
+                      />
+                    </td>
+                  )}
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    {/* Desktop Actions */}
+                    <div className="hidden md:flex justify-end gap-1">
+                      {isTracking && context !== "athlete-seances" && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleTransmit(program)} title="Transmettre">
+                          <Send size={14}/>
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {isTracking && <DropdownMenuItem onSelect={() => handleTransmit(program)}><Send size={14} className="mr-2"/> Transmettre</DropdownMenuItem>}
-                        <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}><Copy size={14} className="mr-2"/> Dupliquer</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
-                          <Trash2 size={14} className="mr-2"/> Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
+                        <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14}/></Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
+                        <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14}/></Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleDuplicate(program.id)} title="Dupliquer">
+                        <Copy size={14}/></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={() => handleDelete(program)} title="Supprimer">
+                        <Trash2 size={14}/></Button>
+                    </div>
+                    {/* Mobile Actions */}
+                    <div className="md:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {isTracking && context !== "athlete-seances" && <DropdownMenuItem onSelect={() => handleTransmit(program)}><Send size={14} className="mr-2"/> Transmettre</DropdownMenuItem>}
+                          <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
+                          <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}><Copy size={14} className="mr-2"/> Dupliquer</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
+                            <Trash2 size={14} className="mr-2"/> Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

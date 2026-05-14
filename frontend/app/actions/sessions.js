@@ -10,7 +10,8 @@ const SESSION_SELECT = `
     *,
     exercise:exercices_library(*)
   ),
-  athletes (id, first_name, last_name, email, avatar_url)
+  athletes (id, first_name, last_name, email, avatar_url),
+  objectif:objectifs(id, label, total_sessions, sessions(id, date))
 `
 
 export async function getSessions() {
@@ -51,6 +52,7 @@ export async function createSession(formData) {
       date: rawData.date || new Date().toISOString().split('T')[0],
       status: rawData.status || 'prévu',
       athlete_id: rawData.athlete_id || user?.id, 
+      objectif_id: rawData.objectif_id || null,
       is_template: rawData.is_template === true || rawData.is_template === 'true',
       duration: toNumeric(rawData.duration, 0),
       main_rounds: Math.round(toNumeric(rawData.main_rounds, 1))
@@ -96,6 +98,7 @@ export async function updateSession(id, formData) {
       date: rawData.date,
       status: rawData.status,
       athlete_id: rawData.athlete_id,
+      objectif_id: rawData.objectif_id || null,
       is_template: rawData.is_template === true || rawData.is_template === 'true',
       duration: toNumeric(rawData.duration, 0),
       main_rounds: Math.round(toNumeric(rawData.main_rounds, 1))

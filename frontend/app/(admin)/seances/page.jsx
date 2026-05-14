@@ -85,7 +85,7 @@ export default function SeancesPage() {
           personName: athleteName,
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
-          // Correction ici : vérifie le nom de la table jointe (exercice vs exercices_library)
+          rawObjectif: session.objectif, // Ajouté pour le calcul de progression
           exercises: session.session_exercises?.map(se => ({
             name: se.exercise?.name || se.exercice_library?.name || "Exercice"
           })) || [],

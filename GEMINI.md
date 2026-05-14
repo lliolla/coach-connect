@@ -20,7 +20,8 @@ This project is a web application for athlete preparation management. It is a fu
 - **athletes**: Profiles (id, first_name, last_name, email, sports, objectives, avatar_url, abonnement_id, mode_paiement_id).
 - **abonnements**: List of available subscriptions.
 - **groupes**: List of athlete groups.
-- **sessions**: Enveloppe de la séance (id, title, date, status, athlete_id, is_template, duration, main_rounds).
+- **objectifs**: List of objectives (id, label, description, weeksCount, total_sessions, athlete_id).
+- **sessions**: Enveloppe de la séance (id, title, date, status, athlete_id, objectif_id, is_template, duration, main_rounds).
 - **exercices_library**: Bibliothèque de modèles d'exercices (id, name, description, category, unit, video_url, image_data, intensity).
 - **session_exercises**: Table de liaison (id, session_id, exercise_id, sets, reps, weight, order_index, rest_time, notes, intensity, section).
 
@@ -31,6 +32,10 @@ This project is a web application for athlete preparation management. It is a fu
 - **UI/UX Standard**: 
     - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.
     - **SUCCESS**: Success Modals MUST close automatically after 2 seconds and trigger the appropriate redirection. They MUST NOT contain a "Close" button to maintain a fluid experience.
+    - **OBJECTIFS & PROGRESSION**: 
+        - Les objectifs incluent un champ `total_sessions` (ex: 20).
+        - Les séances liées à un objectif affichent un badge de progression (ex: "Séance 5 / 20").
+        - Le rang est calculé dynamiquement par un tri chronologique des séances rattachées au même objectif.
     - **SESSION STRUCTURE**: Sessions MUST be divided into 3 distinct blocks: Warmup (optional), Main Body (with a "Rounds/Tours" setting), and Cooldown (optional).
     - **DRAG & DROP**: Exercise reordering MUST be implemented using a fluid Drag & Drop interface, optimized for mobile usage (large touch targets, visual feedback).
     - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.

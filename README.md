@@ -9,6 +9,11 @@
 - **CRUD Intégral** : Création, modification et suppression sécurisée des athlètes via des interfaces dédiées.
 - **Organisation** : Attribution aux groupes et suivi des types d'abonnements.
 
+### 📋 Gestion des Objectifs & Progression
+- **Programmation ciblée** : Création d'objectifs avec durée (semaines) et nombre total de séances prévu.
+- **Suivi Dynamique** : Calcul automatique de la progression "X / Y" sur les séances liées.
+- **Visualisation** : Badges de progression intégrés dans les listes de séances coach et athlète.
+
 ### 📋 Gestion des Modèles (Templates)
 - **Bibliothèque de séances** : Création et gestion de modèles de séances réutilisables.
 - **Structure Granulaire** : Organisation des séances en 3 blocs (Échauffement, Corps de séance, Retour au calme).
@@ -34,7 +39,7 @@
 
 ## 🎨 Standard UI/UX
 
-- **Architecture Unifiée** : Architecture Full-stack Next.js. Les Server Actions communiquent directement avec Supabase via `@supabase/ssr`.
+- **Architecture Unifiée** : Full-stack Next.js. Les Server Actions communiquent directement avec Supabase via `@supabase/ssr`.
 - **Automatisation** : Modales de succès avec fermeture et redirection automatique après 2 secondes.
 - **Sécurité des actions** : Toutes les suppressions requièrent une confirmation via une modale stylisée. Native browser pop-ups interdits.
 - **Affichage Intelligent** : Les tableaux s'adaptent au contexte (ex: masquage des athlètes dans la bibliothèque de modèles).

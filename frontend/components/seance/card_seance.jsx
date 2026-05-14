@@ -32,7 +32,8 @@ import {
   Wind,
   ChevronDown,
   ChevronRight,
-  Info
+  Info,
+  Scale
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -93,11 +94,13 @@ import { restrictToVerticalAxis, restrictToWindowEdges } from '@dnd-kit/modifier
 import { getSessionById, getSessions, createSession, updateSession } from "@/app/actions/sessions"
 import { getExercices } from "@/app/actions/exercices"
 import { getAthletes } from "@/app/actions/athletes"
+import { getObjectifs } from "@/app/actions/objectifs"
 
 const initialFormState = {
   title: "",
   description: "",
   athlete_id: null,
+  objectif_id: null,
   date: new Date().toISOString().split('T')[0],
   duration: 0,
   main_rounds: 1,
@@ -112,7 +115,7 @@ const SortableExerciseCard = ({
   index, 
   isView, 
   updateExerciseDetails, 
-  removeExercise 
+  onRemoveRequest 
 }) => {
   const {
     attributes,
@@ -129,6 +132,8 @@ const SortableExerciseCard = ({
     zIndex: isDragging ? 50 : 'auto',
     opacity: isDragging ? 0.4 : 1,
   };
+
+  const unitLabel = ex.unit === 'reps' ? 'Répétitions' : (ex.unit === 'secs' ? 'Secondes' : (ex.unit === 'meters' ? 'Mètres' : 'Répétitions'));
 
   return (
     <Card 
@@ -165,7 +170,7 @@ const SortableExerciseCard = ({
                   className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-95 z-10" 
                   onClick={(e) => {
                     e.stopPropagation(); 
-                    removeExercise(index);
+                    onRemoveRequest(index);
                   }}
                 >
                     <Trash2 size={16} />
@@ -176,7 +181,7 @@ const SortableExerciseCard = ({
       
       <div className="grid grid-cols-2 gap-3 mb-3 relative z-10" onClick={(e) => e.stopPropagation()}>
         <div className="space-y-1">
-          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Répétitions</Label>
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground">{unitLabel}</Label>
           <Input 
             type="number" 
             min="1"
@@ -186,6 +191,21 @@ const SortableExerciseCard = ({
             disabled={isView} 
           />
         </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><Scale size={10} /> Poids (kg)</Label>
+          <Input 
+            type="number" 
+            min="0"
+            step="0.5"
+            value={ex.weight} 
+            onChange={(e) => updateExerciseDetails(index, 'weight', e.target.value)} 
+            className="h-9 text-sm font-bold bg-background border-primary/10 focus:border-primary transition-all" 
+            disabled={isView} 
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-3 relative z-10" onClick={(e) => e.stopPropagation()}>
         <div className="space-y-1">
           <Label className="text-[10px] uppercase font-bold text-muted-foreground">Repos (s)</Label>
           <Select 
@@ -201,9 +221,6 @@ const SortableExerciseCard = ({
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 mb-3 relative z-10" onClick={(e) => e.stopPropagation()}>
         <div className="space-y-1">
           <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><Zap size={10} className="text-amber-500"/> Intensité (RPE)</Label>
           <Input 
@@ -214,16 +231,17 @@ const SortableExerciseCard = ({
             disabled={isView} 
           />
         </div>
-        <div className="space-y-1">
-          <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><MessageSquare size={10} className="text-primary"/> Notes</Label>
-          <Input 
-            placeholder="..." 
-            value={ex.notes} 
-            onChange={(e) => updateExerciseDetails(index, 'notes', e.target.value)} 
-            className="h-9 text-xs bg-background/50 border-primary/5 italic" 
-            disabled={isView} 
-          />
-        </div>
+      </div>
+
+      <div className="space-y-1 relative z-10" onClick={(e) => e.stopPropagation()}>
+        <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><MessageSquare size={10} className="text-primary"/> Notes</Label>
+        <Input 
+          placeholder="..." 
+          value={ex.notes} 
+          onChange={(e) => updateExerciseDetails(index, 'notes', e.target.value)} 
+          className="h-9 text-xs bg-background/50 border-primary/5 italic" 
+          disabled={isView} 
+        />
       </div>
     </Card>
   );
@@ -234,7 +252,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const searchParams = useSearchParams()
   
   const context = searchParams.get('context')
-  const effectiveIsTracking = isTracking || context === 'seances' || context === 'seances'
+  const effectiveIsTracking = isTracking || context === 'seances'
   
   const isCreation = mode === "create" || mode === "duplicate"
   const isView = mode === "view"
@@ -243,14 +261,17 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const [openExercises, setOpenExercises] = React.useState({ open: false, section: 'main' })
   const [openTemplates, setOpenTemplates] = React.useState(false)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState({ open: false, index: null })
   const [formData, setFormData] = React.useState(initialFormState)
   const [isManualDuration, setIsManualDuration] = React.useState(false)
   const [availableExercises, setAvailableExercises] = React.useState([])
   const [availableAthletes, setAvailableAthletes] = React.useState([])
   const [availableTemplates, setAvailableTemplates] = React.useState([])
+  const [availableObjectifs, setAvailableObjectifs] = React.useState([])
   const [loadingExercises, setLoadingExercises] = React.useState(false)
   const [loadingAthletes, setLoadingAthletes] = React.useState(false)
   const [loadingTemplates, setLoadingTemplates] = React.useState(false)
+  const [loadingObjectifs, setLoadingObjectifs] = React.useState(false)
   const [activeId, setActiveId] = React.useState(null);
 
   // État des accordéons (Info ouvert par défaut, les autres fermés)
@@ -281,6 +302,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     fetchAvailableExercises()
     fetchAthletes()
     fetchTemplates()
+    fetchObjectifsList()
     if ((!isCreation && seanceId) || (isDuplicate && duplicateId)) {
       fetchSeance(isDuplicate ? duplicateId : seanceId)
     }
@@ -311,6 +333,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         title: isDuplicate ? `${data.title} (Copie)` : (data.title || ""),
         description: data.description || "",
         athlete_id: isDuplicate ? null : (data.athlete_id?.toString() || null),
+        objectif_id: isDuplicate ? null : (data.objectif_id?.toString() || null),
         date: isDuplicate ? new Date().toISOString().split('T')[0] : (data.date || new Date().toISOString().split('T')[0]),
         status: isDuplicate ? "prévu" : (data.status || "prévu"),
         exercises: mappedExercises,
@@ -394,6 +417,18 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     }
   }
 
+  const fetchObjectifsList = async () => {
+    try {
+      setLoadingObjectifs(true)
+      const data = await getObjectifs()
+      setAvailableObjectifs(data)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setLoadingObjectifs(false)
+    }
+  }
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -403,16 +438,22 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     setFormData(prev => ({ ...prev, athlete_id: value }));
   }
 
+  const handleObjectifSelect = (value) => {
+    setFormData(prev => ({ ...prev, objectif_id: value }));
+  }
+
   const handleTemplateSelect = (template) => {
     const mappedExercises = (template.exercises || template.session_exercises || []).map((ex, idx) => ({
       sortId: `ex-${Date.now()}-${idx}`,
       exercise_id: ex.exercise_id || ex.template_id || ex.id,
       template_id: ex.exercise_id || ex.id_exercises || ex.template_id || ex.id,
       reps: ex.reps || 10,
+      weight: ex.weight || 0,
       rest_time_seconds: ex.repos || ex.rest_time || ex.rest_time_seconds || 60,
       name: ex.name || (ex.exercices_library ? ex.exercices_library.name : "Exercice"),
       description: ex.description || (ex.exercices_library ? ex.exercices_library.description : ""),
       category: ex.category || (ex.exercices_library ? ex.exercices_library.category : ""),
+      unit: ex.unit || (ex.exercices_library ? ex.exercices_library.unit : "reps"),
       notes: ex.notes || "",
       intensity: ex.intensity || "",
       section: ex.section || 'main'
@@ -453,11 +494,19 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     toast.success(`${exerciseTemplate.name} ajouté`)
   }
 
-  const removeExercise = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      exercises: prev.exercises.filter((_, i) => i !== index)
-    }))
+  const requestRemoveExercise = (index) => {
+    setShowDeleteConfirm({ open: true, index })
+  }
+
+  const confirmRemoveExercise = () => {
+    if (showDeleteConfirm.index !== null) {
+      setFormData(prev => ({
+        ...prev,
+        exercises: prev.exercises.filter((_, i) => i !== showDeleteConfirm.index)
+      }))
+      setShowDeleteConfirm({ open: false, index: null })
+      toast.success("Exercice retiré")
+    }
   }
 
   const updateExerciseDetails = (index, field, value) => {
@@ -533,6 +582,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         title: formData.title,
         description: formData.description,
         athlete_id: isTemplateToSave ? null : formData.athlete_id,
+        objectif_id: formData.objectif_id,
         date: formData.date,
         duration: formData.duration,
         main_rounds: parseInt(formData.main_rounds) || 1,
@@ -644,7 +694,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                       index={originalIndex}
                       isView={isView}
                       updateExerciseDetails={updateExerciseDetails}
-                      removeExercise={removeExercise}
+                      onRemoveRequest={requestRemoveExercise}
                     />
                   )
                 })
@@ -731,6 +781,35 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                             </Select>
                         </div>
                     )}
+
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Objectif lié (Facultatif)</Label>
+                        <Select value={formData.objectif_id || undefined} onValueChange={handleObjectifSelect} disabled={isView}>
+                        <SelectTrigger className="h-12 border-2 font-bold">
+                            <SelectValue placeholder="Sélectionner un objectif" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {availableObjectifs.map((obj) => (
+                            <SelectItem key={obj.id} value={obj.id.toString()}>
+                                {obj.label}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    </div>
+
+                    {effectiveIsTracking && (
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Date prévue</Label>
+                            <Input 
+                                type="date"
+                                value={formData.date} 
+                                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                                className="h-12 border-2 font-bold"
+                                disabled={isView}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className="space-y-2">
@@ -784,7 +863,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                     isView={true}
                     index={-1}
                     updateExerciseDetails={() => {}}
-                    removeExercise={() => {}}
+                    onRemoveRequest={() => {}}
                   />
                 </div>
               ) : null}
@@ -805,7 +884,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         </CardFooter>
       </Card>
 
-      {/* Exercise Selection Modal (Unchanged) */}
+      {/* Exercise Selection Modal */}
       <Dialog open={openExercises.open} onOpenChange={(val) => setOpenExercises(prev => ({ ...prev, open: val }))}>
         <DialogContent className="sm:max-w-xl p-0 overflow-hidden">
             <div className="p-6 border-b bg-muted/5">
@@ -840,7 +919,26 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         </DialogContent>
       </Dialog>
 
-      {/* Success Modal (Unchanged) */}
+      {/* Confirmation Modal for Deletion */}
+      <Dialog open={showDeleteConfirm.open} onOpenChange={(val) => setShowDeleteConfirm(prev => ({ ...prev, open: val }))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              Retirer l'exercice
+            </DialogTitle>
+            <DialogDescription className="py-4">
+              Êtes-vous sûr de vouloir retirer cet exercice de la séance ? Cette action est irréversible pour cette séance.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-end">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm({ open: false, index: null })}>Annuler</Button>
+            <Button variant="destructive" onClick={confirmRemoveExercise}>Retirer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={() => {}}>
         <DialogContent className="sm:max-w-md [&>button]:hidden border-none shadow-2xl">
           <DialogHeader className="flex flex-col items-center justify-center text-center py-6">

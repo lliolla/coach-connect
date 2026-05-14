@@ -62,9 +62,18 @@ export async function createObjectif(formData) {
   const { sessionIds, ...objectifData } = formData
   
   try {
+    // Nettoyage des données
+    const cleanData = {
+      label: objectifData.label,
+      description: objectifData.description,
+      weeksCount: parseInt(objectifData.weeksCount) || 4,
+      total_sessions: parseInt(objectifData.total_sessions) || 20,
+      athlete_id: objectifData.athlete_id
+    }
+
     const { data: objectives, error: objError } = await supabase
       .from('objectifs')
-      .insert([objectifData])
+      .insert([cleanData])
       .select()
     
     if (objError) throw objError

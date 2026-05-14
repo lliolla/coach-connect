@@ -64,6 +64,7 @@ export default function AthleteSeancesPage() {
         personName: "Moi", 
         programName: session.title,
         numberOfExercises: session.session_exercises?.length || 0,
+        rawObjectif: session.objectif, // Ajouté pour le calcul de progression
         exercises: session.session_exercises?.map(se => ({
           name: se.exercise?.name || se.exercice_library?.name || "Exercice"
         })) || [],

@@ -26,6 +26,7 @@ export const CardObjectif = ({ id, mode = "create" }) => {
     label: "",
     description: "",
     weeksCount: 4,
+    total_sessions: 20,
     athlete_id: null
   })
   
@@ -35,7 +36,25 @@ export const CardObjectif = ({ id, mode = "create" }) => {
 
   React.useEffect(() => {
     fetchAthletes()
-  }, [])
+    if (id) fetchObjectif()
+  }, [id])
+
+  const fetchObjectif = async () => {
+    try {
+      const data = await getObjectifById(id)
+      if (data) {
+        setFormData({
+          label: data.label || "",
+          description: data.description || "",
+          weeksCount: data.weeksCount || 4,
+          total_sessions: data.total_sessions || 20,
+          athlete_id: data.athlete_id?.toString() || null
+        })
+      }
+    } catch (error) {
+      toast.error("Erreur chargement objectif")
+    }
+  }
 
   const fetchAthletes = async () => {
     try {
@@ -53,6 +72,7 @@ export const CardObjectif = ({ id, mode = "create" }) => {
   const handleSubmit = async () => {
     if (!formData.label.trim()) { toast.error("Nom obligatoire"); return; }
     if (!formData.athlete_id) { toast.error("Athlète obligatoire"); return; }
+    if (!formData.total_sessions || formData.total_sessions < 1) { toast.error("Nombre de séances invalide"); return; }
     
     setSaving(true)
     try {
@@ -130,6 +150,17 @@ export const CardObjectif = ({ id, mode = "create" }) => {
                   value={formData.weeksCount} 
                   onChange={(e) => setFormData({...formData, weeksCount: parseInt(e.target.value)})}
                   className="h-12 border-2 font-bold"
+                  disabled={isView}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase text-muted-foreground">Total de séances prévues</Label>
+                <Input 
+                  type="number"
+                  value={formData.total_sessions} 
+                  onChange={(e) => setFormData({...formData, total_sessions: parseInt(e.target.value)})}
+                  className="h-12 border-2 font-bold"
+                  placeholder="Ex: 20"
                   disabled={isView}
                 />
               </div>
