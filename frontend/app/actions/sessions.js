@@ -11,7 +11,7 @@ const SESSION_SELECT = `
     exercise:exercices_library(*)
   ),
   athletes (id, first_name, last_name, email, avatar_url),
-  objectif:objectifs(id, label, total_sessions, sessions(id, date))
+  objectif:objectifs!objectif_id(id, label, total_sessions, sessions(id, date))
 `
 
 export async function getSessions() {
@@ -21,7 +21,24 @@ export async function getSessions() {
     .select(SESSION_SELECT)
     .order('date', { ascending: false })
     
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error("Erreur getSessions:", error.message)
+    // Tentative de repli sans la jointure d'objectif si la relation échoue
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        session_exercises (
+          *,
+          exercise:exercices_library(*)
+        ),
+        athletes (id, first_name, last_name, email, avatar_url)
+      `)
+      .order('date', { ascending: false })
+    
+    if (fallbackError) throw new Error(fallbackError.message)
+    return fallbackData
+  }
   return data
 }
 
@@ -33,7 +50,24 @@ export async function getSessionById(id) {
     .eq('id', id)
     .single()
     
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error("Erreur getSessionById:", error.message)
+    // Fallback sans objectif
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        session_exercises (
+          *,
+          exercise:exercices_library(*)
+        ),
+        athletes (id, first_name, last_name, email, avatar_url)
+      `)
+      .eq('id', id)
+      .single()
+    if (fallbackError) throw new Error(fallbackError.message)
+    return fallbackData
+  }
   return data
 }
 
