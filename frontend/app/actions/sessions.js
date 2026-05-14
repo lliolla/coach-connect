@@ -71,6 +71,26 @@ export async function getSessionById(id) {
   return data
 }
 
+/**
+ * Marque une séance comme transmise en mettant à jour le statut
+ */
+export async function transmitSession(id) {
+  const supabase = await createClient()
+  try {
+    const { error } = await supabase
+      .from('sessions')
+      .update({ status: 'transmis' })
+      .eq('id', id)
+    
+    if (error) throw error
+    
+    revalidatePath('/seances')
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
 export async function createSession(formData) {
   const supabase = await createClient()
   
