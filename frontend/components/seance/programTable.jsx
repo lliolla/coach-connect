@@ -86,7 +86,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Exercices</th>
-              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombre</th>
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Progression</th>
               {isTracking && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Transmission</th>}
               <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
@@ -103,15 +103,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                     </td>
                   )}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
-                    <div className="flex flex-col gap-1">
-                      <span>{program.programName}</span>
-                      {progression && (
-                        <div className="flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-0.5 rounded-full w-fit border border-primary/10">
-                          <Target size={10} />
-                          Séance {progression}
-                        </div>
-                      )}
-                    </div>
+                    {program.programName}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
                     {program.description || '-'}
@@ -135,9 +127,14 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="inline-flex items-center justify-center px-2 py-0.5 rounded bg-muted text-muted-foreground text-xs font-bold">
-                      {program.numberOfExercises} ex.
-                    </div>
+                    {progression ? (
+                        <div className="inline-flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
+                          <Target size={10} />
+                          {progression} SÉANCES
+                        </div>
+                    ) : (
+                      <span className="text-muted-foreground opacity-30 italic text-xs">Hors objectif</span>
+                    )}
                   </td>
                   {isTracking && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
