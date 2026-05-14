@@ -82,12 +82,16 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
             <tr>
+              {isTracking && (
+                <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                  <Mail size={16} />
+                </th>
+              )}
               {showAthlete && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Athlète</th>}
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Exercices</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Progression</th>
-              {isTracking && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Transmission</th>}
               <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -97,6 +101,17 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
               
               return (
                 <tr key={program.id} className="hover:bg-muted/5 transition-colors group">
+                  {isTracking && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <Mail 
+                        size={16} 
+                        className={cn(
+                          "mx-auto transition-colors duration-300", 
+                          transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
+                        )} 
+                      />
+                    </td>
+                  )}
                   {showAthlete && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">
                       {program.personName || '-'}
@@ -136,17 +151,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions" }) => {
                       <span className="text-muted-foreground opacity-30 italic text-xs">Hors objectif</span>
                     )}
                   </td>
-                  {isTracking && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <Mail 
-                        size={16} 
-                        className={cn(
-                          "mx-auto transition-colors duration-300", 
-                          transmittedPrograms[program.id] ? "text-green-500" : "text-red-500"
-                        )} 
-                      />
-                    </td>
-                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                     {/* Desktop Actions */}
                     <div className="hidden md:flex justify-end gap-1">
