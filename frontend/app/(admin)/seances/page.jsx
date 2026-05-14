@@ -216,43 +216,43 @@ export default function SeancesPage() {
             )}
           </div>
         </div>
+
+        <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="flex flex-col items-center justify-center text-center">
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                <IconActivity className="h-6 w-6 text-red-600" />
+              </div>
+              <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
+              <DialogDescription className="text-base py-2">
+                Êtes-vous sûr de vouloir supprimer la séance <strong>{sessionToDelete?.programName || sessionToDelete?.title}</strong> ? Cette action est irréversible.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex sm:justify-center gap-2">
+              <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
+                Annuler
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteSession} className="flex-1 sm:flex-none">
+                Supprimer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+          <DialogContent className="sm:max-w-md [&>button]:hidden">
+            <DialogHeader className="flex flex-col items-center justify-center text-center">
+              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                <IconCheck className="h-6 w-6 text-green-600" />
+              </div>
+              <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
+              <DialogDescription className="text-base py-2">
+                La séance a été supprimée avec succès.
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
       </SidebarInset>
-
-      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="flex flex-col items-center justify-center text-center">
-            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
-              <IconActivity className="h-6 w-6 text-red-600" />
-            </div>
-            <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
-            <DialogDescription className="text-base py-2">
-              Êtes-vous sûr de vouloir supprimer la séance <strong>{sessionToDelete?.programName || sessionToDelete?.title}</strong> ? Cette action est irréversible.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex sm:justify-center gap-2">
-            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
-              Annuler
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteSession} className="flex-1 sm:flex-none">
-              Supprimer
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-md [&>button]:hidden">
-          <DialogHeader className="flex flex-col items-center justify-center text-center">
-            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-              <IconCheck className="h-6 w-6 text-green-600" />
-            </div>
-            <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
-            <DialogDescription className="text-base py-2">
-              La séance a été supprimée avec succès.
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
     </SidebarProvider>
   )
 }
