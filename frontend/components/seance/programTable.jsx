@@ -62,12 +62,18 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
   };
 
   const handleTransmit = async (program) => {
+    // 1. Mise à jour immédiate de l'état local pour une réaction UI instantanée
+    setTransmittedPrograms(prev => ({ ...prev, [program.id]: true }));
+    
+    // 2. Appel de la Server Action
     const result = await transmitSession(program.id);
     if (result.success) {
       toast.success("Programme transmis avec succès");
       router.refresh(); 
     } else {
       toast.error("Erreur lors de la transmission");
+      // Rollback si erreur
+      setTransmittedPrograms(prev => ({ ...prev, [program.id]: false }));
     }
   };
 
