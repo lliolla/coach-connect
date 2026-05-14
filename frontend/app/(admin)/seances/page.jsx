@@ -44,7 +44,30 @@ export default function SeancesPage() {
   const [sessions, setSessions] = React.useState([]) 
   const [loading, setLoading] = React.useState(true)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
-  // ... rest of state ...
+  const [sessionToDelete, setSessionToDelete] = React.useState(null) // <-- Réinitialisé ici
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return;
+    try {
+      const result = await deleteSession(sessionToDelete.id);
+      if (result.success) {
+        setDeleteConfirmOpen(false);
+        setShowSuccessModal(true);
+        fetchInitialData();
+        setTimeout(() => setShowSuccessModal(false), 2000);
+      } else {
+        toast.error("Erreur: " + result.error);
+      }
+    } catch (err) {
+      toast.error("Erreur lors de la suppression");
+    }
+  };
+  
+  const openDeleteConfirm = (session) => {
+    setSessionToDelete(session);
+    setDeleteConfirmOpen(true);
+  };
 
   const fetchInitialData = async () => {
     try {
@@ -218,7 +241,7 @@ export default function SeancesPage() {
             <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
               Annuler
             </Button>
-            <Button variant="destructive" onClick={handleDelete} className="flex-1 sm:flex-none">
+            <Button variant="destructive" onClick={handleDeleteSession} className="flex-1 sm:flex-none">
               Supprimer
             </Button>
           </DialogFooter>
