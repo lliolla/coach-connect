@@ -18,8 +18,14 @@ import {
   IconBarbell, 
   IconActivity, 
   IconLoader2, 
-  IconCalendarEvent 
+  IconCalendarEvent,
+  IconFilter,
+  IconX
 } from "@tabler/icons-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import { getAthletes } from "@/app/actions/athletes"
  
 import { CalendarView } from "@/components/seance/calendar-view"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -32,47 +38,47 @@ import { getSessions } from "@/app/actions/sessions"
 
 export default function SeancesPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [sessions, setSessions] = React.useState([]) // Initialisé en tableau vide : BIEN
+  const [athleteFilter, setAthleteFilter] = React.useState("all")
+  const [statusFilter, setStatusFilter] = React.useState("all")
+  const [availableAthletes, setAvailableAthletes] = React.useState([])
+  const [sessions, setSessions] = React.useState([]) 
   const [loading, setLoading] = React.useState(true)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
-  const [sessionToDelete, setSessionToDelete] = React.useState(null)
-  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
-  const [handleDelete, setHandleDelete] = React.useState(false)
-  const[openDeleteConfirm, setOpenDeleteConfirm] = React.useState(false)
-  // ... (modals states inchangés)
+  // ... rest of state ...
 
-  const fetchSessions = async () => {
+  const fetchInitialData = async () => {
     try {
       setLoading(true)
-      const data = await getSessions()
-      // SÉCURITÉ : On s'assure que data est bien un tableau
-      setSessions(Array.isArray(data) ? data : [])
+      const [sessionData, athletesData] = await Promise.all([
+        getSessions(),
+        getAthletes()
+      ])
+      setSessions(Array.isArray(sessionData) ? sessionData : [])
+      setAvailableAthletes(athletesData || [])
     } catch (error) {
       console.error("Erreur fetch:", error)
-      toast.error("Impossible de charger les séances")
-      setSessions([]) // Évite que sessions devienne undefined
+      toast.error("Impossible de charger les données")
+      setSessions([])
     } finally {
       setLoading(false)
     }
   }
 
   React.useEffect(() => {
-    fetchSessions()
+    fetchInitialData()
   }, [])
 
-  // ... (handleDelete inchangé)
-
   const programsForTable = React.useMemo(() => {
-    // SÉCURITÉ CRITIQUE : Si sessions n'est pas prêt ou n'est pas un tableau
     if (!sessions || !Array.isArray(sessions)) return [];
 
     return sessions
       .filter(session => {
-        // Double sécurité sur le type de is_template
-        return session.is_template !== true && String(session.is_template) !== "true";
+        const matchesTemplate = session.is_template !== true && String(session.is_template) !== "true";
+        const matchesAthlete = athleteFilter === "all" || session.athlete_id?.toString() === athleteFilter;
+        const matchesStatus = statusFilter === "all" || session.status === statusFilter;
+        return matchesTemplate && matchesAthlete && matchesStatus;
       })
       .map(session => {
-        // Vérifie si Supabase renvoie 'athletes' ou 'athlete' (selon ta relation)
         const athleteData = session.athletes || session.athlete; 
         const athleteName = athleteData 
           ? `${athleteData.first_name || ''} ${athleteData.last_name || ''}`.trim() 
@@ -82,8 +88,9 @@ export default function SeancesPage() {
           id: session.id,
           title: session.title,
           description: session.description,
-          status: session.status, // S'assurer que le statut est bien passé
+          status: session.status,
           personName: athleteName,
+          athleteId: session.athlete_id,
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
           rawObjectif: session.objectif, 
@@ -93,7 +100,7 @@ export default function SeancesPage() {
           thumbnailUrl: null,
         };
       });
-  }, [sessions]);
+  }, [sessions, athleteFilter, statusFilter]);
 
   return (
     <SidebarProvider
@@ -118,14 +125,60 @@ export default function SeancesPage() {
             </Button>
           </div>
 
-          <div className="relative">
-            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input 
-              placeholder="Rechercher une séance ou un athlète..." 
-              className="pl-10"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+          {/* Recherche & Filtres */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <Input 
+                placeholder="Rechercher une séance..." 
+                className="pl-10"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <IconFilter size={18} />
+                  Filtres
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-4 space-y-4">
+                <div className="space-y-2">
+                  <Label>Athlète</Label>
+                  <Select value={athleteFilter} onValueChange={setAthleteFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les athlètes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les athlètes</SelectItem>
+                      {availableAthletes.map(a => (
+                        <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Statut</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tous les statuts" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Tous les statuts</SelectItem>
+                      <SelectItem value="en attente">En attente</SelectItem>
+                      <SelectItem value="transmis">Transmis</SelectItem>
+                      <SelectItem value="prévu">Prévu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(athleteFilter !== "all" || statusFilter !== "all") && (
+                  <Button variant="ghost" className="w-full gap-2" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); }}>
+                    <IconX size={16} /> Réinitialiser
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="mt-4">
