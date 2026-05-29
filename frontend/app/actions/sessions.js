@@ -99,7 +99,8 @@ export async function transmitSession(id) {
         react: WorkoutProgramEmail({ 
           athleteName, 
           programTitle: session.title,
-          notes: session.description 
+          notes: session.description,
+          exercises: session.session_exercises 
         }),
       });
 
