@@ -3,6 +3,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { toNumeric, mapExercises } from '@/lib/actions-utils'
 import { revalidatePath } from 'next/cache'
+import { Resend } from 'resend'
+import { WorkoutProgramEmail } from '@/components/emails/WorkoutProgramEmail'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 const SESSION_SELECT = `
   *,
@@ -72,11 +76,40 @@ export async function getSessionById(id) {
 }
 
 /**
- * Marque une séance comme transmise en mettant à jour le statut
+ * Marque une séance comme transmise en mettant à jour le statut et en envoyant un email
  */
 export async function transmitSession(id) {
   const supabase = await createClient()
   try {
+    // 1. Récupérer les infos de la séance et de l'athlète
+    const session = await getSessionById(id)
+    if (!session) throw new Error("Séance non trouvée")
+    
+    const athlete = session.athletes || session.athlete
+    if (!athlete || !athlete.email) {
+      console.warn("Pas d'email pour l'athlète, mise à jour du statut uniquement")
+    } else {
+      // 2. Envoyer l'email via Resend
+      const athleteName = `${athlete.first_name} ${athlete.last_name || ''}`.trim()
+      
+      const { error: emailError } = await resend.emails.send({
+        from: 'Prep Athlete <contact@prepathlete.pro>',
+        to: [athlete.email],
+        subject: 'Ton programme de la semaine est disponible !',
+        react: WorkoutProgramEmail({ 
+          athleteName, 
+          programTitle: session.title,
+          notes: session.description 
+        }),
+      });
+
+      if (emailError) {
+        console.error("Erreur Resend:", emailError)
+        // On continue quand même pour mettre à jour le statut
+      }
+    }
+
+    // 3. Mettre à jour le statut en DB
     const { error } = await supabase
       .from('sessions')
       .update({ status: 'transmis' })
@@ -85,8 +118,12 @@ export async function transmitSession(id) {
     if (error) throw error
     
     revalidatePath('/seances')
+    revalidatePath(`/seances/${id}`)
+    revalidatePath('/mes-seances')
+    
     return { success: true }
   } catch (err) {
+    console.error("Erreur transmitSession:", err)
     return { success: false, error: err.message }
   }
 }

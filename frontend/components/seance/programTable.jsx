@@ -62,13 +62,18 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
   };
 
   const handleTransmit = async (program) => {
-    // 1. Appel de la Server Action pour persister en DB
-    const result = await transmitSession(program.id);
-    if (result.success) {
-      toast.success("Programme transmis avec succès");
-      router.refresh(); 
-    } else {
-      toast.error("Erreur lors de la transmission");
+    const toastId = toast.loading("Transmission du programme en cours...");
+    try {
+      // 1. Appel de la Server Action pour persister en DB et envoyer l'email
+      const result = await transmitSession(program.id);
+      if (result.success) {
+        toast.success("Programme transmis avec succès", { id: toastId });
+        router.refresh(); 
+      } else {
+        toast.error("Erreur lors de la transmission : " + result.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Une erreur inattendue est survenue", { id: toastId });
     }
   };
 
