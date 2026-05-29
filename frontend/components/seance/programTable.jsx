@@ -31,7 +31,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
     const lowerTerm = searchTerm.toLowerCase();
     return programs.filter(p => 
       p.programName.toLowerCase().includes(lowerTerm) ||
-      p.description?.toLowerCase().includes(lowerTerm) ||
+      p.objectifName?.toLowerCase().includes(lowerTerm) ||
       p.personName?.toLowerCase().includes(lowerTerm)
     );
   }, [programs, searchTerm]);
@@ -62,18 +62,13 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
   };
 
   const handleTransmit = async (program) => {
-    // 1. Mise à jour immédiate de l'état local pour une réaction UI instantanée
-    setTransmittedPrograms(prev => ({ ...prev, [program.id]: true }));
-    
-    // 2. Appel de la Server Action
+    // 1. Appel de la Server Action pour persister en DB
     const result = await transmitSession(program.id);
     if (result.success) {
       toast.success("Programme transmis avec succès");
       router.refresh(); 
     } else {
       toast.error("Erreur lors de la transmission");
-      // Rollback si erreur
-      setTransmittedPrograms(prev => ({ ...prev, [program.id]: false }));
     }
   };
 
@@ -112,7 +107,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
               )}
               {showAthlete && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Athlète</th>}
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom</th>
-              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</th>
+              <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Objectifs</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Exercices</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Progression</th>
               <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
@@ -127,12 +122,14 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   {isTracking && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                       <Mail 
-                      size={16} 
-                      className={cn(
-                        "mx-auto transition-colors duration-300", 
-                        program.status === 'transmis' ? "text-green-500" : "text-amber-500"
-                      )} 
-                      />                    </td>
+                        size={16} 
+                        className={cn(
+                          "mx-auto transition-colors duration-300", 
+                          program.status === 'transmis' ? "text-green-500" : "text-amber-500"
+                        )} 
+                        onClick={() => console.log("Statut de la séance:", program.status, program)}
+                      />
+                    </td>
                   )}
                   {showAthlete && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-muted-foreground italic">
@@ -143,7 +140,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                     {program.programName}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground max-w-xs truncate">
-                    {program.description || '-'}
+                    {program.objectifName || '-'}
                   </td>
                   <td className="px-6 py-4 text-sm text-muted-foreground">
                     <div className="flex flex-wrap gap-1.5">

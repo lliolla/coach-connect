@@ -18,15 +18,18 @@ import {
   IconActivity, 
   IconLoader2, 
   IconFilter,
-  IconX
+  IconFilterCheck,
+  IconX,
+  IconSelector
 } from "@tabler/icons-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { getAthletes } from "@/app/actions/athletes"
+import { getObjectifs } from "@/app/actions/objectifs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-import { toast } from "sonner"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
 import ProgramTable from "@/components/seance/programTable"
 import { getSessions, deleteSession } from "@/app/actions/sessions"
 
@@ -34,12 +37,31 @@ export default function SeancesPage() {
   const [searchTerm, setSearchTerm] = React.useState("")
   const [athleteFilter, setAthleteFilter] = React.useState("all")
   const [statusFilter, setStatusFilter] = React.useState("all")
+  const [objectifFilter, setObjectifFilter] = React.useState("all")
+  const [objectifOpen, setObjectifOpen] = React.useState(false)
+  const [showFilters, setShowFilters] = React.useState(false)
   const [availableAthletes, setAvailableAthletes] = React.useState([])
+  const [allObjectifs, setAllObjectifs] = React.useState([])
   const [sessions, setSessions] = React.useState([]) 
   const [loading, setLoading] = React.useState(true)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] = React.useState(null)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+
+  const isFilterActive = athleteFilter !== "all" || statusFilter !== "all" || objectifFilter !== "all";
+
+  // Calcul dynamique des objectifs disponibles
+  const filteredObjectifs = React.useMemo(() => {
+    if (athleteFilter === "all") return allObjectifs;
+    return allObjectifs.filter(o => o.athlete_id?.toString() === athleteFilter);
+  }, [athleteFilter, allObjectifs]);
+
+  // Reset objectifFilter si l'objectif sélectionné n'est plus dans la liste filtrée
+  React.useEffect(() => {
+    if (objectifFilter !== "all" && !filteredObjectifs.find(o => o.id.toString() === objectifFilter)) {
+      setObjectifFilter("all");
+    }
+  }, [filteredObjectifs, objectifFilter]);
 
   const handleDeleteSession = async () => {
     if (!sessionToDelete) return;
@@ -66,12 +88,15 @@ export default function SeancesPage() {
   const fetchInitialData = async () => {
     try {
       setLoading(true)
-      const [sessionData, athletesData] = await Promise.all([
+      const [sessionData, athletesData, objectifsData] = await Promise.all([
         getSessions(),
-        getAthletes()
+        getAthletes(),
+        getObjectifs()
       ])
+      console.log("Données objectifs reçues:", objectifsData);
       setSessions(Array.isArray(sessionData) ? sessionData : [])
       setAvailableAthletes(athletesData || [])
+      setAllObjectifs(objectifsData || [])
     } catch (error) {
       console.error("Erreur fetch:", error)
       toast.error("Impossible de charger les données")
@@ -93,7 +118,8 @@ export default function SeancesPage() {
         const matchesTemplate = session.is_template !== true && String(session.is_template) !== "true";
         const matchesAthlete = athleteFilter === "all" || session.athlete_id?.toString() === athleteFilter;
         const matchesStatus = statusFilter === "all" || session.status === statusFilter;
-        return matchesTemplate && matchesAthlete && matchesStatus;
+        const matchesObjectif = objectifFilter === "all" || session.objectif_id?.toString() === objectifFilter;
+        return matchesTemplate && matchesAthlete && matchesStatus && matchesObjectif;
       })
       .map(session => {
         const athleteData = session.athletes || session.athlete; 
@@ -111,13 +137,14 @@ export default function SeancesPage() {
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
           rawObjectif: session.objectif, 
+          objectifName: session.objectif?.label || "Sans objectif",
           exercises: session.session_exercises?.map(se => ({
             name: se.exercise?.name || se.exercice_library?.name || "Exercice"
           })) || [],
           thumbnailUrl: null,
         };
       });
-  }, [sessions, athleteFilter, statusFilter]);
+  }, [sessions, athleteFilter, statusFilter, objectifFilter]);
 
   return (
     <SidebarProvider
@@ -145,63 +172,147 @@ export default function SeancesPage() {
                 <h2 className="text-lg font-semibold">Liste des Séances</h2>
               </div>
               
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <Input 
-                    placeholder="Rechercher une séance..." 
-                    className="pl-10"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="gap-2">
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <Input 
+                      placeholder="Rechercher une séance..." 
+                      className="pl-10"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <Button 
+                    variant={showFilters ? "secondary" : "outline"} 
+                    className="gap-2"
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    {isFilterActive ? (
+                      <IconFilterCheck size={18} />
+                    ) : (
                       <IconFilter size={18} />
-                      Filtres
+                    )}
+                    Filtres
+                  </Button>
+                </div>
+
+                {showFilters && (
+                  <div className="flex flex-col gap-4 p-4 border rounded-lg bg-muted/20 animate-in fade-in slide-in-from-top-2 relative">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute top-2 right-2 h-6 w-6" 
+                      onClick={() => setShowFilters(false)}
+                    >
+                      <IconX size={14} />
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 p-0 shadow-lg border-muted/20" align="end">
-                    <div className="p-4 border-b bg-muted/30">
-                      <h4 className="font-bold uppercase tracking-widest text-xs">Options de filtrage</h4>
-                    </div>
-                    <div className="p-4 space-y-5">
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Athlète</Label>
-                        <Select value={athleteFilter} onValueChange={setAthleteFilter}>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder="Tous les athlètes" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Tous les athlètes</SelectItem>
-                            {availableAthletes.map(a => (
-                              <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-start items-start">
+                      <div className="flex gap-4">
+                        <div className="space-y-2 w-48">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Athlète</Label>
+                          <Select value={athleteFilter} onValueChange={setAthleteFilter}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Tous les athlètes" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Tous les athlètes</SelectItem>
+                              {availableAthletes.map(a => (
+                                <SelectItem key={a.id} value={a.id.toString()}>{a.first_name} {a.last_name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2 w-48">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Statut</Label>
+                          <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Tous les statuts" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Tous les statuts</SelectItem>
+                              <SelectItem value="en attente">En attente</SelectItem>
+                              <SelectItem value="transmis">Transmis</SelectItem>
+                              <SelectItem value="prévu">Prévu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2 w-48">
+                          <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Objectif</Label>
+                          <Popover open={objectifOpen} onOpenChange={setObjectifOpen}>
+                            <PopoverTrigger asChild>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={objectifOpen}
+                                className="w-full h-10 justify-between font-normal"
+                              >
+                                <span className="truncate">
+                                  {objectifFilter === "all" 
+                                    ? "Tous les objectifs" 
+                                    : filteredObjectifs.find((o) => o.id.toString() === objectifFilter)?.label || "Sélectionner..."
+                                  }
+                                </span>
+                                <IconSelector className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-48 p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Rechercher..." className="h-9" />
+                                <CommandList>
+                                  <CommandEmpty>Aucun objectif trouvé.</CommandEmpty>
+                                  <CommandGroup>
+                                    <CommandItem
+                                      value="all"
+                                      onSelect={() => {
+                                        setObjectifFilter("all")
+                                        setObjectifOpen(false)
+                                      }}
+                                    >
+                                      <IconCheck
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          objectifFilter === "all" ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      Tous les objectifs
+                                    </CommandItem>
+                                    {filteredObjectifs.map((o) => (
+                                      <CommandItem
+                                        key={o.id}
+                                        value={o.id.toString()}
+                                        onSelect={(currentValue) => {
+                                          setObjectifFilter(currentValue === objectifFilter ? "all" : currentValue)
+                                          setObjectifOpen(false)
+                                        }}
+                                      >
+                                        <IconCheck
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            objectifFilter === o.id.toString() ? "opacity-100" : "opacity-0"
+                                          )}
+                                        />
+                                        {o.label}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase text-muted-foreground tracking-wider">Statut</Label>
-                        <Select value={statusFilter} onValueChange={setStatusFilter}>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder="Tous les statuts" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Tous les statuts</SelectItem>
-                            <SelectItem value="en attente">En attente</SelectItem>
-                            <SelectItem value="transmis">Transmis</SelectItem>
-                            <SelectItem value="prévu">Prévu</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {(athleteFilter !== "all" || statusFilter !== "all") && (
-                        <Button variant="ghost" className="w-full h-9 gap-2 text-xs font-bold text-destructive hover:text-destructive/90 hover:bg-destructive/5" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); }}>
-                          <IconX size={14} /> Réinitialiser
-                        </Button>
+                      
+                      {isFilterActive && (
+                        <div className="flex items-end h-full mt-auto">
+                          <Button variant="ghost" className="h-10 gap-2 px-3 text-destructive hover:text-destructive/90 hover:bg-destructive/5" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); setObjectifFilter("all"); }}>
+                            <IconX size={16} /> Effacer
+                          </Button>
+                        </div>
                       )}
                     </div>
-                  </PopoverContent>                </Popover>
+                  </div>
+                )}
               </div>
             </div>
 
