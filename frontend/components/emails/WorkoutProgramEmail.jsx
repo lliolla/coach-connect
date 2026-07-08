@@ -1,7 +1,7 @@
 import { Body, Container, Head, Heading, Html, Preview, Text, Link, Section, Hr, Img } from '@react-email/components';
 import * as React from 'react';
 
-export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercises = [] }) => {
+export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercises = [], mainRounds, duration }) => {
   const sections = {
     'warmup': [],
     'main': [],
@@ -24,7 +24,8 @@ export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercise
         <Container style={container}>
           <Heading style={h1}>Hello {athleteName} ! 👋</Heading>
           <Text style={text}>
-            Voici ton nouveau programme pour cette semaine : <strong>{programTitle}</strong>.
+            Voici ton nouveau programme pour cette semaine : <strong>{programTitle}</strong>. 
+            {duration && <span> Prévois environ <strong>{duration} min</strong> pour cette séance.</span>}
           </Text>
           {notes && (
             <Text style={italicText}>
@@ -36,7 +37,7 @@ export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercise
             <Section key={key} style={sectionContainer}>
               <Heading style={h2}>
                 {key === 'warmup' ? 'Échauffement' : 
-                 key === 'main' ? 'Corps de séance' : 
+                 key === 'main' ? `Corps de séance ${mainRounds ? `(${mainRounds} tours)` : ''}` : 
                  key === 'cooldown' ? 'Retour au calme' : 
                  key.charAt(0).toUpperCase() + key.slice(1)}
               </Heading>
@@ -53,6 +54,7 @@ export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercise
                   )}
                   <Text style={exerciseText}>
                     <strong>{ex.exercise?.name}</strong>: {ex.sets}x{ex.reps} {ex.weight ? `(${ex.weight}kg)` : ''} {ex.rest_time ? `| Repos: ${ex.rest_time}s` : ''}
+                    {ex.notes && <Text style={noteText}>Note: {ex.notes}</Text>}
                   </Text>
                 </Section>
               ))}
@@ -64,7 +66,7 @@ export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercise
           <Text style={text}>
             Connecte-toi à l'application pour voir tous les détails et cocher tes exercices.
           </Text>
-          <Link href="https://votre-app.vercel.app" style={button}>
+          <Link href="https://www.prepathlete.pro" style={button}>
             Voir mon programme
           </Link>
         </Container>
@@ -82,7 +84,8 @@ const text = { color: '#525f7f', fontSize: '16px', lineHeight: '24px', textAlign
 const exerciseRow = { display: 'flex', alignItems: 'center', margin: '10px 0' };
 const exerciseImage = { borderRadius: '4px', marginRight: '10px' };
 const exerciseText = { ...text, margin: '0' };
+const noteText = { ...text, fontStyle: 'italic', color: '#718096', fontSize: '14px', marginTop: '4px' };
 const italicText = { ...text, fontStyle: 'italic', color: '#718096', borderLeft: '4px solid #e2e8f0', paddingLeft: '12px' };
 const button = { backgroundColor: '#000000', borderRadius: '5px', color: '#fff', fontSize: '16px', fontWeight: 'bold', textDecoration: 'none', textAlign: 'center', display: 'block', padding: '12px', marginTop: '24px' };
 const sectionContainer = { margin: '20px 0' };
-const hr = { borderColor: '#e6ebf1', margin: '20px 0' }; 
+const hr = { borderColor: '#e6ebf1', margin: '20px 0' };

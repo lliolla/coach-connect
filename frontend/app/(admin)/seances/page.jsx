@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 import ProgramTable from "@/components/seance/programTable"
 import { getSessions, deleteSession } from "@/app/actions/sessions"
 

@@ -100,7 +100,9 @@ export async function transmitSession(id) {
           athleteName, 
           programTitle: session.title,
           notes: session.description,
-          exercises: session.session_exercises 
+          exercises: session.session_exercises,
+          mainRounds: session.main_rounds,
+          duration: session.duration
         }),
       });
 
