@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { IconLoader2, IconArrowLeft, IconTarget, IconCalendar, IconClock, IconCheck, IconX, IconAlertCircle, IconPlus, IconPencil } from "@tabler/icons-react"
+import { IconLoader2, IconArrowLeft, IconTarget, IconCalendar, IconClock, IconCheck, IconX, IconAlertCircle, IconPlus, IconPencil, IconChevronDown, IconChevronUp, IconPaperPlane, IconSend } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { getAthleteWithObjectifsAndSessions } from "@/app/actions/admin-athletes"
 import {
@@ -26,16 +26,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export default function AthleteDetailPage() {
   const params = useParams()
   const router = useRouter()
   const athleteId = params.id
-  
+
   const [athleteData, setAthleteData] = React.useState(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(null)
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [expandedObjectifs, setExpandedObjectifs] = React.useState({})
 
   React.useEffect(() => {
     if (athleteId) {
@@ -48,11 +62,11 @@ export default function AthleteDetailPage() {
       setLoading(true)
       setError(null)
       const result = await getAthleteWithObjectifsAndSessions(athleteId)
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Impossible de charger les données')
       }
-      
+
       setAthleteData(result.data)
     } catch (err) {
       console.error(err)
@@ -84,19 +98,39 @@ export default function AthleteDetailPage() {
     return 'bg-red-500'
   }
 
+  const getRealisationIcon = (realisation) => {
+    switch (realisation) {
+      case 'complet':
+        return <IconCheck className="text-green-500" size={18} />
+      case 'non réalisé':
+        return <IconX className="text-red-500" size={18} />
+      case 'en cours':
+        return <IconClock className="text-yellow-500" size={18} />
+      default:
+        return <IconClock className="text-muted-foreground" size={18} />
+    }
+  }
+
+  const toggleObjectif = (objectifId) => {
+    setExpandedObjectifs(prev => ({
+      ...prev,
+      [objectifId]: !prev[objectifId]
+    }))
+  }
+
   // Filtrer les objectifs par terme de recherche
   const filteredObjectifs = React.useMemo(() => {
     if (!athleteData?.objectifs) return []
-    
+
     return athleteData.objectifs.filter(obj => {
       const label = (obj.label || '').toLowerCase()
       const description = (obj.description || '').toLowerCase()
-      const sessionsMatch = obj.sessions?.some(s => 
+      const sessionsMatch = obj.sessions?.some(s =>
         (s.title || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
-      
-      return label.includes(searchTerm.toLowerCase()) || 
-             description.includes(searchTerm.toLowerCase()) || 
+
+      return label.includes(searchTerm.toLowerCase()) ||
+             description.includes(searchTerm.toLowerCase()) ||
              sessionsMatch
     })
   }, [athleteData?.objectifs, searchTerm])
@@ -104,12 +138,12 @@ export default function AthleteDetailPage() {
   // Calculer les stats globales
   const globalStats = React.useMemo(() => {
     if (!athleteData) return { total: 0, transmis: 0, en_attente: 0, prevu: 0 }
-    
+
     let total = 0
     let transmis = 0
     let en_attente = 0
     let prevu = 0
-    
+
     athleteData.objectifs.forEach(obj => {
       obj.sessions?.forEach(s => {
         total++
@@ -120,7 +154,7 @@ export default function AthleteDetailPage() {
         }
       })
     })
-    
+
     return { total, transmis, en_attente, prevu }
   }, [athleteData])
 
@@ -197,8 +231,8 @@ export default function AthleteDetailPage() {
             </Button>
             <div className="flex items-center gap-4 flex-1">
               <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-sm">
-                <AvatarImage 
-                  src={athleteData.athlete.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${athleteData.athlete.first_name || 'default'}`} 
+                <AvatarImage
+                  src={athleteData.athlete.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${athleteData.athlete.first_name || 'default'}`}
                 />
                 <AvatarFallback className="text-lg font-bold">
                   {athleteData.athlete.first_name?.[0]}{athleteData.athlete.last_name?.[0]}
@@ -283,8 +317,8 @@ export default function AthleteDetailPage() {
           {/* Recherche */}
           <div className="relative max-w-md">
             <IconLoader2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input 
-              placeholder="Rechercher dans les objectifs et séances..." 
+            <Input
+              placeholder="Rechercher dans les objectifs et séances..."
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -317,112 +351,118 @@ export default function AthleteDetailPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {filteredObjectifs.map((objectif) => (
-                  <Card key={objectif.id} className="shadow-sm border">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <CardTitle className="text-xl font-bold flex items-center gap-2">
-                            <IconTarget size={20} className="text-primary" />
-                            {objectif.label}
-                          </CardTitle>
-                          {objectif.description && (
-                            <CardDescription className="mt-1 text-base">
-                              {objectif.description}
-                            </CardDescription>
-                          )}
-                          
-                          {/* Badge de progression */}
-                          <div className="mt-3">
-                            <Badge 
-                              className={`text-white font-bold px-3 py-1 ${getProgressionColor(objectif.progression.percentage)}`}
-                            >
-                              {objectif.progression.display}
-                            </Badge>
-                            {objectif.weeksCount && (
-                              <span className="ml-2 text-sm text-muted-foreground">
-                                ({objectif.weeksCount} semaines)
-                              </span>
+              <div className="space-y-2">
+                <Accordion type="multiple" value={Object.keys(expandedObjectifs).filter(id => expandedObjectifs[id])} onValueChange={(value) => {
+                  const newExpanded = {}
+                  value.forEach(id => newExpanded[id] = true)
+                  setExpandedObjectifs(newExpanded)
+                }}>
+                  {filteredObjectifs.map((objectif) => (
+                    <AccordionItem key={objectif.id} value={objectif.id}>
+                      <AccordionTrigger className="hover:no-underline">
+                        <div className="flex items-center gap-4 w-full">
+                          <IconTarget size={20} className="text-primary flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-lg truncate">{objectif.label}</div>
+                            {objectif.description && (
+                              <div className="text-sm text-muted-foreground truncate">{objectif.description}</div>
                             )}
                           </div>
+                          <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-end">
+                              <Badge
+                                className={`text-white font-bold px-3 py-1 ${getProgressionColor(objectif.progression.percentage)}`}
+                              >
+                                {objectif.progression.display}
+                              </Badge>
+                              {objectif.weeksCount && (
+                                <span className="text-sm text-muted-foreground mt-1">
+                                  ({objectif.weeksCount} semaines)
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-2xl font-bold text-muted-foreground">
+                              {objectif.progression.current}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              sur {objectif.progression.total} séances
+                            </div>
+                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${getProgressionColor(objectif.progression.percentage)} transition-all duration-300`}
+                                style={{ width: `${objectif.progression.percentage}%` }}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        
-                        {/* Stats de l'objectif et actions */}
-                        <div className="flex flex-col items-end gap-2 text-right">
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            className="gap-1 h-7"
-                            asChild
-                          >
-                            <Link href={`/admin/objectifs/${objectif.id}?mode=edit&athlete_id=${athleteId}`}>
-                              <IconPencil size={14} />
-                              Modifier
-                            </Link>
-                          </Button>
-                          <div className="text-4xl font-bold text-muted-foreground">
-                            {objectif.progression.current}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            sur {objectif.progression.total} séances
-                          </div>
-                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className={`h-full ${getProgressionColor(objectif.progression.percentage)} transition-all duration-300`}
-                              style={{ width: `${objectif.progression.percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      {/* Tableau des séances de cet objectif */}
-                      {objectif.sessions && objectif.sessions.length > 0 ? (
-                        <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="rounded-xl border shadow-sm bg-card overflow-hidden mt-2">
                           <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-border">
-                              <thead className="bg-muted/30">
-                                <tr>
-                                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">N°</th>
-                                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Date</th>
-                                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Titre</th>
-                                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Durée</th>
-                                  <th scope="col" className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Statut</th>
-                                  <th scope="col" className="px-4 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-transparent divide-y divide-border">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[200px]">Titre</TableHead>
+                                  <TableHead>Description</TableHead>
+                                  <TableHead className="w-[150px]">Progression</TableHead>
+                                  <TableHead className="w-[120px]">Transmission</TableHead>
+                                  <TableHead className="w-[150px]">Réalisé</TableHead>
+                                  <TableHead className="w-[100px] text-right">Actions</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
                                 {objectif.sessions.map((session) => (
-                                  <tr 
-                                    key={session.id} 
-                                    className="hover:bg-muted/5 transition-colors group"
-                                  >
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                                      {session.rank}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                                      {new Date(session.date).toLocaleDateString('fr-FR', {
-                                        day: '2-digit',
-                                        month: 'short',
-                                        year: 'numeric'
-                                      })}
-                                    </td>
-                                    <td className="px-4 py-3 text-sm font-medium">
-                                      {session.title}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                                      {session.duration ? `${session.duration} min` : '-'}
-                                    </td>
-                                    <td className="px-4 py-3">
+                                  <TableRow key={session.id}>
+                                    <TableCell className="font-medium">{session.title}</TableCell>
+                                    <TableCell>{session.description || '-'}</TableCell>
+                                    <TableCell>
+                                      <div className="flex items-center gap-2">
+                                        <div className="text-sm text-muted-foreground">
+                                          {session.rank}
+                                        </div>
+                                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                                          <div
+                                            className={`h-full ${getProgressionColor(session.progression.percentage)} transition-all duration-300`}
+                                            style={{ width: `${session.progression.percentage}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                    <TableCell>
                                       {getStatusBadge(session.status)}
-                                    </td>
-                                    <td className="px-4 py-3 whitespace-nowrap text-right">
+                                    </TableCell>
+                                    <TableCell>
+                                      <Select defaultValue={session.realisation || 'en cours'}>
+                                        <SelectTrigger className="w-[120px]">
+                                          <SelectValue placeholder="Réalisé" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          <SelectItem value="complet">
+                                            <div className="flex items-center gap-2">
+                                              <IconCheck className="text-green-500" size={18} />
+                                              <span>Complet</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="non réalisé">
+                                            <div className="flex items-center gap-2">
+                                              <IconX className="text-red-500" size={18} />
+                                              <span>Non réalisé</span>
+                                            </div>
+                                          </SelectItem>
+                                          <SelectItem value="en cours">
+                                            <div className="flex items-center gap-2">
+                                              <IconClock className="text-yellow-500" size={18} />
+                                              <span>En cours</span>
+                                            </div>
+                                          </SelectItem>
+                                        </SelectContent>
+                                      </Select>
+                                    </TableCell>
+                                    <TableCell className="text-right">
                                       <div className="flex justify-end gap-1">
-                                        <Button 
-                                          variant="ghost" 
-                                          size="icon" 
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
                                           className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
                                           asChild
                                           title="Voir la séance"
@@ -431,23 +471,26 @@ export default function AthleteDetailPage() {
                                             <IconArrowLeft size={14} className="transform rotate-180" />
                                           </Link>
                                         </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
+                                          title="Transmettre la séance"
+                                        >
+                                          <IconSend size={14} />
+                                        </Button>
                                       </div>
-                                    </td>
-                                  </tr>
+                                    </TableCell>
+                                  </TableRow>
                                 ))}
-                              </tbody>
-                            </table>
+                              </TableBody>
+                            </Table>
                           </div>
                         </div>
-                      ) : (
-                        <div className="text-center py-8 text-muted-foreground italic">
-                          <IconCalendar className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
-                          <p>Aucune séance pour cet objectif.</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
             )}
           </div>
