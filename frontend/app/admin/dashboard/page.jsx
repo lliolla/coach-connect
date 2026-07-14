@@ -69,7 +69,7 @@ export default function DashboardPage() {
                     <CardDescription>{athletes.length} athlètes au total.</CardDescription>
                   </div>
                   <Button variant="ghost" size="icon" asChild>
-                    <Link href="/users">
+                    <Link href="/admin/users">
                       <IconArrowRight size={20} />
                     </Link>
                   </Button>

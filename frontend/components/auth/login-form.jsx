@@ -25,7 +25,7 @@ export function LoginForm({ className }) {
     
     if (result.success) {
       toast.success("Connexion réussie")
-      router.push(result.isAdmin ? '/dashboard' : '/profile')
+      router.push(result.isAdmin ? '/admin/dashboard' : '/profile')
     } else {
       toast.error(result.error || "Erreur de connexion")
     }

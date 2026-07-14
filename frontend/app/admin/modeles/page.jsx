@@ -129,7 +129,7 @@ export default function ModelesPage() {
               <p className="text-muted-foreground text-sm">Gérez vos modèles d'entraînement réutilisables.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/modeles/new">
+              <Link href="/admin/modeles/new">
                 <IconPlus size={18} />
                 Nouveau modèle
               </Link>

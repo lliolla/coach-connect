@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { IconActivity, IconClock, IconUser } from "@tabler/icons-react"
 import Link from "next/link"
 
-export function CalendarView({ sessions = [], searchTerm = "" }) {
+export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) {
   const [date, setDate] = React.useState(new Date())
 
   // Filtrer les sessions réelles (pas les modèles) et appliquer la recherche
@@ -88,7 +88,7 @@ export function CalendarView({ sessions = [], searchTerm = "" }) {
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/modeles/${session.id}?mode=view&context=seances`}>Détails</Link>
+                    <Link href={`${basePath}/modeles/${session.id}?mode=view&context=seances`}>Détails</Link>
                 </Button>
               </div>
             ))
@@ -97,7 +97,7 @@ export function CalendarView({ sessions = [], searchTerm = "" }) {
               <IconActivity size={40} className="opacity-20 mb-2" />
               <p className="italic">Aucune séance planifiée pour ce jour.</p>
               <Button variant="link" size="sm" className="mt-2" asChild>
-                <Link href="/seances/new">+ Ajouter une séance</Link>
+                <Link href={`${basePath}/seances/new`}>+ Ajouter une séance</Link>
               </Button>
             </div>
           )}

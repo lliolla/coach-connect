@@ -242,3 +242,32 @@ export async function deleteSession(id) {
     return { success: false, error: err.message }
   }
 }
+
+/**
+ * Met à jour la réalisation d'une séance (Complet/Partiel)
+ */
+export async function updateSessionRealisation(id, realisation) {
+  const supabase = await createClient()
+  
+  try {
+    const { error } = await supabase
+      .from('sessions')
+      .update({ realisation: realisation })
+      .eq('id', id)
+    
+    if (error) {
+      // Si la colonne n'existe pas, essayer de l'ajouter via une requête brute
+      // Note: Supabase JavaScript client ne permet pas d'ALTER TABLE directement
+      // Le user doit créer la colonne manuellement via l'interface Supabase
+      throw new Error(`Erreur: ${error.message}. Veuillez vérifier que la colonne 'realisation' existe dans la table 'sessions'.`)
+    }
+    
+    revalidatePath('/suivis')
+    revalidatePath('/seances')
+    revalidatePath('/mes-seances')
+    
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}

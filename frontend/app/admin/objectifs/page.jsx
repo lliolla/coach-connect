@@ -120,7 +120,7 @@ export default function ObjectifsPage() {
               <p className="text-muted-foreground text-sm">Gérez les programmes d'objectifs et les séances associées.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/objectifs/new">
+              <Link href="/admin/objectifs/new">
                 <IconPlus size={18} />
                 Nouvel objectif
               </Link>
@@ -180,10 +180,10 @@ export default function ObjectifsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                             <div className="hidden md:flex justify-end gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
-                                <Link href={`/objectifs/${obj.id}?mode=view`}><Eye size={14}/></Link>
+                                <Link href={`/admin/objectifs/${obj.id}?mode=view`}><Eye size={14}/></Link>
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
-                                <Link href={`/objectifs/${obj.id}?mode=edit`}><Edit2 size={14}/></Link>
+                                <Link href={`/admin/objectifs/${obj.id}?mode=edit`}><Edit2 size={14}/></Link>
                               </Button>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={(e) => openDeleteConfirm(e, obj)} title="Supprimer">
                                 <Trash2 size={14}/></Button>
@@ -196,8 +196,8 @@ export default function ObjectifsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild><Link href={`/objectifs/${obj.id}?mode=view`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
-                                  <DropdownMenuItem asChild><Link href={`/objectifs/${obj.id}?mode=edit`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
+                                  <DropdownMenuItem asChild><Link href={`/admin/objectifs/${obj.id}?mode=view`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
+                                  <DropdownMenuItem asChild><Link href={`/admin/objectifs/${obj.id}?mode=edit`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
                                   <DropdownMenuItem onSelect={(e) => openDeleteConfirm(null, obj)} className="text-red-600 font-medium">
                                     <Trash2 size={14} className="mr-2"/> Supprimer
                                   </DropdownMenuItem>

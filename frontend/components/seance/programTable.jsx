@@ -15,10 +15,11 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const ITEMS_PER_PAGE = 10;
 
-const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "" }) => {
+const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "", onRealisationChange, showRealisation = false }) => {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -114,6 +115,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Objectifs</th>
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Exercices</th>
+              {showRealisation && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Réalisation</th>}
               <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Progression</th>
               <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
             </tr>
@@ -165,6 +167,23 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                       )}
                     </div>
                   </td>
+                  {showRealisation && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <Select 
+                        value={program.realisation || ""} 
+                        onValueChange={(value) => onRealisationChange?.(program.id, value)}
+                        className="h-8 w-32"
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Complet">Complet</SelectItem>
+                          <SelectItem value="Partiel">Partiel</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     {progression ? (
                         <div className="inline-flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-full border border-primary/10">

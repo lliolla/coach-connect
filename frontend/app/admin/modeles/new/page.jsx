@@ -1,43 +1,41 @@
 'use client'
 import * as React from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { CardObjectif } from "@/components/objectif/card_objectif"
+import { CardSeance } from "@/components/seance/card_seance"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
 
-function ObjectifDetailContent() {
-  const { id } = useParams()
+function NewSessionContent() {
   const searchParams = useSearchParams()
-  const mode = searchParams.get('mode') || 'view'
+  const mode = searchParams.get('mode') || 'create'
+  const duplicateId = searchParams.get('duplicateId')
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild>
-          <Link href="/objectifs">
+          <Link href="/admin/modeles">
             <IconArrowLeft size={18} />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">
-          {mode === 'edit' ? 'Modifier l\'objectif' : 'Détails de l\'objectif'}
-        </h1>
+        <h1 className="text-2xl font-bold">Nouveau Modèle</h1>
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardObjectif id={id} mode={mode} />
+        <CardSeance mode={mode} duplicateId={duplicateId} />
       </div>
     </div>
   )
 }
 
-export default function ObjectifDetailPage() {
+export default function NewSessionPage() {
   return (
     <SidebarProvider
       style={{
@@ -48,7 +46,7 @@ export default function ObjectifDetailPage() {
       <SidebarInset>
         <SiteHeader />
         <React.Suspense fallback={<div className="flex justify-center p-8">Chargement...</div>}>
-          <ObjectifDetailContent />
+          <NewSessionContent />
         </React.Suspense>
       </SidebarInset>
     </SidebarProvider>

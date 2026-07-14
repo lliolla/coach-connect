@@ -29,7 +29,7 @@ export async function getObjectifs() {
 }
 
 /**
- * Récupère un objectif par son ID avec ses séances
+ * Récupère un objectif par son ID avec ses séances et l'athlète lié
  */
 export async function getObjectifById(id) {
   const supabase = await createClient()
@@ -37,7 +37,8 @@ export async function getObjectifById(id) {
     .from('objectifs')
     .select(`
       *,
-      sessions (*)
+      sessions (*),
+      athletes_objectifs (athlete_id)
     `)
     .eq('id', id)
     .single()
@@ -45,12 +46,21 @@ export async function getObjectifById(id) {
   if (error) {
     const { data: simpleData, error: simpleError } = await supabase
       .from('objectifs')
-      .select('*')
+      .select('*, athletes_objectifs (athlete_id)')
       .eq('id', id)
       .single()
     if (simpleError) throw new Error(simpleError.message)
     return simpleData
   }
+  
+  // Ajouter athlete_id pour compatibilité avec le formulaire
+  if (data.athletes_objectifs && data.athletes_objectifs.length > 0) {
+    return {
+      ...data,
+      athlete_id: data.athletes_objectifs[0].athlete_id
+    }
+  }
+  
   return data
 }
 
@@ -59,16 +69,14 @@ export async function getObjectifById(id) {
  */
 export async function createObjectif(formData) {
   const supabase = await createClient()
-  const { sessionIds, ...objectifData } = formData
+  const { sessionIds, athlete_id, ...objectifData } = formData
   
   try {
-    // Nettoyage des données
+    // Nettoyage des données pour l'objectif
     const cleanData = {
       label: objectifData.label,
       description: objectifData.description,
-      weeksCount: parseInt(objectifData.weeksCount) || 4,
-      total_sessions: parseInt(objectifData.total_sessions) || 20,
-      athlete_id: objectifData.athlete_id
+      total_sessions: parseInt(objectifData.total_sessions) || 20
     }
 
     const { data: objectives, error: objError } = await supabase
@@ -78,6 +86,17 @@ export async function createObjectif(formData) {
     
     if (objError) throw objError
     const objective = objectives[0]
+
+    // Lier l'objectif à l'athlète via la table de liaison
+    if (athlete_id) {
+      const { error: linkError } = await supabase
+        .from('athletes_objectifs')
+        .insert([{
+          athlete_id: athlete_id,
+          objectif_id: objective.id
+        }])
+      if (linkError) throw linkError
+    }
 
     // Si on a des IDs de séances à lier
     if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
@@ -99,19 +118,46 @@ export async function createObjectif(formData) {
  */
 export async function updateObjectif(id, formData) {
   const supabase = await createClient()
-  const { sessionIds, ...objectifData } = formData
+  const { sessionIds, athlete_id, ...objectifData } = formData
   
   try {
+    // Nettoyage des données
+    const cleanData = {
+      ...objectifData,
+      total_sessions: parseInt(objectifData.total_sessions) || 20
+    }
+    // Supprimer les champs qui ne sont pas dans la table objectifs
+    delete cleanData.weeksCount
+    delete cleanData.athlete_id
+
     const { data: objectives, error: objError } = await supabase
       .from('objectifs')
-      .update(objectifData)
+      .update(cleanData)
       .eq('id', id)
       .select()
     
     if (objError) throw objError
     const objective = objectives[0]
 
-    // Mise à jour des liens (on nettoie d'abord les anciens liens)
+    // Mettre à jour la liaison avec l'athlète si athlete_id est fourni
+    if (athlete_id) {
+      // Supprimer l'ancienne liaison si elle existe
+      await supabase
+        .from('athletes_objectifs')
+        .delete()
+        .eq('objectif_id', id)
+      
+      // Créer la nouvelle liaison
+      const { error: linkError } = await supabase
+        .from('athletes_objectifs')
+        .insert([{
+          athlete_id: athlete_id,
+          objectif_id: id
+        }])
+      if (linkError) throw linkError
+    }
+
+    // Mise à jour des liens avec les séances
     await supabase
       .from('sessions')
       .update({ objectif_id: null })

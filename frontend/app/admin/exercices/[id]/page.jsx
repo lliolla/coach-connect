@@ -1,20 +1,19 @@
 'use client'
 import * as React from "react"
+import { useParams } from "next/navigation"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { CardAthlete } from "@/components/athlete/card_athlete"
+import { CardExercice } from "@/components/exercice/card_exercice"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
 
-export default function AthleteDetailPage() {
-  const params = useParams()
-  const { id } = params
+export default function EditExercicePage() {
+  const { id } = useParams()
 
   return (
     <SidebarProvider
@@ -28,16 +27,15 @@ export default function AthleteDetailPage() {
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" asChild>
-              <Link href="/users">
+              <Link href="/admin/exercices">
                 <IconArrowLeft size={18} />
               </Link>
             </Button>
-            <h1 className="text-2xl font-bold">Modifier l'athlète</h1>
+            <h1 className="text-2xl font-bold">Modifier l'exercice</h1>
           </div>
 
-          <div className="max-w-3xl mx-auto w-full">
-            {/* The form will eventually fetch data based on the ID */}
-            <CardAthlete athleteId={id} />
+          <div className="max-w-3xl mx-auto w-full py-8">
+            <CardExercice mode="edit" exerciceId={id} />
           </div>
         </div>
       </SidebarInset>

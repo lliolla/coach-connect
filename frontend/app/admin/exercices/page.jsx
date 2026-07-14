@@ -130,7 +130,7 @@ export default function ExercicesPage() {
               <p className="text-muted-foreground text-sm">Gérez vos modèles d'exercices réutilisables.</p>
             </div>
             <Button className="gap-2" asChild>
-              <Link href="/exercices/new">
+              <Link href="/admin/exercices/new">
                 <IconPlus size={18} />
                 Nouvel Exercice
               </Link>
@@ -166,7 +166,7 @@ export default function ExercicesPage() {
           {!loading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredExercices.map((exercice) => (
-                <Link key={exercice.id} href={`/exercices/${exercice.id}`}>
+                <Link key={exercice.id} href={`/admin/exercices/${exercice.id}`}>
                   <Card className="hover:border-primary transition-colors cursor-pointer h-full relative group overflow-hidden">
                     <Button
                       variant="ghost"

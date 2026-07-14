@@ -159,7 +159,7 @@ export default function SeancesPage() {
         <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
           <div className="flex items-center justify-end">
             <Button className="gap-2" asChild>
-              <Link href="/seances/new">
+              <Link href="/admin/seances/new">
                 <IconPlus size={18} />
                 Nouvelle séance
               </Link>

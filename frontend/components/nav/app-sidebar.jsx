@@ -68,34 +68,34 @@ const menuData = {
   administration: [
     {
       title: "Tableau de bord",
-      url: "/dashboard",
+      url: "/admin/dashboard",
       icon: LayoutGrid,
     },
     {
       title: "Gestion Séances",
-      url: "/seances",
+      url: "/admin/seances",
       icon: Calendar,
     },
     {
       title: "Objectifs",
-      url: "/objectifs",
+      url: "/admin/objectifs",
       icon: Target,
     },
     {
       title: "Athlètes",
-      url: "/users",
+      url: "/admin/users",
       icon: Users,
     },
   ],
   parametrage: [
     {
       name: "Gestion des listes",
-      url: "/parametrage",
+      url: "/admin/parametrage",
       icon: List,
     },
     {
       name: "Modèles de séance",
-      url: "/modeles",
+      url: "/admin/modeles",
       icon: Layers,
     },
     {
