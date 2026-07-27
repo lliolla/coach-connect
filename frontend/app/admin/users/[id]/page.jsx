@@ -15,9 +15,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { IconLoader2, IconArrowLeft, IconTarget, IconCalendar, IconClock, IconCheck, IconX, IconAlertCircle, IconPlus, IconPencil, IconChevronDown, IconChevronUp, IconPaperPlane, IconSend } from "@tabler/icons-react"
 import { toast } from "sonner"
 import { getAthleteWithObjectifsAndSessions } from "@/app/actions/admin-athletes"
+import { deleteSession } from "@/app/actions/sessions"
 import {
   Accordion,
   AccordionContent,
@@ -48,6 +57,9 @@ export default function AthleteDetailPage() {
   const [error, setError] = React.useState(null)
   const [searchTerm, setSearchTerm] = React.useState("")
   const [expandedObjectifs, setExpandedObjectifs] = React.useState({})
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
+  const [sessionToDelete, setSessionToDelete] = React.useState(null)
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
 
   React.useEffect(() => {
     if (athleteId) {
@@ -85,6 +97,33 @@ export default function AthleteDetailPage() {
         return <Badge variant="outline" className="text-blue-600 border-blue-200 dark:text-blue-400 dark:border-blue-800">Prévu</Badge>
       default:
         return <Badge variant="secondary">{status || 'Inconnu'}</Badge>
+    }
+  }
+
+  const openDeleteConfirm = (session) => {
+    setSessionToDelete(session)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteSession = async () => {
+    if (!sessionToDelete) return
+    const loadingToast = toast.loading("Suppression en cours...")
+    try {
+      const result = await deleteSession(sessionToDelete.id)
+      if (result.success) {
+        toast.dismiss(loadingToast)
+        setDeleteConfirmOpen(false)
+        setShowSuccessModal(true)
+        fetchAthleteData() // Rafraîchir les données
+        setTimeout(() => {
+          setShowSuccessModal(false)
+          setSessionToDelete(null)
+        }, 2000)
+      } else {
+        toast.error(result.error || "Erreur lors de la suppression", { id: loadingToast })
+      }
+    } catch (error) {
+      toast.error(error.message || "Erreur lors de la suppression", { id: loadingToast })
     }
   }
 
@@ -431,14 +470,7 @@ export default function AthleteDetailPage() {
                       </div>
                       <ProgramTable
                         programs={programsForTable}
-                        onDelete={(session) => {
-                          // Logique de suppression si nécessaire
-                          console.log("Suppression de la séance:", session)
-                        }}
-                        onRealisationChange={async (sessionId, value) => {
-                          // Logique de mise à jour de la réalisation
-                          console.log("Mise à jour de la réalisation:", sessionId, value)
-                        }}
+                        onDelete={openDeleteConfirm}
                         context="athlete-seances"
                         showRealisation={true}
                       />
@@ -451,6 +483,44 @@ export default function AthleteDetailPage() {
               />
             )}
           </div>
+          
+          {/* Modal de confirmation de suppression */}
+          <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader className="flex flex-col items-center justify-center text-center">
+                <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                  <IconAlertCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <DialogTitle className="text-xl">Confirmer la suppression</DialogTitle>
+                <DialogDescription className="text-base py-2">
+                  Êtes-vous sûr de vouloir supprimer la séance <strong>{sessionToDelete?.title}</strong> ? Cette action est irréversible.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex sm:justify-center gap-2">
+                <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="flex-1 sm:flex-none">
+                  Annuler
+                </Button>
+                <Button variant="destructive" onClick={handleDeleteSession} className="flex-1 sm:flex-none">
+                  Supprimer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Modal de succès */}
+          <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+            <DialogContent className="sm:max-w-md [&>button]:hidden">
+              <DialogHeader className="flex flex-col items-center justify-center text-center">
+                <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                  <IconCheck className="h-6 w-6 text-green-600" />
+                </div>
+                <DialogTitle className="text-xl">Suppression réussie</DialogTitle>
+                <DialogDescription className="text-base py-2">
+                  La séance a été supprimée avec succès.
+                </DialogDescription>
+              </DialogHeader>
+            </DialogContent>
+          </Dialog>
         </div>
       </SidebarInset>
     </SidebarProvider>
