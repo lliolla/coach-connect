@@ -19,19 +19,12 @@ import { IconLoader2, IconArrowLeft, IconTarget, IconCalendar, IconClock, IconCh
 import { toast } from "sonner"
 import { getAthleteWithObjectifsAndSessions } from "@/app/actions/admin-athletes"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
 } from "@/components/ui/accordion"
+import * as AccordionPrimitive from "@radix-ui/react-accordion"
+import { cn } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -39,6 +32,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import ProgramTable from "@/components/seance/programTable"
+import CollapsibleCard from "@/components/ui/collapsible-card"
+import { transmitSession } from "@/app/actions/sessions"
+
+
 
 export default function AthleteDetailPage() {
   const params = useParams()
@@ -118,6 +116,17 @@ export default function AthleteDetailPage() {
     }))
   }
 
+  // Debug: afficher les données brutes
+  React.useEffect(() => {
+    if (athleteData) {
+      console.log("Données de l'athlète:", athleteData)
+      console.log("Nombre d'objectifs:", athleteData.objectifs.length)
+      athleteData.objectifs.forEach((obj, index) => {
+        console.log(`Objectif ${index + 1}: ${obj.label}, sessions:`, obj.sessions?.length || 0)
+      })
+    }
+  }, [athleteData])
+
   // Filtrer les objectifs par terme de recherche
   const filteredObjectifs = React.useMemo(() => {
     if (!athleteData?.objectifs) return []
@@ -187,7 +196,7 @@ export default function AthleteDetailPage() {
         <AppSidebar variant="inset" />
         <SidebarInset>
           <SiteHeader />
-          <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
+          <div className="page-content flex flex-1 flex-col gap-6 p-8 bg-white">
             <div className="flex items-center gap-4">
               <Button variant="outline" size="icon" asChild className="h-8 w-8">
                 <Link href="/admin/users">
@@ -327,171 +336,111 @@ export default function AthleteDetailPage() {
 
           {/* Section Objectifs */}
           <div className="mt-4">
-            <div className="flex items-center justify-between mb-4">
+            <div className="section-header flex items-center justify-between mb-6">
               <div className="flex items-center gap-2">
                 <IconTarget size={20} className="text-primary" />
-                <h2 className="text-lg font-semibold">
+                <h2 className="section-title text-xl font-bold text-gray-900">
                   Objectifs ({filteredObjectifs.length} / {athleteData.objectifs.length})
                 </h2>
               </div>
-              <Button className="gap-2" asChild>
+              <Button className="btn-add-objective bg-black text-white rounded-md px-4 py-2 hover:bg-gray-800 transition-colors" asChild>
                 <Link href={`/admin/objectifs/new?athlete_id=${athleteId}`}>
-                  <IconPlus size={18} />
-                  Ajouter un objectif
+                  + Ajouter un objectif
                 </Link>
               </Button>
             </div>
 
             {filteredObjectifs.length === 0 ? (
-              <div className="text-center py-20 border-2 border-dashed rounded-xl">
-                <IconTarget className="mx-auto h-12 w-12 text-muted-foreground/20 mb-4" />
+              <div className="text-center py-20 border-2 border-dashed rounded-xl bg-gray-50">
                 <p className="text-muted-foreground font-medium">Aucun objectif trouvé.</p>
                 <p className="text-sm text-muted-foreground/60">
                   {searchTerm ? 'Aucun résultat pour votre recherche.' : 'Cet athlète n\'a pas encore d\'objectifs.'}
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                <Accordion type="multiple" value={Object.keys(expandedObjectifs).filter(id => expandedObjectifs[id])} onValueChange={(value) => {
-                  const newExpanded = {}
-                  value.forEach(id => newExpanded[id] = true)
-                  setExpandedObjectifs(newExpanded)
-                }}>
-                  {filteredObjectifs.map((objectif) => (
-                    <AccordionItem key={objectif.id} value={objectif.id}>
-                      <AccordionTrigger className="hover:no-underline">
-                        <div className="flex items-center gap-4 w-full">
-                          <IconTarget size={20} className="text-primary flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-bold text-lg truncate">{objectif.label}</div>
-                            {objectif.description && (
-                              <div className="text-sm text-muted-foreground truncate">{objectif.description}</div>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="flex flex-col items-end">
-                              <Badge
-                                className={`text-white font-bold px-3 py-1 ${getProgressionColor(objectif.progression.percentage)}`}
-                              >
-                                {objectif.progression.display}
-                              </Badge>
-                              {objectif.weeksCount && (
-                                <span className="text-sm text-muted-foreground mt-1">
-                                  ({objectif.weeksCount} semaines)
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-2xl font-bold text-muted-foreground">
-                              {objectif.progression.current}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              sur {objectif.progression.total} séances
-                            </div>
-                            <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${getProgressionColor(objectif.progression.percentage)} transition-all duration-300`}
-                                style={{ width: `${objectif.progression.percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent>
-                        <div className="rounded-xl border shadow-sm bg-card overflow-hidden mt-2">
-                          <div className="overflow-x-auto">
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead className="w-[200px]">Titre</TableHead>
-                                  <TableHead>Description</TableHead>
-                                  <TableHead className="w-[150px]">Progression</TableHead>
-                                  <TableHead className="w-[120px]">Transmission</TableHead>
-                                  <TableHead className="w-[150px]">Réalisé</TableHead>
-                                  <TableHead className="w-[100px] text-right">Actions</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {objectif.sessions.map((session) => (
-                                  <TableRow key={session.id}>
-                                    <TableCell className="font-medium">{session.title}</TableCell>
-                                    <TableCell>{session.description || '-'}</TableCell>
-                                    <TableCell>
-                                      <div className="flex items-center gap-2">
-                                        <div className="text-sm text-muted-foreground">
-                                          {session.rank}
-                                        </div>
-                                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                                          <div
-                                            className={`h-full ${getProgressionColor(session.progression.percentage)} transition-all duration-300`}
-                                            style={{ width: `${session.progression.percentage}%` }}
-                                          />
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                    <TableCell>
-                                      {getStatusBadge(session.status)}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Select defaultValue={session.realisation || 'en cours'}>
-                                        <SelectTrigger className="w-[120px]">
-                                          <SelectValue placeholder="Réalisé" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="complet">
-                                            <div className="flex items-center gap-2">
-                                              <IconCheck className="text-green-500" size={18} />
-                                              <span>Complet</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="non réalisé">
-                                            <div className="flex items-center gap-2">
-                                              <IconX className="text-red-500" size={18} />
-                                              <span>Non réalisé</span>
-                                            </div>
-                                          </SelectItem>
-                                          <SelectItem value="en cours">
-                                            <div className="flex items-center gap-2">
-                                              <IconClock className="text-yellow-500" size={18} />
-                                              <span>En cours</span>
-                                            </div>
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                      <div className="flex justify-end gap-1">
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                                          asChild
-                                          title="Voir la séance"
-                                        >
-                                          <Link href={`/admin/seances/${session.id}`}>
-                                            <IconArrowLeft size={14} className="transform rotate-180" />
-                                          </Link>
-                                        </Button>
-                                        <Button
-                                          variant="ghost"
-                                          size="icon"
-                                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5"
-                                          title="Transmettre la séance"
-                                        >
-                                          <IconSend size={14} />
-                                        </Button>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </div>
+              <CollapsibleCard
+                items={filteredObjectifs}
+                renderHeader={(objectif) => (
+                  <div className="flex items-center gap-4 w-full">
+                    <IconTarget size={20} className="text-primary flex-shrink-0" />
+                    <div className="objective-info flex-1 min-w-0">
+                      <h3 className="objective-title text-lg truncate text-black capitalize">{objectif.label}</h3>
+                      {objectif.description && (
+                        <p className="text-sm text-muted-foreground truncate">{objectif.description}</p>
+                      )}
+                    </div>
+                    <div className="objective-progress flex items-center gap-4">
+                      <Badge className="seance-badge text-gray-700 bg-gray-200 px-3 py-1 font-bold">
+                        {objectif.progression.display}
+                      </Badge>
+                      {objectif.weeksCount && (
+                        <span className="text-sm text-muted-foreground">
+                          ({objectif.weeksCount} semaines)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                renderContent={(objectif) => {
+                  // Vérifier que les sessions existent et sont un tableau
+                  const sessions = objectif.sessions || []
+                  
+                  // Debug: afficher le nombre de sessions
+                  console.log(`Objectif "${objectif.label}" a ${sessions.length} sessions`)
+                  
+                  // Mapper les sessions au format attendu par ProgramTable
+                  const programsForTable = sessions.map(session => ({
+                    id: session.id,
+                    programName: session.title,
+                    description: session.description,
+                    status: session.status,
+                    personName: `${athleteData.athlete.first_name} ${athleteData.athlete.last_name}`,
+                    athleteId: athleteData.athlete.id,
+                    numberOfExercises: session.session_exercises?.length || 0,
+                    rawObjectif: objectif,
+                    objectifName: objectif.label,
+                    date: session.date,
+                    duration: session.duration,
+                    realisation: session.realisation || "",
+                    exercises: session.session_exercises?.map(se => ({
+                      name: se.exercise?.name || se.exercices_library?.name || "Exercice"
+                    })) || [],
+                  }))
+
+                  // Debug: afficher le nombre de programmes mappés
+                  console.log(`Objectif "${objectif.label}" a ${programsForTable.length} programmes mappés`)
+
+                  // Afficher un message si aucune session
+                  if (programsForTable.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>Aucune séance pour cet objectif</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="sessions-table-container p-4">
+                      <ProgramTable
+                        programs={programsForTable}
+                        onDelete={(session) => {
+                          // Logique de suppression si nécessaire
+                          console.log("Suppression de la séance:", session)
+                        }}
+                        onRealisationChange={async (sessionId, value) => {
+                          // Logique de mise à jour de la réalisation
+                          console.log("Mise à jour de la réalisation:", sessionId, value)
+                        }}
+                        context="athlete-seances"
+                        showRealisation={true}
+                      />
+                    </div>
+                  )
+                }}
+                itemClassName="objective-card"
+                triggerClassName="objective-header hover:bg-gray-50 transition-colors py-4"
+                contentClassName="border-t border-gray-200"
+              />
             )}
           </div>
         </div>
