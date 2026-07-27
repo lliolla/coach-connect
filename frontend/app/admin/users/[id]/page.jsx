@@ -421,6 +421,14 @@ export default function AthleteDetailPage() {
 
                   return (
                     <div className="sessions-table-container p-4">
+                      <div className="flex justify-end mb-4">
+                        <Button className="gap-2" asChild>
+                          <Link href={`/admin/seances/new?objectif_id=${objectif.id}&athlete_id=${athleteId}`}>
+                            <IconPlus size={18} />
+                            Nouvelle séance
+                          </Link>
+                        </Button>
+                      </div>
                       <ProgramTable
                         programs={programsForTable}
                         onDelete={(session) => {

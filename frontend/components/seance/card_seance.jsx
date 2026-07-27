@@ -266,6 +266,20 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const [formData, setFormData] = React.useState(initialFormState)
   const [isManualDuration, setIsManualDuration] = React.useState(false)
   const [availableExercises, setAvailableExercises] = React.useState([])
+
+  // Pré-remplir athlete_id et objectif_id depuis les paramètres URL
+  React.useEffect(() => {
+    const athleteIdParam = searchParams.get('athlete_id')
+    const objectifIdParam = searchParams.get('objectif_id')
+    
+    if (isCreation && (athleteIdParam || objectifIdParam)) {
+      setFormData(prev => ({
+        ...prev,
+        athlete_id: athleteIdParam || prev.athlete_id,
+        objectif_id: objectifIdParam || prev.objectif_id
+      }))
+    }
+  }, [searchParams, isCreation])
   const [availableAthletes, setAvailableAthletes] = React.useState([])
   const [availableTemplates, setAvailableTemplates] = React.useState([])
   const [availableObjectifs, setAvailableObjectifs] = React.useState([])
@@ -617,7 +631,12 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   const handleModalClose = () => {
     setShowSuccessModal(false)
-    router.push(effectiveIsTracking ? '/seances' : '/modeles')
+    // Rediriger vers la page de l'athlète si athlete_id est présent, sinon vers /admin/seances
+    if (formData.athlete_id) {
+      router.push(`/admin/users/${formData.athlete_id}`)
+    } else {
+      router.push('/admin/seances')
+    }
   }
 
   const renderExerciseSection = (sectionId, title, icon, colorClass) => {
@@ -724,7 +743,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                 {isView ? "Détails de la séance" : (isCreation ? (isDuplicate ? "Dupliquer le programme" : (effectiveIsTracking ? "Nouvelle séance" : "Nouveau Modèle")) : "Modifier le programme")}
             </div>
           </CardTitle>
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/modeles')}>
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(formData.athlete_id ? `/admin/users/${formData.athlete_id}` : '/admin/seances')}>
             <X size={20} />
           </Button>
         </CardHeader>
@@ -895,7 +914,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
                     Transmettre
                   </Button>
                 )}
-                <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(effectiveIsTracking ? '/seances' : '/modeles')}>Quitter</Button>
+                <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(formData.athlete_id ? `/admin/users/${formData.athlete_id}` : '/admin/seances')}>Quitter</Button>
               </>
             ) : (
               <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20 active:scale-[0.98] transition-all" onClick={handleSubmit}>
