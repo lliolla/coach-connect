@@ -48,31 +48,41 @@ export async function getSessions() {
 
 export async function getSessionById(id) {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('sessions')
-    .select(SESSION_SELECT)
-    .eq('id', id)
-    .single()
-    
-  if (error) {
-    console.error("Erreur getSessionById:", error.message)
-    // Fallback sans objectif
-    const { data: fallbackData, error: fallbackError } = await supabase
+  console.log(`[getSessionById] Recherche de la séance avec ID: ${id}`)
+  
+  // D'abord, essayons avec la requête complète
+  try {
+    const { data, error } = await supabase
       .from('sessions')
-      .select(`
-        *,
-        session_exercises (
-          *,
-          exercise:exercices_library(*)
-        ),
-        athletes (id, first_name, last_name, email, avatar_url)
-      `)
+      .select(SESSION_SELECT)
       .eq('id', id)
       .single()
-    if (fallbackError) throw new Error(fallbackError.message)
-    return fallbackData
+      
+    if (error) {
+      console.error("[getSessionById] Erreur avec SESSION_SELECT:", error.message)
+      
+      // Si erreur, essayons avec une requête plus simple
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('sessions')
+        .select('*')
+        .eq('id', id)
+        .single()
+        
+      if (simpleError) {
+        console.error("[getSessionById] Erreur avec requête simple:", simpleError.message)
+        throw new Error(simpleError.message)
+      }
+      
+      console.log("[getSessionById] Séance trouvée avec requête simple:", simpleData)
+      return simpleData
+    }
+    
+    console.log("[getSessionById] Séance trouvée:", data)
+    return data
+  } catch (err) {
+    console.error("[getSessionById] Erreur fatale:", err.message)
+    throw new Error("Séance non trouvée")
   }
-  return data
 }
 
 /**
@@ -204,16 +214,30 @@ export async function updateSession(id, formData) {
       .eq('id', id)
       .select()
 
-    if (sessionError) throw sessionError
+    if (sessionError) {
+      console.error("Erreur updateSession (session):", sessionError.message)
+      throw sessionError
+    }
+
+    if (!sessions || sessions.length === 0) {
+      throw new Error("Aucune séance retournée après mise à jour")
+    }
 
     if (exercises && Array.isArray(exercises)) {
-      await supabase.from('session_exercises').delete().eq('session_id', id)
+      const { error: deleteError } = await supabase.from('session_exercises').delete().eq('session_id', id)
+      if (deleteError) {
+        console.error("Erreur updateSession (delete exercises):", deleteError.message)
+        throw deleteError
+      }
       
       if (exercises.length > 0) {
         const { error: exError } = await supabase
           .from('session_exercises')
           .insert(mapExercises(exercises, id))
-        if (exError) throw exError
+        if (exError) {
+          console.error("Erreur updateSession (insert exercises):", exError.message)
+          throw exError
+        }
       }
     }
     
@@ -224,6 +248,7 @@ export async function updateSession(id, formData) {
     
     return { success: true, data: sessions[0] }
   } catch (err) {
+    console.error("Erreur updateSession:", err)
     return { success: false, error: err.message }
   }
 }

@@ -60,6 +60,8 @@ export default function AthleteDetailPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] = React.useState(null)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+  const [showMaxSessionsModal, setShowMaxSessionsModal] = React.useState(false)
+  const [objectifWithMaxSessions, setObjectifWithMaxSessions] = React.useState(null)
 
   React.useEffect(() => {
     if (athleteId) {
@@ -161,7 +163,7 @@ export default function AthleteDetailPage() {
       console.log("Données de l'athlète:", athleteData)
       console.log("Nombre d'objectifs:", athleteData.objectifs.length)
       athleteData.objectifs.forEach((obj, index) => {
-        console.log(`Objectif ${index + 1}: ${obj.label}, sessions:`, obj.sessions?.length || 0)
+        console.log(`Objectif ${index + 1}: ID=${obj.id}, ${obj.label}, sessions:`, obj.sessions?.length || 0)
       })
     }
   }, [athleteData])
@@ -449,31 +451,40 @@ export default function AthleteDetailPage() {
                   // Debug: afficher le nombre de programmes mappés
                   console.log(`Objectif "${objectif.label}" a ${programsForTable.length} programmes mappés`)
 
-                  // Afficher un message si aucune session
-                  if (programsForTable.length === 0) {
-                    return (
-                      <div className="text-center py-8 text-gray-500">
-                        <p>Aucune séance pour cet objectif</p>
-                      </div>
-                    )
-                  }
-
                   return (
                     <div className="sessions-table-container p-4">
                       <div className="flex justify-end mb-4">
-                        <Button className="gap-2" asChild>
-                          <Link href={`/admin/seances/new?objectif_id=${objectif.id}&athlete_id=${athleteId}`}>
-                            <IconPlus size={18} />
-                            Nouvelle séance
-                          </Link>
+                        <Button className="gap-2" 
+                          onClick={(e) => {
+                            const existingSessionsCount = objectif.sessions?.length || 0
+                            const totalSessions = objectif.total_sessions || 0
+                            console.log(`[Bouton Nouvelle séance] objectif.id=${objectif.id}, label=${objectif.label}, sessions=${existingSessionsCount}/${totalSessions}`)
+                            if (totalSessions > 0 && existingSessionsCount >= totalSessions) {
+                              e.preventDefault()
+                              setObjectifWithMaxSessions(objectif)
+                              setShowMaxSessionsModal(true)
+                            } else {
+                              router.push(`/admin/seances/new?objectif_id=${objectif.id}&athlete_id=${athleteId}`)
+                            }
+                          }}
+                        >
+                          <IconPlus size={18} />
+                          Nouvelle séance
                         </Button>
                       </div>
-                      <ProgramTable
-                        programs={programsForTable}
-                        onDelete={openDeleteConfirm}
-                        context="athlete-seances"
-                        showRealisation={true}
-                      />
+                      
+                      {programsForTable.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                          <p>Aucune séance pour cet objectif</p>
+                        </div>
+                      ) : (
+                        <ProgramTable
+                          programs={programsForTable}
+                          onDelete={openDeleteConfirm}
+                          context="athlete-seances"
+                          showRealisation={true}
+                        />
+                      )}
                     </div>
                   )
                 }}
@@ -502,6 +513,47 @@ export default function AthleteDetailPage() {
                 </Button>
                 <Button variant="destructive" onClick={handleDeleteSession} className="flex-1 sm:flex-none">
                   Supprimer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Modal de limite de séances atteinte */}
+          <Dialog open={showMaxSessionsModal} onOpenChange={setShowMaxSessionsModal}>
+            <DialogContent className="sm:max-w-md [&>button]:hidden">
+              <DialogHeader className="flex flex-col items-center justify-center text-center">
+                <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+                  <IconAlertCircle className="h-6 w-6 text-amber-600" />
+                </div>
+                <DialogTitle className="text-xl">Limite de séances atteinte</DialogTitle>
+                <DialogDescription className="text-base py-2">
+                  {objectifWithMaxSessions && (
+                    `Vous avez atteint le nombre maximal de séances (${objectifWithMaxSessions.total_sessions || 0}) pour l'objectif "${objectifWithMaxSessions.label}".`
+                  )}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex sm:justify-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowMaxSessionsModal(false)
+                    setObjectifWithMaxSessions(null)
+                  }}
+                  className="flex-1 sm:flex-none"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  onClick={() => {
+                    setShowMaxSessionsModal(false)
+                    if (objectifWithMaxSessions) {
+                      router.push(`/admin/objectifs/${objectifWithMaxSessions.id}?mode=edit`)
+                    }
+                    setObjectifWithMaxSessions(null)
+                  }}
+                  className="flex-1 sm:flex-none"
+                >
+                  Modifier l'objectif
                 </Button>
               </DialogFooter>
             </DialogContent>

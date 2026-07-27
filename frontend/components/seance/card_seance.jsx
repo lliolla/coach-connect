@@ -34,7 +34,8 @@ import {
   ChevronRight,
   Info,
   Scale,
-  Send
+  Send,
+  AlertCircle
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -263,9 +264,39 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
   const [openTemplates, setOpenTemplates] = React.useState(false)
   const [showSuccessModal, setShowSuccessModal] = React.useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState({ open: false, index: null })
+  const [showMaxSessionsModal, setShowMaxSessionsModal] = React.useState(false)
+  const [objectifsList, setObjectifsList] = React.useState([])
   const [formData, setFormData] = React.useState(initialFormState)
   const [isManualDuration, setIsManualDuration] = React.useState(false)
   const [availableExercises, setAvailableExercises] = React.useState([])
+
+  // DEBUG: Log des valeurs initiales
+  React.useEffect(() => {
+    console.log('DEBUG CardSeance: mode=', mode, 'isCreation=', isCreation, 'formData.objectif_id=', formData.objectif_id, 'objectifsList.length=', objectifsList.length)
+  }, [mode, isCreation, formData.objectif_id, objectifsList.length])
+
+  // VÉRIFICATION UNIQUE DE LA LIMITE: se déclenche quand objectif_id ET objectifsList sont prêts
+  React.useEffect(() => {
+    if (isCreation && formData.objectif_id && objectifsList.length > 0) {
+      console.log('✓ Vérification unique: objectif_id=', formData.objectif_id, 'objectifsList.length=', objectifsList.length)
+      const objectif = objectifsList.find(obj => obj.id === formData.objectif_id)
+      if (objectif) {
+        const existingSessionsCount = objectif.sessions?.length || 0
+        const totalSessions = objectif.total_sessions || 0
+        console.log(`→ Objectif trouvé: id=${objectif.id}, sessions=${existingSessionsCount}, total_sessions=${totalSessions}`)
+        if (totalSessions > 0 && existingSessionsCount >= totalSessions) {
+          console.log(`✅ LIMITE ATTEINTE ! ${existingSessionsCount}/${totalSessions}`)
+          setShowMaxSessionsModal(true)
+        } else {
+          console.log(`❌ Limite non atteinte: ${existingSessionsCount}/${totalSessions}`)
+        }
+      } else {
+        console.log('❌ Objectif non trouvé dans objectifsList')
+      }
+    } else {
+      console.log('⏳ En attente: isCreation=', isCreation, 'objectif_id=', formData.objectif_id, 'objectifsList.length=', objectifsList.length)
+    }
+  }, [isCreation, formData.objectif_id, objectifsList.length])
 
   // Pré-remplir athlete_id et objectif_id depuis les paramètres URL
   React.useEffect(() => {
@@ -278,8 +309,41 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
         athlete_id: athleteIdParam || prev.athlete_id,
         objectif_id: objectifIdParam || prev.objectif_id
       }))
+      
+      console.log('Pré-remplissage: objectifIdParam=', objectifIdParam, 'objectifsList.length=', objectifsList.length)
+      // Si objectifsList est déjà chargé, vérifier la limite immédiatement
+      if (objectifIdParam && objectifsList.length > 0) {
+        console.log('Vérification déclenchée !')
+        const objectif = objectifsList.find(obj => obj.id === objectifIdParam)
+        console.log('objectif trouvé:', objectif)
+        if (objectif) {
+          const existingSessionsCount = objectif.sessions?.length || 0
+          const totalSessions = objectif.total_sessions || 0
+          console.log(`Vérification après pré-remplissage: objectif=${objectif.id}, sessions=${existingSessionsCount}, total=${totalSessions}`)
+          if (totalSessions > 0 && existingSessionsCount >= totalSessions) {
+            console.log(`Limite atteinte après pré-remplissage ! ${existingSessionsCount}/${totalSessions}`)
+            setShowMaxSessionsModal(true)
+          }
+        }
+      }
     }
-  }, [searchParams, isCreation])
+  }, [searchParams, isCreation, objectifsList])
+
+  // Vérifier la limite de séances une fois que formData.objectif_id est défini
+  React.useEffect(() => {
+    if (isCreation && formData.objectif_id && objectifsList.length > 0) {
+      const objectif = objectifsList.find(obj => obj.id === formData.objectif_id)
+      if (objectif) {
+        const existingSessionsCount = objectif.sessions?.length || 0
+        const totalSessions = objectif.total_sessions || 0
+        console.log(`Vérification limite: objectif=${objectif.id}, sessions=${existingSessionsCount}, total=${totalSessions}`, objectif)
+        if (totalSessions > 0 && existingSessionsCount >= totalSessions) {
+          console.log(`Limite atteinte ! ${existingSessionsCount}/${totalSessions}`)
+          setShowMaxSessionsModal(true)
+        }
+      }
+    }
+  }, [formData.objectif_id, objectifsList, isCreation])
   const [availableAthletes, setAvailableAthletes] = React.useState([])
   const [availableTemplates, setAvailableTemplates] = React.useState([])
   const [availableObjectifs, setAvailableObjectifs] = React.useState([])
@@ -437,6 +501,9 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
       setLoadingObjectifs(true)
       const data = await getObjectifs()
       setAvailableObjectifs(data)
+      setObjectifsList(data)
+      
+
     } catch (error) {
       console.error(error)
     } finally {
@@ -573,6 +640,19 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
     if (!formData.title) { toast.error("Le nom du programme est obligatoire"); return; }
     if (effectiveIsTracking && !formData.athlete_id) { toast.error("Veuillez sélectionner un athlète"); return; }
     if (formData.exercises.length === 0) { toast.error("Ajoutez au moins un exercice"); return; }
+    
+    // Vérifier si le nombre max de séances pour l'objectif est atteint
+    if (isCreation && formData.objectif_id && !isTemplateToSave) {
+      const objectif = objectifsList.find(obj => obj.id === formData.objectif_id)
+      if (objectif) {
+        // Compter le nombre de séances existantes pour cet objectif
+        const existingSessionsCount = objectif.sessions?.length || 0
+        if (existingSessionsCount >= objectif.total_sessions) {
+          setShowMaxSessionsModal(true)
+          return
+        }
+      }
+    }
 
     for (const [index, ex] of formData.exercises.entries()) {
         if (!ex.exercise_id && !ex.template_id) { toast.error(`Exercice ${index + 1} : ID manquant`); return; }
@@ -728,7 +808,8 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
 
   return (
     <>
-      <Card className="w-full max-w-3xl mx-auto border shadow-none relative bg-background/50 backdrop-blur-sm">
+      {!showMaxSessionsModal && (
+        <Card className="w-full max-w-3xl mx-auto border shadow-none relative bg-background/50 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 pb-6">
           <CardTitle className="text-xl font-bold flex items-center gap-3">
             {isView ? (
@@ -924,6 +1005,7 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
           </div>
         </CardFooter>
       </Card>
+      )}
 
       {/* Exercise Selection Modal */}
       <Dialog open={openExercises.open} onOpenChange={(val) => setOpenExercises(prev => ({ ...prev, open: val }))}>
@@ -1003,6 +1085,49 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               }
             </DialogDescription>
           </DialogHeader>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal de limite de séances */}
+      <Dialog open={showMaxSessionsModal} onOpenChange={setShowMaxSessionsModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="flex flex-col items-center justify-center text-center">
+            <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+              <AlertCircle className="h-6 w-6 text-amber-600" />
+            </div>
+            <DialogTitle className="text-xl">Limite de séances atteinte</DialogTitle>
+            <DialogDescription className="text-base py-2">
+              {formData.objectif_id && (
+                <>
+                  Vous avez atteint le nombre maximal de séances ({objectifsList.find(obj => obj.id === formData.objectif_id)?.total_sessions || 0}) 
+                  pour cet objectif. <br />
+                  Souhaitez-vous :
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex sm:justify-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowMaxSessionsModal(false)
+                router.push(`/admin/objectifs/${formData.objectif_id}/edit`)
+              }}
+              className="flex-1 sm:flex-none"
+            >
+              Modifier l'objectif
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={() => {
+                setShowMaxSessionsModal(false)
+                router.push(formData.athlete_id ? `/admin/users/${formData.athlete_id}` : '/admin/seances')
+              }}
+              className="flex-1 sm:flex-none"
+            >
+              Revenir à la page athlète
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

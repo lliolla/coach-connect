@@ -198,3 +198,17 @@ il faut ouvrir un nouveau terminal.
 Ne jamais partager une clé API complète ; si elle apparaît dans un dépôt, un log ou un échange, la révoquer et en créer une nouvelle.
 
 Cette procédure couvre le cas rencontré : ancienne clé invalide → nouvelle clé valide → mise à jour Windows → validation Vibe.
+
+CREER UNE NOUVELLE CLEF A CHAQUE CESSION ET L4ENREGISTRER 
+ 
+
+ creer une nouvelle clef
+
+ echo $env:MISTRAL_API_KEY
+ Remove-Item Env:MISTRAL_API_KEY 
+  $env:MISTRAL_API_KEY="clef"
+  
+  echo $env:MISTRAL_API_KEY
+   notepad $PROFILE => nouvelle clef
+  $PROFILE
+  vibe -p "Bonjour"

@@ -52,13 +52,37 @@ export async function getAthleteWithObjectifsAndSessions(athleteId) {
     
     if (sessionError) throw new Error(sessionError.message)
     
+    // Debug: afficher les séances récupérées
+    console.log(`Nombre de séances récupérées: ${sessions.length}`)
+    sessions.forEach((s, i) => {
+      console.log(`Séance ${i + 1}: ${s.title}, objectif_id: ${s.objectif_id}, athlete_id: ${s.athlete_id}`)
+    })
+    
     // 4. Structurer les données par objectif
     const objectifsWithSessions = []
     
+    // Solution temporaire: si des séances n'ont pas d'objectif_id, les attacher au premier objectif
+    const sessionsSansObjectif = sessions.filter(s => !s.objectif_id)
+    if (sessionsSansObjectif.length > 0 && athleteObjectifs.length > 0) {
+      console.log(`ATTENTION: ${sessionsSansObjectif.length} séances n'ont pas d'objectif_id, attachement automatique au premier objectif`)
+      
+      // Attacher chaque séance sans objectif au premier objectif de la liste
+      for (const session of sessionsSansObjectif) {
+        session.objectif_id = athleteObjectifs[0].objectif_id
+      }
+    }
+    
     for (const ao of athleteObjectifs) {
       const objectif = ao.objectifs
-      // Filtrer les séances qui appartiennent à cet objectif
-      const objectifSessions = sessions.filter(s => s.objectif_id === objectif.id)
+      console.log(`Traitement objectif: ${objectif.label}, id: ${objectif.id}`)
+      
+      // Filtrer les séances qui appartiennent à cet objectif (comparaison souple pour éviter les problèmes number/string)
+      const objectifIdStr = String(objectif.id)
+      console.log(`[DEBUG] Séances brutes pour objectif ${objectif.id} (${objectif.label}):`, sessions.map(s => ({ id: s.id, title: s.title, objectif_id: s.objectif_id, type: typeof s.objectif_id })))
+      
+      const objectifSessions = sessions.filter(s => String(s.objectif_id) === objectifIdStr)
+      console.log(`Objectif "${objectif.label}" (ID=${objectif.id}, type=${typeof objectif.id}) a ${objectifSessions.length} sessions filtrées`)
+      console.log(`Séances filtrées pour cet objectif:`, objectifSessions.map(s => ({id: s.id, title: s.title, objectif_id: s.objectif_id})))
       
       // Calculer la progression : rang chronologique / total_sessions
       // Tri par date pour avoir l'ordre chronologique

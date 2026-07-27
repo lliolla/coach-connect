@@ -27,14 +27,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import ProgramTable from "@/components/seance/programTable"
 import { getObjectifs, deleteObjectif } from "@/app/actions/objectifs"
-import { MoreHorizontal, Eye, Edit2, Trash2, Calendar } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
 export default function ObjectifsPage() {
@@ -64,11 +58,7 @@ export default function ObjectifsPage() {
     }
   }
 
-  const openDeleteConfirm = (e, objectif) => {
-    if (e) {
-      e.preventDefault()
-      e.stopPropagation()
-    }
+  const openDeleteConfirm = (objectif) => {
     setObjectifToDelete(objectif)
     setDeleteConfirmOpen(true)
   }
@@ -98,11 +88,27 @@ export default function ObjectifsPage() {
     }
   }
 
-  const filteredObjectifs = objectifs.filter(obj => {
-    const label = (obj.label || '').toLowerCase()
-    const description = (obj.description || '').toLowerCase()
-    return label.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase())
-  })
+  const programsForTable = React.useMemo(() => {
+    if (!objectifs || !Array.isArray(objectifs)) return [];
+
+    return objectifs
+      .filter(obj => {
+        const label = (obj.label || '').toLowerCase()
+        const description = (obj.description || '').toLowerCase()
+        return label.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase())
+      })
+      .map(obj => ({
+        id: obj.id,
+        programName: obj.label,
+        label: obj.label, // Ajout pour compatibilité avec le message de confirmation
+        description: obj.description,
+        numberOfExercises: obj.sessions?.length || 0,
+        exercises: [], // Pas d'exercices directs pour les objectifs
+        objectifName: obj.label, // Même valeur que programName pour cohérence
+        rawObjectif: obj, // Pour la progression
+        sessionsCount: obj.sessions?.length || 0,
+      }));
+  }, [objectifs, searchTerm]);
 
   return (
     <SidebarProvider
@@ -149,72 +155,17 @@ export default function ObjectifsPage() {
                 <p className="text-muted-foreground">Chargement des objectifs...</p>
               </div>
             ) : (
-              <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-muted/30">
-                      <tr>
-                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Libellé</th>
-                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Description</th>
-                        <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Séances</th>
-                        <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-transparent divide-y divide-border">
-                      {filteredObjectifs.map((obj) => (
-                        <tr key={obj.id} className="hover:bg-muted/5 transition-colors group">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-foreground">
-                            {obj.label}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-muted-foreground max-w-md truncate">
-                            {obj.description || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2">
-                              <Calendar size={14} className="text-muted-foreground" />
-                              <span className="text-sm font-medium">
-                                {obj.sessions?.length || 0} séances
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                            <div className="hidden md:flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Voir">
-                                <Link href={`/admin/objectifs/${obj.id}?mode=view`}><Eye size={14}/></Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" asChild title="Modifier">
-                                <Link href={`/admin/objectifs/${obj.id}?mode=edit`}><Edit2 size={14}/></Link>
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={(e) => openDeleteConfirm(e, obj)} title="Supprimer">
-                                <Trash2 size={14}/></Button>
-                            </div>
-                            <div className="md:hidden">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild><Link href={`/admin/objectifs/${obj.id}?mode=view`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
-                                  <DropdownMenuItem asChild><Link href={`/admin/objectifs/${obj.id}?mode=edit`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={(e) => openDeleteConfirm(null, obj)} className="text-red-600 font-medium">
-                                    <Trash2 size={14} className="mr-2"/> Supprimer
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {filteredObjectifs.length === 0 && (
-                    <div className="text-center py-20 text-muted-foreground italic border-t">
-                      Aucun objectif trouvé.
-                    </div>
-                  )}
-                </div>
+              <ProgramTable
+                programs={programsForTable}
+                onDelete={openDeleteConfirm}
+                context="objectifs"  // Forcé à "objectifs" pour éviter les erreurs
+                searchTerm={searchTerm}
+              />
+            )}
+            {!loading && programsForTable.length === 0 && (
+              <div className="text-center py-20 border-2 border-dashed rounded-xl">
+                <IconTarget className="mx-auto h-12 w-12 text-muted-foreground/20 mb-4" />
+                <p className="text-muted-foreground font-medium">Aucun objectif trouvé.</p>
               </div>
             )}
           </div>

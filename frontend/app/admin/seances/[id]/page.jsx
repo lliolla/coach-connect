@@ -2,7 +2,7 @@
 
 'use client'
 import * as React from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -18,8 +18,16 @@ function SeanceDetailsContent() {
   const { id } = useParams()
   const searchParams = useSearchParams()
   const mode = searchParams.get('mode') || 'view'
+  const router = useRouter()
   
-  const title = mode === 'edit' ? "Modifier la séance" : "Détails de la séance"
+  // Rediriger vers la nouvelle page d'édition si mode === 'edit'
+  React.useEffect(() => {
+    if (mode === 'edit') {
+      router.push(`/admin/seances/${id}/edit`)
+    }
+  }, [mode, id, router])
+  
+  const title = "Détails de la séance"
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
@@ -30,10 +38,15 @@ function SeanceDetailsContent() {
           </Link>
         </Button>
         <h1 className="text-2xl font-bold">{title}</h1>
+        <Button asChild>
+          <Link href={`/admin/seances/${id}/edit`}>
+            Modifier
+          </Link>
+        </Button>
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardSeance mode={mode} seanceId={id} isTracking={true} />
+        <CardSeance mode="view" seanceId={id} isTracking={true} />
       </div>
     </div>
   )
