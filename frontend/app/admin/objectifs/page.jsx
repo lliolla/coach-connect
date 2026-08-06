@@ -1,5 +1,5 @@
+// frontend/app/admin/objectifs/page.jsx
 'use client'
-
 import * as React from "react"
 import Link from "next/link"
 import { AppSidebar } from "@/components/nav/app-sidebar"
@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  IconSearch, 
-  IconPlus, 
-  IconTarget, 
-  IconAlertTriangle, 
+import {
+  IconSearch,
+  IconPlus,
+  IconTarget,
+  IconAlertTriangle,
   IconCheck,
   IconLoader2
 } from "@tabler/icons-react"
@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import ProgramTable from "@/components/seance/programTable"
+import GenericTable from "@/components/common/GenericTable"
 import { getObjectifs, deleteObjectif } from "@/app/actions/objectifs"
 import { cn } from "@/lib/utils"
 
@@ -35,7 +35,7 @@ export default function ObjectifsPage() {
   const [objectifs, setObjectifs] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-  
+
   // States for Modals
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [objectifToDelete, setObjectifToDelete] = React.useState(null)
@@ -88,27 +88,53 @@ export default function ObjectifsPage() {
     }
   }
 
-  const programsForTable = React.useMemo(() => {
+  const filteredObjectifs = React.useMemo(() => {
     if (!objectifs || !Array.isArray(objectifs)) return [];
 
-    return objectifs
-      .filter(obj => {
-        const label = (obj.label || '').toLowerCase()
-        const description = (obj.description || '').toLowerCase()
-        return label.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase())
-      })
-      .map(obj => ({
-        id: obj.id,
-        programName: obj.label,
-        label: obj.label, // Ajout pour compatibilité avec le message de confirmation
-        description: obj.description,
-        numberOfExercises: obj.sessions?.length || 0,
-        exercises: [], // Pas d'exercices directs pour les objectifs
-        objectifName: obj.label, // Même valeur que programName pour cohérence
-        rawObjectif: obj, // Pour la progression
-        sessionsCount: obj.sessions?.length || 0,
-      }));
-  }, [objectifs, searchTerm]);
+    return objectifs.filter(obj => {
+      const label = (obj.label || '').toLowerCase()
+      const description = (obj.description || '').toLowerCase()
+      return label.includes(searchTerm.toLowerCase()) || description.includes(searchTerm.toLowerCase())
+    })
+  }, [objectifs, searchTerm])
+
+  const columns = React.useMemo(() => [
+    {
+      accessorKey: "label",
+      header: "Nom",
+      cell: (item) => (
+        <span className="text-sm font-medium text-foreground">
+          {item.label}
+        </span>
+      )
+    },
+    {
+      accessorKey: "description",
+      header: "Description"
+    },
+    {
+      accessorKey: "athleteName",
+      header: "Athlète",
+      cell: (item) => (
+        <span>
+          {item.athletes_objectifs?.[0]?.athlete?.first_name} {item.athletes_objectifs?.[0]?.athlete?.last_name}
+        </span>
+      )
+    },
+    {
+      accessorKey: "sessionsCount",
+      header: "Séances",
+      cell: (item) => item.sessions?.length || 0
+    }
+  ], [])
+
+  const objectifsForTable = React.useMemo(() => {
+    return filteredObjectifs.map(obj => ({
+      ...obj,
+      athleteName: obj.athletes_objectifs?.[0]?.athlete?.first_name + ' ' + obj.athletes_objectifs?.[0]?.athlete?.last_name,
+      sessionsCount: obj.sessions?.length || 0
+    }))
+  }, [filteredObjectifs])
 
   return (
     <SidebarProvider
@@ -135,8 +161,8 @@ export default function ObjectifsPage() {
 
           <div className="relative">
             <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input 
-              placeholder="Rechercher un objectif..." 
+            <Input
+              placeholder="Rechercher un objectif..."
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -155,18 +181,11 @@ export default function ObjectifsPage() {
                 <p className="text-muted-foreground">Chargement des objectifs...</p>
               </div>
             ) : (
-              <ProgramTable
-                programs={programsForTable}
+              <GenericTable
+                data={objectifsForTable}
+                columns={columns}
                 onDelete={openDeleteConfirm}
-                context="objectifs"  // Forcé à "objectifs" pour éviter les erreurs
-                searchTerm={searchTerm}
               />
-            )}
-            {!loading && programsForTable.length === 0 && (
-              <div className="text-center py-20 border-2 border-dashed rounded-xl">
-                <IconTarget className="mx-auto h-12 w-12 text-muted-foreground/20 mb-4" />
-                <p className="text-muted-foreground font-medium">Aucun objectif trouvé.</p>
-              </div>
             )}
           </div>
         </div>

@@ -65,29 +65,30 @@ const menuData = {
     },
   ],
   // ESPACE 2: ADMINISTRATION (Admins uniquement)
-  administration: [
+  Gestion: [
     {
       title: "Tableau de bord",
       url: "/admin/dashboard",
       icon: LayoutGrid,
     },
-    {
-      title: "Gestion Séances",
-      url: "/admin/seances",
-      icon: Calendar,
+      {
+      title: "Athlètes",
+      url: "/admin/users",
+      icon: Users,
     },
-    {
+     {
       title: "Objectifs",
       url: "/admin/objectifs",
       icon: Target,
     },
     {
-      title: "Athlètes",
-      url: "/admin/users",
-      icon: Users,
+      title: "Séances",
+      url: "/admin/seances",
+      icon: Calendar,
     },
+
   ],
-  parametrage: [
+  Parametrage: [
     {
       name: "Gestion des listes",
       url: "/admin/parametrage",
@@ -171,8 +172,8 @@ export function AppSidebar({
         {/* ESPACE 2: ADMINISTRATION (Affiché seulement si isAdmin est TRUE) */}
         {user.isAdmin === true && (
           <div className="space-y-4">
-            <NavMain items={menuData.administration} label="Administration" />
-            <NavDocuments items={menuData.parametrage} label="Paramétrage" />
+            <NavMain items={menuData.Gestion} label="Administration" />
+            <NavDocuments items={menuData.Parametrage} label="Paramétrage" />
           </div>
         )}
       </SidebarContent>

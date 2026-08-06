@@ -212,3 +212,4 @@ CREER UNE NOUVELLE CLEF A CHAQUE CESSION ET L4ENREGISTRER
    notepad $PROFILE => nouvelle clef
   $PROFILE
   vibe -p "Bonjour"
+  vibe 

@@ -855,11 +855,11 @@ export const CardSeance = ({ mode = "create", seanceId = null, duplicateId = nul
               <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom du programme / Modèle (Obligatoire)</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom de la séance (Obligatoire)</Label>
                         <Input 
                             value={formData.title} 
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            placeholder="Nom du programme"
+                            placeholder="Nouvelle séance"
                             className="h-12 border-2 font-bold"
                             disabled={isView}
                         />

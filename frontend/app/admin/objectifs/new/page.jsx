@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
-import { CardObjectif } from "@/components/objectif/card_objectif"
+import { CardObjectif } from "@/components/objectifs/CardObjectif"
 
 function NewObjectifContent() {
   const searchParams = useSearchParams()
