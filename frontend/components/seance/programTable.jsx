@@ -289,43 +289,63 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
             const progression = isObjectifs ? null : getSessionProgression(program.id, program.rawObjectif);
 
             return (
-              <div key={program.id} className="border rounded-lg p-4 bg-card">
-                {/* En-tête avec nom et menu */}
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-bold text-lg flex-1">{program.programName}</h3>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 ml-2 flex-shrink-0">
-                        <MoreHorizontal className="h-5 w-5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
-                          <Eye size={14} className="mr-2" /> Voir
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
-                          <Edit2 size={14} className="mr-2" /> Modifier
-                        </Link>
-                      </DropdownMenuItem>
-                      {!isObjectifs && (
-                        <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
-                          <Copy size={14} className="mr-2" /> Dupliquer
-                        </DropdownMenuItem>
+              <div key={program.id} className="border rounded-lg p-4 bg-card shadow-sm">
+                {/* En-tête avec nom, enveloppe et menu */}
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="font-bold text-lg flex-1 pr-2">{program.programName}</h3>
+                  <div className="flex items-center gap-2">
+                    <Mail
+                      size={24}
+                      className={cn(
+                        "flex-shrink-0 transition-colors duration-300",
+                        program.status === 'transmis' ? "text-green-500 cursor-not-allowed" :
+                        program.status === 'erreur' ? "text-red-500" :
+                        "text-amber-500"
                       )}
-                      {!isObjectifs && <DropdownMenuSeparator />}
-                      <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
-                        <Trash2 size={14} className="mr-2" /> Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      onClick={program.status === 'transmis' ? undefined : () => handleTransmit(program)}
+                      title={
+                        program.status === 'transmis' ? "Email déjà envoyé" :
+                        program.status === 'erreur' ? "Échec de l'envoi — cliquer pour réessayer" :
+                        "Envoyer par email"
+                      }
+                    />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 flex-shrink-0">
+                          <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
+                            <Eye size={14} className="mr-2" /> Voir
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
+                            <Edit2 size={14} className="mr-2" /> Modifier
+                          </Link>
+                        </DropdownMenuItem>
+                        {!isObjectifs && (
+                          <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
+                            <Copy size={14} className="mr-2" /> Dupliquer
+                          </DropdownMenuItem>
+                        )}
+                        {!isObjectifs && <DropdownMenuSeparator />}
+                        <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
+                          <Trash2 size={14} className="mr-2" /> Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 {/* Athlète - ligne séparée */}
                 {showAthlete && !isObjectifs && (
-                  <p className="text-sm text-muted-foreground mb-3">{program.personName || '-'}</p>
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">Athlète</p>
+                    <p className="text-sm">{program.personName || '-'}</p>
+                  </div>
                 )}
 
                 {/* Objectif - ligne séparée */}
@@ -338,9 +358,12 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
 
                 {/* Progression - ligne séparée */}
                 {!isObjectifs && (
-                  <div className="flex items-center gap-2 text-sm mb-3">
-                    <Target size={14} className="text-primary" />
-                    <span className="font-medium">{progression || 0} séances</span>
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">Progression</p>
+                    <div className="flex items-center gap-2">
+                      <Target size={14} className="text-primary" />
+                      <span className="font-medium">{progression || 0} séances</span>
+                    </div>
                   </div>
                 )}
 
@@ -363,25 +386,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                     </Select>
                   </div>
                 )}
-
-                {/* Statut email - ligne dédiée avec enveloppe centrée */}
-                <div className="flex justify-center my-4">
-                  <Mail
-                    size={28}
-                    className={cn(
-                      "transition-colors duration-300",
-                      program.status === 'transmis' ? "text-green-500 cursor-not-allowed" :
-                      program.status === 'erreur' ? "text-red-500" :
-                      "text-amber-500"
-                    )}
-                    onClick={program.status === 'transmis' ? undefined : () => handleTransmit(program)}
-                    title={
-                      program.status === 'transmis' ? "Email déjà envoyé" :
-                      program.status === 'erreur' ? "Échec de l'envoi — cliquer pour réessayer" :
-                      "Envoyer par email"
-                    }
-                  />
-                </div>
               </div>
             );
           })}
