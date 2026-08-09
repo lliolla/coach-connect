@@ -110,7 +110,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
         setShowSuccessModal(false)
         // Redirection vers la page de l'athlète après modification
         if (athleteId) {
-          router.push(`/admin/user/${athleteId}`)
+          router.push(`/admin/users/${athleteId}`)
         } else {
           router.push('/admin/objectifs')
         }
@@ -131,7 +131,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
       if (shouldModify) {
         // Rediriger vers la page de l'athlète
         if (athleteId) {
-          router.push(`/admin/user/${athleteId}`)
+          router.push(`/admin/users/${athleteId}`)
         } else {
           router.push('/admin/objectifs')
         }
@@ -161,7 +161,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
           <CardAction>
             <Button variant="ghost" size="sm" onClick={() => {
               if (athleteId) {
-                router.push(`/admin/user/${athleteId}`)
+                router.push(`/admin/users/${athleteId}`)
               } else {
                 router.push('/admin/objectifs')
               }
@@ -266,7 +266,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
         <CardFooter className="flex justify-between border-t p-6 mt-6">
           <Button variant="outline" onClick={() => {
             if (athleteId) {
-              router.push(`/admin/user/${athleteId}`)
+              router.push(`/admin/users/${athleteId}`)
             } else {
               router.push('/admin/objectifs')
             }
@@ -297,7 +297,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
               onClick={() => {
                 setShowSuccessModal(false)
                 if (athleteId) {
-                  router.push(`/admin/user/${athleteId}`)
+                  router.push(`/admin/users/${athleteId}`)
                 } else {
                   router.push('/admin/objectifs')
                 }
