@@ -311,7 +311,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                     />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 p-0 flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-10 w-10 p-0 flex-shrink-0">
                           <MoreHorizontal className="h-5 w-5" />
                         </Button>
                       </DropdownMenuTrigger>
