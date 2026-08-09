@@ -50,11 +50,12 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
   const [formData, setFormData] = React.useState({
     label: objectif.label || "",
     description: objectif.description || "",
-    duree: objectif.duree || 4, // Utilisation de duree pour le nombre de semaines
-    total_sessions: objectif.total_sessions || 20, // Utilisation de total_sessions pour le nombre de séances
+    duree: objectif.duree || 4,
+    total_sessions: objectif.total_sessions || 20,
     status: objectif.completed ? "termine" : "en_cours"
   })
-// Effet pour mettre à jour les données du formulaire lorsque l'objectif change
+
+  // Effet pour mettre à jour les données du formulaire lorsque l'objectif change
   React.useEffect(() => {
     setFormData({
       label: objectif.label || "",
@@ -83,8 +84,8 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
       const dataToSend = {
         label: formData.label,
         description: formData.description,
-        duree: parseInt(formData.duree) || 4, // Utilisation de duree
-        total_sessions: parseInt(formData.total_sessions) || 20, // Utilisation de total_sessions
+        duree: parseInt(formData.duree) || 4,
+        total_sessions: parseInt(formData.total_sessions) || 20,
         completed: formData.status === "termine"
       }
 
@@ -97,10 +98,9 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
       } else {
         result = await createObjectif({
           ...dataToSend,
-          athlete_id: athleteId // Ajout de l'ID de l'athlète
+          athlete_id: athleteId
         })
       }
-
 
       if (!result.success) throw new Error(result.error || "Erreur lors de l'opération")
 
@@ -112,7 +112,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
         if (athleteId) {
           router.push(`/admin/athletes/${athleteId}`)
         } else {
-          router.push('/admin/athletes')
+          router.push('/admin/objectifs')
         }
       }, 2000)
     } catch (error) {
@@ -120,7 +120,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
       toast.error("Erreur: " + error.message, { id: loadingToast })
     }
   }
-// Fonction pour vérifier si le nombre de séances est atteint
+
   const checkSessionLimit = async () => {
     if (objectif.total_sessions && objectif.sessions_count >= objectif.total_sessions) {
       // Afficher une modale pour demander si l'utilisateur veut modifier le nombre de séances
@@ -133,7 +133,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
         if (athleteId) {
           router.push(`/admin/athletes/${athleteId}`)
         } else {
-          router.push('/admin/athletes')
+          router.push('/admin/objectifs')
         }
       }
       return false
@@ -188,14 +188,14 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="weeksCount">Durée (semaines)</Label>
+              <Label htmlFor="duree">Durée (semaines)</Label>
               <Input
-                id="weeksCount"
-                name="weeksCount"
+                id="duree"
+                name="duree"
                 type="number"
                 min="1"
                 placeholder="ex: 8"
-                value={formData.weeksCount}
+                value={formData.duree}
                 onChange={handleInputChange}
               />
             </div>
@@ -298,5 +298,3 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
 }
 
 export default CardObjectif
-
-// TEST CONTINUE EDIT
