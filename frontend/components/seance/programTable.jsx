@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar, ChevronDown } from 'lucide-react';
+import { MoreVertical, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
 import { cn, getSessionProgression } from "@/lib/utils";
 import { transmitSession } from "@/app/actions/sessions";
@@ -312,7 +312,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-10 w-10 p-0 flex-shrink-0">
-                          <MoreHorizontal className="h-5 w-5" />
+                          <MoreVertical className="h-5 w-5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
