@@ -106,7 +106,8 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
 
   return (
     <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Version Desktop - Tableau classique */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
             <tr>
@@ -281,6 +282,93 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
         </table>
       </div>
 
+      {/* Version Mobile - Cartes compactes */}
+      <div className="md:hidden">
+        <div className="space-y-4 p-4">
+          {paginatedPrograms.map((program) => {
+            const progression = isObjectifs ? null : getSessionProgression(program.id, program.rawObjectif);
+
+            return (
+              <div key={program.id} className="border rounded-lg p-4 bg-card">
+                {/* En-tête avec nom et statut d'envoi */}
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg mb-1">{program.programName}</h3>
+                    {showAthlete && !isObjectifs && (
+                      <p className="text-sm text-muted-foreground">{program.personName || '-'}</p>
+                    )}
+                  </div>
+                  <Mail
+                    size={24}
+                    className={cn(
+                      "flex-shrink-0 transition-colors duration-300",
+                      program.status === 'transmis' ? "text-green-500 cursor-not-allowed" :
+                      program.status === 'erreur' ? "text-red-500" :
+                      "text-amber-500"
+                    )}
+                    onClick={program.status === 'transmis' ? undefined : () => handleTransmit(program)}
+                    title={
+                      program.status === 'transmis' ? "Email déjà envoyé" :
+                      program.status === 'erreur' ? "Échec de l'envoi — cliquer pour réessayer" :
+                      "Envoyer par email"
+                    }
+                  />
+                </div>
+
+                {/* Informations principales */}
+                <div className="space-y-2 mb-4">
+                  {!isObjectifs && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Target size={14} className="text-primary" />
+                      <span className="font-medium">{progression || 0} séances</span>
+                      {program.objectifName && (
+                        <span className="text-muted-foreground">• {program.objectifName}</span>
+                      )}
+                    </div>
+                  )}
+                  {isObjectifs && program.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{program.description}</p>
+                  )}
+                </div>
+
+                {/* Actions principales */}
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>Voir</Link>
+                  </Button>
+                  {program.status !== 'transmis' && (
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleTransmit(program)}>
+                      Envoyer
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>Modifier</Link>
+                  </Button>
+                  {!isObjectifs && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex-1">
+                          <MoreHorizontal size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
+                          <Copy size={14} className="mr-2" /> Dupliquer
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
+                          <Trash2 size={14} className="mr-2" /> Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Pagination commune */}
       <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
           Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
