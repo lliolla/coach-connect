@@ -326,8 +326,6 @@ export default function SeancesPage() {
               <ProgramTable
                 programs={programsForTable}
                 onDelete={openDeleteConfirm}
-                context="seances"
-                searchTerm={searchTerm}
               />
             )}
           </div>
