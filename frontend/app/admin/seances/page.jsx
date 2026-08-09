@@ -9,7 +9,7 @@ import {
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input" 
+import { Input } from "@/components/ui/input"
 import { 
   IconPlus, 
   IconSearch, 
@@ -43,7 +43,7 @@ export default function SeancesPage() {
   const [showFilters, setShowFilters] = React.useState(false)
   const [availableAthletes, setAvailableAthletes] = React.useState([])
   const [allObjectifs, setAllObjectifs] = React.useState([])
-  const [sessions, setSessions] = React.useState([]) 
+  const [sessions, setSessions] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] = React.useState(null)
@@ -80,7 +80,7 @@ export default function SeancesPage() {
       toast.error("Erreur lors de la suppression");
     }
   };
-  
+
   const openDeleteConfirm = (session) => {
     setSessionToDelete(session);
     setDeleteConfirmOpen(true);
@@ -123,9 +123,9 @@ export default function SeancesPage() {
         return matchesTemplate && matchesAthlete && matchesStatus && matchesObjectif;
       })
       .map(session => {
-        const athleteData = session.athletes || session.athlete; 
-        const athleteName = athleteData 
-          ? `${athleteData.first_name || ''} ${athleteData.last_name || ''}`.trim() 
+        const athleteData = session.athletes || session.athlete;
+        const athleteName = athleteData
+          ? `${athleteData.first_name || ''} ${athleteData.last_name || ''}`.trim()
           : '-';
 
         return {
@@ -137,7 +137,7 @@ export default function SeancesPage() {
           athleteId: session.athlete_id,
           programName: session.title,
           numberOfExercises: session.session_exercises?.length || 0,
-          rawObjectif: session.objectif, 
+          rawObjectif: session.objectif,
           objectifName: session.objectif?.label || "Sans objectif",
           exercises: session.session_exercises?.map(se => ({
             name: se.exercise?.name || se.exercice_library?.name || "Exercice"
@@ -172,20 +172,20 @@ export default function SeancesPage() {
                 <IconBarbell size={20} className="text-primary" />
                 <h2 className="text-lg font-semibold">Liste des Séances</h2>
               </div>
-              
+
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                    <Input 
-                      placeholder="Rechercher une séance..." 
+                    <Input
+                      placeholder="Rechercher une séance..."
                       className="pl-10"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
-                  <Button 
-                    variant={showFilters ? "secondary" : "outline"} 
+                  <Button
+                    variant={showFilters ? "secondary" : "outline"}
                     className="gap-2"
                     onClick={() => setShowFilters(!showFilters)}
                   >
@@ -200,10 +200,10 @@ export default function SeancesPage() {
 
                 {showFilters && (
                   <div className="flex flex-col gap-4 p-4 border rounded-lg bg-muted/20 animate-in fade-in slide-in-from-top-2 relative">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute top-2 right-2 h-6 w-6" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
                       onClick={() => setShowFilters(false)}
                     >
                       <IconX size={14} />
@@ -249,8 +249,8 @@ export default function SeancesPage() {
                                 className="w-full h-10 justify-between font-normal"
                               >
                                 <span className="truncate">
-                                  {objectifFilter === "all" 
-                                    ? "Tous les objectifs" 
+                                  {objectifFilter === "all"
+                                    ? "Tous les objectifs"
                                     : filteredObjectifs.find((o) => o.id.toString() === objectifFilter)?.label || "Sélectionner..."
                                   }
                                 </span>
@@ -303,7 +303,7 @@ export default function SeancesPage() {
                           </Popover>
                         </div>
                       </div>
-                      
+
                       {isFilterActive && (
                         <div className="flex items-end h-full mt-auto">
                           <Button variant="ghost" className="h-10 gap-2 px-3 text-destructive hover:text-destructive/90 hover:bg-destructive/5" onClick={() => { setAthleteFilter("all"); setStatusFilter("all"); setObjectifFilter("all"); }}>
@@ -323,8 +323,8 @@ export default function SeancesPage() {
                 <p className="text-muted-foreground">Chargement des séances...</p>
               </div>
             ) : (
-              <ProgramTable 
-                programs={programsForTable} 
+              <ProgramTable
+                programs={programsForTable}
                 onDelete={openDeleteConfirm}
                 context="seances"
                 searchTerm={searchTerm}
