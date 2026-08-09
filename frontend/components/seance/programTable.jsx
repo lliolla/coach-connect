@@ -31,7 +31,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
   const filteredPrograms = useMemo(() => {
     if (!searchTerm) return programs;
     const lowerTerm = searchTerm.toLowerCase();
-    return programs.filter(p => 
+    return programs.filter(p =>
       p.programName.toLowerCase().includes(lowerTerm) ||
       p.objectifName?.toLowerCase().includes(lowerTerm) ||
       p.personName?.toLowerCase().includes(lowerTerm)
@@ -41,7 +41,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
   // Pagination logic
   const totalItems = filteredPrograms?.length || 0;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-  
+
   const paginatedPrograms = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredPrograms.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -57,7 +57,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
     const targetPath = isTracking ? "/seances/new" : "/modeles/new"
     router.push(`${targetPath}?mode=duplicate&duplicateId=${programId}`);
   };
-  
+
   const handleDelete = (program) => {
     if (onDelete) {
       onDelete(program);
@@ -71,7 +71,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
       const result = await transmitSession(program.id);
       if (result.success) {
         toast.success("Programme transmis avec succès", { id: toastId });
-        router.refresh(); 
+        router.refresh();
       } else {
         toast.error("Erreur lors de la transmission : " + result.error, { id: toastId });
       }
@@ -137,18 +137,19 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
           <tbody className="bg-transparent divide-y divide-border">
             {paginatedPrograms.map((program) => {
               const progression = isObjectifs ? null : getSessionProgression(program.id, program.rawObjectif);
-              
+
               return (
                 <tr key={program.id} className="hover:bg-muted/5 transition-colors group">
                   {isTracking && !isObjectifs && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <Mail 
-                        size={16} 
+                      <Mail
+                        size={16}
                         className={cn(
-                          "mx-auto transition-colors duration-300", 
-                          program.status === 'transmis' ? "text-green-500" : "text-amber-500"
-                        )} 
-                        onClick={() => console.log("Statut de la séance:", program.status, program)}
+                          "mx-auto transition-colors duration-300 cursor-pointer",
+                          program.status === 'transmis' ? "text-green-500" : "text-amber-500 hover:text-amber-600"
+                        )}
+                        onClick={() => handleTransmit(program)}
+                        title={program.status === 'transmis' ? "Email déjà envoyé" : "Envoyer par email"}
                       />
                     </td>
                   )}
@@ -200,8 +201,8 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   )}
                   {showRealisation && !isObjectifs && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <Select 
-                        value={program.realisation || ""} 
+                      <Select
+                        value={program.realisation || ""}
                         onValueChange={(value) => onRealisationChange?.(program.id, value)}
                         className="h-8 w-32"
                       >
@@ -279,19 +280,19 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
           Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
         </p>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
             onClick={handlePrevPage}
             disabled={currentPage === 1}
           >
             <ChevronLeft size={12} className="mr-1" /> Précédent
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40" 
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
             onClick={handleNextPage}
             disabled={currentPage === totalPages || totalPages === 0}
           >
