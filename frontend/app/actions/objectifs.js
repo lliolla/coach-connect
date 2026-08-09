@@ -1,5 +1,4 @@
 'use server'
-
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
@@ -15,13 +14,14 @@ export async function getObjectifs() {
       sessions (*)
     `)
     .order('label', { ascending: true })
-  
+
   if (error) {
     // Si la jointure échoue (colonne sessions.objectif_id absente), on récupère juste les objectifs
     const { data: simpleData, error: simpleError } = await supabase
       .from('objectifs')
       .select('*')
       .order('label', { ascending: true })
+
     if (simpleError) throw new Error(simpleError.message)
     return simpleData
   }
@@ -33,79 +33,86 @@ export async function getObjectifs() {
  */
 export async function getObjectifById(id) {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('objectifs')
-    .select(`
-      *,
-      sessions (*),
-      athletes_objectifs (athlete_id)
-    `)
-    .eq('id', id)
-    .single()
-  
-  if (error) {
-    const { data: simpleData, error: simpleError } = await supabase
+
+  try {
+    // Récupération de l'objectif avec toutes les informations nécessaires
+    const { data: objectif, error } = await supabase
       .from('objectifs')
-      .select('*, athletes_objectifs (athlete_id)')
+      .select('*')
       .eq('id', id)
       .single()
-    if (simpleError) throw new Error(simpleError.message)
-    return simpleData
-  }
-  
-  // Ajouter athlete_id pour compatibilité avec le formulaire
-  if (data.athletes_objectifs && data.athletes_objectifs.length > 0) {
-    return {
-      ...data,
-      athlete_id: data.athletes_objectifs[0].athlete_id
+
+    if (error) throw error
+
+    // Récupération du nombre de séances associées à l'objectif
+    const { count: sessionsCount, error: countError } = await supabase
+      .from('sessions')
+      .select('id', { count: 'exact' })
+      .eq('objectif_id', id)
+
+    if (countError) throw countError
+
+    // Ajout du nombre de séances à l'objectif
+    const objectifWithSessions = {
+      ...objectif,
+      sessions_count: sessionsCount || 0
     }
+
+    return objectifWithSessions
+  } catch (err) {
+    console.error("Erreur lors de la récupération de l'objectif:", err)
+    return null
   }
-  
-  return data
 }
+
 
 /**
  * Crée un nouvel objectif
  */
 export async function createObjectif(formData) {
   const supabase = await createClient()
-  const { sessionIds, athlete_id, ...objectifData } = formData
-  
+
   try {
     // Nettoyage des données pour l'objectif
     const cleanData = {
-      label: objectifData.label,
-      description: objectifData.description,
-      total_sessions: parseInt(objectifData.total_sessions) || 20
+      label: formData.label,
+      description: formData.description,
+      total_sessions: parseInt(formData.total_sessions) || 20,
+      weeksCount: parseInt(formData.weeksCount) || 4,
+       total_sessions: parseInt(formData.total_sessions) || 20, // Utilisation de total_sessions
+      duree: parseInt(formData.duree) || 4, // Utilisation de duree
+      completed: formData.completed || false
     }
 
     const { data: objectives, error: objError } = await supabase
       .from('objectifs')
       .insert([cleanData])
       .select()
-    
+
     if (objError) throw objError
+
     const objective = objectives[0]
 
     // Lier l'objectif à l'athlète via la table de liaison
-    if (athlete_id) {
+    if (formData.athlete_id) {
       const { error: linkError } = await supabase
         .from('athletes_objectifs')
         .insert([{
-          athlete_id: athlete_id,
+          athlete_id: formData.athlete_id,
           objectif_id: objective.id
         }])
+
       if (linkError) throw linkError
     }
 
     // Si on a des IDs de séances à lier
-    if (sessionIds && Array.isArray(sessionIds) && sessionIds.length > 0) {
+    if (formData.sessionIds && Array.isArray(formData.sessionIds) && formData.sessionIds.length > 0) {
       await supabase
         .from('sessions')
         .update({ objectif_id: objective.id })
-        .in('id', sessionIds)
+        .in('id', formData.sessionIds)
     }
-    
+
     revalidatePath('/objectifs')
     return { success: true, data: objective }
   } catch (err) {
@@ -116,44 +123,50 @@ export async function createObjectif(formData) {
 /**
  * Met à jour un objectif
  */
-export async function updateObjectif(id, formData) {
+export async function updateObjectif(formData) {
   const supabase = await createClient()
-  const { sessionIds, athlete_id, ...objectifData } = formData
-  
+
   try {
+    // Vérification des données requises
+    if (!formData.id) {
+      throw new Error("ID de l'objectif manquant")
+    }
+
     // Nettoyage des données
     const cleanData = {
-      ...objectifData,
-      total_sessions: parseInt(objectifData.total_sessions) || 20
+      label: formData.label,
+      description: formData.description,
+      total_sessions: parseInt(formData.total_sessions) || 20,
+       duree: parseInt(formData.duree) || 4, // Utilisation de duree
+      completed: formData.completed || false
     }
-    // Supprimer les champs qui ne sont pas dans la table objectifs
-    delete cleanData.weeksCount
-    delete cleanData.athlete_id
 
     const { data: objectives, error: objError } = await supabase
       .from('objectifs')
       .update(cleanData)
-      .eq('id', id)
+      .eq('id', formData.id)
       .select()
-    
+
     if (objError) throw objError
+
     const objective = objectives[0]
 
     // Mettre à jour la liaison avec l'athlète si athlete_id est fourni
-    if (athlete_id) {
+    if (formData.athlete_id) {
       // Supprimer l'ancienne liaison si elle existe
       await supabase
         .from('athletes_objectifs')
         .delete()
-        .eq('objectif_id', id)
-      
+        .eq('objectif_id', formData.id)
+
       // Créer la nouvelle liaison
       const { error: linkError } = await supabase
         .from('athletes_objectifs')
         .insert([{
-          athlete_id: athlete_id,
-          objectif_id: id
+          athlete_id: formData.athlete_id,
+          objectif_id: formData.id
         }])
+
       if (linkError) throw linkError
     }
 
@@ -162,32 +175,31 @@ export async function updateObjectif(id, formData) {
     await supabase
       .from('sessions')
       .update({ objectif_id: null })
-      .eq('objectif_id', id)
+      .eq('objectif_id', formData.id)
 
     // 2. Rattacher les séances
-    if (sessionIds && Array.isArray(sessionIds)) {
+    if (formData.sessionIds && Array.isArray(formData.sessionIds)) {
       // Si sessionIds est fourni, rattacher uniquement ces séances
       await supabase
         .from('sessions')
-        .update({ objectif_id: id })
-        .in('id', sessionIds)
-    } else {
-      // Si sessionIds n'est pas fourni, récupérer les séances qui étaient liées à cet objectif avant la mise à jour
-      // (même si elles ont été déliées)
+        .update({ objectif_id: formData.id })
+        .in('id', formData.sessionIds)
+    } else if (formData.athlete_id) {
+      // Si sessionIds n'est pas fourni, récupérer les séances qui étaient liées à cet objectif ou qui n'ont pas d'objectif
       const { data: sessionsToReattach, error: fetchError } = await supabase
         .from('sessions')
         .select('id')
-        .eq('athlete_id', athlete_id)
-        .or(`objectif_id.eq.${id},objectif_id.is.null`)
-        // On rattache uniquement les séances qui étaient liées à cet objectif ou qui n'ont pas d'objectif
+        .eq('athlete_id', formData.athlete_id)
+        .or(`objectif_id.eq.${formData.id},objectif_id.is.null`)
+
       if (!fetchError && sessionsToReattach?.length > 0) {
         await supabase
           .from('sessions')
-          .update({ objectif_id: id })
+          .update({ objectif_id: formData.id })
           .in('id', sessionsToReattach.map(s => s.id))
       }
     }
-    
+
     revalidatePath('/objectifs')
     return { success: true, data: objective }
   } catch (err) {
@@ -200,7 +212,7 @@ export async function updateObjectif(id, formData) {
  */
 export async function deleteObjectif(id) {
   const supabase = await createClient()
-  
+
   try {
     // On délie les séances avant de supprimer l'objectif
     await supabase
@@ -212,9 +224,9 @@ export async function deleteObjectif(id) {
       .from('objectifs')
       .delete()
       .eq('id', id)
-    
+
     if (error) throw error
-    
+
     revalidatePath('/objectifs')
     return { success: true }
   } catch (err) {
