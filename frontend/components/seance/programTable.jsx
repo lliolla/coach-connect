@@ -146,10 +146,16 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                         size={16}
                         className={cn(
                           "mx-auto transition-colors duration-300 cursor-pointer",
-                          program.status === 'transmis' ? "text-green-500" : "text-amber-500 hover:text-amber-600"
+                          program.status === 'transmis' ? "text-green-500 cursor-not-allowed" :
+                          program.status === 'erreur' ? "text-red-500" :
+                          "text-amber-500 hover:text-amber-600"
                         )}
-                        onClick={() => handleTransmit(program)}
-                        title={program.status === 'transmis' ? "Email déjà envoyé" : "Envoyer par email"}
+                        onClick={program.status === 'transmis' ? undefined : () => handleTransmit(program)}
+                        title={
+                          program.status === 'transmis' ? "Email déjà envoyé" :
+                          program.status === 'erreur' ? "Échec de l'envoi — cliquer pour réessayer" :
+                          "Envoyer par email"
+                        }
                       />
                     </td>
                   )}
