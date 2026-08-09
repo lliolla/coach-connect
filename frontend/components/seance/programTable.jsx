@@ -290,8 +290,38 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
 
             return (
               <div key={program.id} className="border rounded-lg p-4 bg-card">
-                {/* Nom de la séance - bien visible */}
-                <h3 className="font-bold text-lg mb-3">{program.programName}</h3>
+                {/* En-tête avec nom et menu */}
+                <div className="flex justify-between items-start mb-3">
+                  <h3 className="font-bold text-lg flex-1">{program.programName}</h3>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 p-0 ml-2 flex-shrink-0">
+                        <MoreHorizontal className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
+                          <Eye size={14} className="mr-2" /> Voir
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
+                          <Edit2 size={14} className="mr-2" /> Modifier
+                        </Link>
+                      </DropdownMenuItem>
+                      {!isObjectifs && (
+                        <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
+                          <Copy size={14} className="mr-2" /> Dupliquer
+                        </DropdownMenuItem>
+                      )}
+                      {!isObjectifs && <DropdownMenuSeparator />}
+                      <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
+                        <Trash2 size={14} className="mr-2" /> Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
 
                 {/* Athlète - ligne séparée */}
                 {showAthlete && !isObjectifs && (
@@ -351,51 +381,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                       "Envoyer par email"
                     }
                   />
-                </div>
-
-                {/* Actions - réorganisées verticalement avec espace */}
-                <div className="flex flex-col gap-2 pt-2 border-t border-border">
-                  <Button variant="outline" size="lg" className="w-full justify-start" asChild>
-                    <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
-                      <Eye size={16} className="mr-2" /> Voir
-                    </Link>
-                  </Button>
-
-                  {program.status !== 'transmis' && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="w-full justify-start"
-                      onClick={() => handleTransmit(program)}
-                    >
-                      <Send size={16} className="mr-2" /> Envoyer
-                    </Button>
-                  )}
-
-                  <Button variant="outline" size="lg" className="w-full justify-start" asChild>
-                    <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
-                      <Edit2 size={16} className="mr-2" /> Modifier
-                    </Link>
-                  </Button>
-
-                  {!isObjectifs && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="lg" className="w-full justify-between">
-                          <span>Plus d'actions</span>
-                          <ChevronDown size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
-                          <Copy size={14} className="mr-2" /> Dupliquer
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
-                          <Trash2 size={14} className="mr-2" /> Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
                 </div>
               </div>
             );
