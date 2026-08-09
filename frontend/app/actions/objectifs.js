@@ -52,10 +52,18 @@ export async function getObjectifById(id) {
 
     if (countError) throw countError
 
-    // Ajout du nombre de séances à l'objectif
+    // Récupération de l'athlète associé via la table de jointure
+    const { data: athleteLink, error: linkError } = await supabase
+      .from('athletes_objectifs')
+      .select('athlete_id')
+      .eq('objectif_id', id)
+      .single()
+
+    // Ajout du nombre de séances et de l'athlète à l'objectif
     const objectifWithSessions = {
       ...objectif,
-      sessions_count: sessionsCount || 0
+      sessions_count: sessionsCount || 0,
+      athlete_id: athleteLink?.athlete_id || null
     }
 
     return objectifWithSessions
@@ -64,7 +72,6 @@ export async function getObjectifById(id) {
     return null
   }
 }
-
 
 /**
  * Crée un nouvel objectif
