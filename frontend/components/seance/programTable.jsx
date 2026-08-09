@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MoreHorizontal, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar } from 'lucide-react';
+import { MoreHorizontal, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
 import { cn, getSessionProgression } from "@/lib/utils";
 import { transmitSession } from "@/app/actions/sessions";
@@ -106,7 +106,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
 
   return (
     <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
-      {/* Version Desktop - Tableau classique */}
+      {/* Version Desktop - Tableau classique (inchangé) */}
       <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
@@ -282,7 +282,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
         </table>
       </div>
 
-      {/* Version Mobile - Cartes compactes */}
+      {/* Version Mobile - Cartes compactes réorganisées */}
       <div className="md:hidden">
         <div className="space-y-4 p-4">
           {paginatedPrograms.map((program) => {
@@ -290,18 +290,56 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
 
             return (
               <div key={program.id} className="border rounded-lg p-4 bg-card">
-                {/* En-tête avec nom et statut d'envoi */}
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg mb-1">{program.programName}</h3>
-                    {showAthlete && !isObjectifs && (
-                      <p className="text-sm text-muted-foreground">{program.personName || '-'}</p>
-                    )}
+                {/* Nom de la séance - bien visible */}
+                <h3 className="font-bold text-lg mb-3">{program.programName}</h3>
+
+                {/* Athlète - ligne séparée */}
+                {showAthlete && !isObjectifs && (
+                  <p className="text-sm text-muted-foreground mb-3">{program.personName || '-'}</p>
+                )}
+
+                {/* Objectif - ligne séparée */}
+                {!isObjectifs && program.objectifName && (
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">Objectif</p>
+                    <p className="text-sm">{program.objectifName}</p>
                   </div>
+                )}
+
+                {/* Progression - ligne séparée */}
+                {!isObjectifs && (
+                  <div className="flex items-center gap-2 text-sm mb-3">
+                    <Target size={14} className="text-primary" />
+                    <span className="font-medium">{progression || 0} séances</span>
+                  </div>
+                )}
+
+                {/* Réalisation - ligne séparée si applicable */}
+                {showRealisation && !isObjectifs && (
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Réalisation</p>
+                    <Select
+                      value={program.realisation || ""}
+                      onValueChange={(value) => onRealisationChange?.(program.id, value)}
+                      className="h-9 w-full"
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Sélectionner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Complet">Complet</SelectItem>
+                        <SelectItem value="Partiel">Partiel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Statut email - ligne dédiée avec enveloppe centrée */}
+                <div className="flex justify-center my-4">
                   <Mail
-                    size={24}
+                    size={28}
                     className={cn(
-                      "flex-shrink-0 transition-colors duration-300",
+                      "transition-colors duration-300",
                       program.status === 'transmis' ? "text-green-500 cursor-not-allowed" :
                       program.status === 'erreur' ? "text-red-500" :
                       "text-amber-500"
@@ -315,40 +353,37 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   />
                 </div>
 
-                {/* Informations principales */}
-                <div className="space-y-2 mb-4">
-                  {!isObjectifs && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Target size={14} className="text-primary" />
-                      <span className="font-medium">{progression || 0} séances</span>
-                      {program.objectifName && (
-                        <span className="text-muted-foreground">• {program.objectifName}</span>
-                      )}
-                    </div>
-                  )}
-                  {isObjectifs && program.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{program.description}</p>
-                  )}
-                </div>
-
-                {/* Actions principales */}
-                <div className="flex gap-2 flex-wrap">
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>Voir</Link>
+                {/* Actions - réorganisées verticalement avec espace */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                  <Button variant="outline" size="lg" className="w-full justify-start" asChild>
+                    <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
+                      <Eye size={16} className="mr-2" /> Voir
+                    </Link>
                   </Button>
+
                   {program.status !== 'transmis' && (
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => handleTransmit(program)}>
-                      Envoyer
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="w-full justify-start"
+                      onClick={() => handleTransmit(program)}
+                    >
+                      <Send size={16} className="mr-2" /> Envoyer
                     </Button>
                   )}
-                  <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>Modifier</Link>
+
+                  <Button variant="outline" size="lg" className="w-full justify-start" asChild>
+                    <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
+                      <Edit2 size={16} className="mr-2" /> Modifier
+                    </Link>
                   </Button>
+
                   {!isObjectifs && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <MoreHorizontal size={16} />
+                        <Button variant="outline" size="lg" className="w-full justify-between">
+                          <span>Plus d'actions</span>
+                          <ChevronDown size={16} />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -357,7 +392,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
                           <Trash2 size={14} className="mr-2" /> Supprimer
-                        </DropdownMenuItem>
+                        </Button>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
