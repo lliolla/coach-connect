@@ -392,7 +392,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                         </DropdownMenuItem>
                         <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
                           <Trash2 size={14} className="mr-2" /> Supprimer
-                        </Button>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
