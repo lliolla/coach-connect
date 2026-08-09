@@ -110,7 +110,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
         setShowSuccessModal(false)
         // Redirection vers la page de l'athlète après modification
         if (athleteId) {
-          router.push(`/admin/athletes/${athleteId}`)
+          router.push(`/admin/user/${athleteId}`)
         } else {
           router.push('/admin/objectifs')
         }
@@ -131,7 +131,7 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
       if (shouldModify) {
         // Rediriger vers la page de l'athlète
         if (athleteId) {
-          router.push(`/admin/athletes/${athleteId}`)
+          router.push(`/admin/user/${athleteId}`)
         } else {
           router.push('/admin/objectifs')
         }
@@ -159,7 +159,13 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
             )}
           </CardTitle>
           <CardAction>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/admin/objectifs')}>
+            <Button variant="ghost" size="sm" onClick={() => {
+              if (athleteId) {
+                router.push(`/admin/user/${athleteId}`)
+              } else {
+                router.push('/admin/objectifs')
+              }
+            }}>
               Retour à la liste
             </Button>
           </CardAction>
@@ -258,7 +264,13 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
         </CardContent>
 
         <CardFooter className="flex justify-between border-t p-6 mt-6">
-          <Button variant="outline" onClick={() => router.push('/admin/objectifs')}>Annuler</Button>
+          <Button variant="outline" onClick={() => {
+            if (athleteId) {
+              router.push(`/admin/user/${athleteId}`)
+            } else {
+              router.push('/admin/objectifs')
+            }
+          }}>Annuler</Button>
           <Button onClick={handleSubmit}>
             {isEditMode ? "Sauvegarder les modifications" : "Créer l'objectif"}
           </Button>
@@ -284,7 +296,11 @@ const CardObjectif = ({ objectif = {}, mode = "edit", athleteId }) => {
               type="button"
               onClick={() => {
                 setShowSuccessModal(false)
-                router.push('/admin/objectifs')
+                if (athleteId) {
+                  router.push(`/admin/user/${athleteId}`)
+                } else {
+                  router.push('/admin/objectifs')
+                }
               }}
               className="w-full sm:w-auto px-8"
             >
