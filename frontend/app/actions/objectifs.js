@@ -177,35 +177,23 @@ export async function updateObjectif(formData) {
       if (linkError) throw linkError
     }
 
-    // Mise à jour des liens avec les séances
-    // 1. Délier toutes les séances de l'objectif
-    await supabase
-      .from('sessions')
-      .update({ objectif_id: null })
-      .eq('objectif_id', formData.id)
-
-    // 2. Rattacher les séances
+    // Mise à jour des liens avec les séances UNIQUEMENT si sessionIds est explicitement fourni
     if (formData.sessionIds && Array.isArray(formData.sessionIds)) {
-      // Si sessionIds est fourni, rattacher uniquement ces séances
+      // 1. Délier toutes les séances de l'objectif
       await supabase
         .from('sessions')
-        .update({ objectif_id: formData.id })
-        .in('id', formData.sessionIds)
-    } else if (formData.athlete_id) {
-      // Si sessionIds n'est pas fourni, récupérer les séances qui étaient liées à cet objectif ou qui n'ont pas d'objectif
-      const { data: sessionsToReattach, error: fetchError } = await supabase
-        .from('sessions')
-        .select('id')
-        .eq('athlete_id', formData.athlete_id)
-        .or(`objectif_id.eq.${formData.id},objectif_id.is.null`)
+        .update({ objectif_id: null })
+        .eq('objectif_id', formData.id)
 
-      if (!fetchError && sessionsToReattach?.length > 0) {
+      // 2. Rattacher les séances spécifiées
+      if (formData.sessionIds.length > 0) {
         await supabase
           .from('sessions')
           .update({ objectif_id: formData.id })
-          .in('id', sessionsToReattach.map(s => s.id))
+          .in('id', formData.sessionIds)
       }
     }
+    // Si sessionIds n'est pas fourni, on conserve les relations existantes
 
     revalidatePath('/objectifs')
     return { success: true, data: objective }
