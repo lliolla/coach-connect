@@ -1,0 +1,6 @@
+<ProgramTable
+  programs={programsForTable}
+  onDelete={openDeleteConfirm}
+  context="seances"  // <-- Prop de contexte
+  searchTerm={searchTerm}
+/>
