@@ -1,4 +1,3 @@
-// frontend/app/actions/sessions.js
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -471,7 +470,16 @@ export async function moveSession(
       throw new Error('Position invalide')
     }
 
-    // 4. Appel à la procédure stockée pour déplacer la séance
+    // 4. Vérifier que la position a changé
+    const currentPosition = sessions.findIndex(s => s.id === sessionId) + 1
+    if (currentPosition === newPosition) {
+      return {
+        success: true,
+        message: 'La séance est déjà à la position demandée'
+      }
+    }
+
+    // 5. Appel à la procédure stockée pour déplacer la séance
     const { error: rpcError } = await supabase.rpc(
       'move_session',
       {
@@ -484,7 +492,7 @@ export async function moveSession(
       throw new Error(`Erreur lors du déplacement de la séance: ${rpcError.message}`)
     }
 
-    // 5. Réactualiser les chemins
+    // 6. Réactualiser les chemins
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
@@ -493,6 +501,7 @@ export async function moveSession(
 
     return {
       success: true,
+      message: 'Séance déplacée avec succès'
     }
   } catch (error) {
     console.error(
