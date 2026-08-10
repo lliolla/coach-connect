@@ -175,7 +175,7 @@ export async function updateSession(id, sessionData) {
   return updatedSession
 }
 
-// ===== FONCTIONS RESTAURÉES =====
+// ===== FONCTIONS EXPORTÉES (correction) =====
 export async function transmitSession(sessionId) {
   const supabase = await createClient()
 
@@ -195,15 +195,7 @@ export async function transmitSession(sessionId) {
       throw new Error("La séance n'est pas liée à un athlète")
     }
 
-    // 3. Envoyer l'email (logique à adapter selon ton service d'email)
-    // Exemple avec un service fictif :
-    // await sendEmail({
-    //   to: session.athlete.email,
-    //   subject: `Nouveau programme : ${session.title}`,
-    //   html: generateProgramEmail(session)
-    // })
-
-    // 4. Mettre à jour le statut de la séance
+    // 3. Mettre à jour le statut de la séance
     const { error: updateError } = await supabase
       .from('sessions')
       .update({ status: 'transmis', transmitted_at: new Date().toISOString() })
