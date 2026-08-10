@@ -14,11 +14,9 @@ declare
 begin
     -- 1. Récupérer les informations de la session originale
     select
-        objectif_id,
-        session_number
+        objectif_id
     into
-        v_objectif_id,
-        v_new_session_number
+        v_objectif_id
     from public.sessions
     where id = p_session_id;
 
@@ -30,6 +28,8 @@ begin
         where objectif_id = v_objectif_id;
 
         v_new_session_number := v_session_count;
+    else
+        v_new_session_number := null;
     end if;
 
     -- 3. Créer la nouvelle session dans une transaction
