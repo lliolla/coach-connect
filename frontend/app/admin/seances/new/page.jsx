@@ -18,14 +18,19 @@ function NewSeanceContent() {
   const mode = searchParams.get('mode') || 'create'
   const duplicateId = searchParams.get('duplicateId')
   const [objectifs, setObjectifs] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     const fetchObjectifs = async () => {
       try {
+        setLoading(true)
         const data = await getObjectifs()
         setObjectifs(data || [])
       } catch (error) {
         console.error("Erreur lors de la récupération des objectifs:", error)
+        setObjectifs([])
+      } finally {
+        setLoading(false)
       }
     }
     fetchObjectifs()
@@ -43,12 +48,16 @@ function NewSeanceContent() {
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardSeance
-          mode={mode}
-          duplicateId={duplicateId}
-          isTracking={true}
-          objectifs={objectifs}
-        />
+        {loading ? (
+          <div className="flex justify-center p-8">Chargement des objectifs...</div>
+        ) : (
+          <CardSeance
+            mode={mode}
+            duplicateId={duplicateId}
+            isTracking={true}
+            objectifs={objectifs}
+          />
+        )}
       </div>
     </div>
   )
