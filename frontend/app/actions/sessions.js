@@ -239,18 +239,23 @@ export async function moveSession(sessionId, newSessionNumber) {
       throw new Error("Numéro de séance invalide")
     }
 
-    // 4. Réordonner les séances
-    const updatedSessions = sessions.map(s => {
-      if (s.id === sessionId) {
-        return { ...s, session_number: newSessionNumber }
-      } else if (s.session_number >= newSessionNumber) {
-        return { ...s, session_number: s.session_number + 1 }
-      }
-      return s
-    })
+    // 4. Trouver l'index actuel de la séance
+    const currentIndex = sessions.findIndex(s => s.id === sessionId)
+    if (currentIndex === -1) throw new Error("Séance non trouvée dans l'objectif")
 
-    // 5. Mettre à jour en base de données
-    for (const s of updatedSessions) {
+    // 5. Réordonner les séances
+    const updatedSessions = [...sessions]
+    const [movedSession] = updatedSessions.splice(currentIndex, 1)
+    updatedSessions.splice(newSessionNumber - 1, 0, movedSession)
+
+    // 6. Mettre à jour les numéros de séance
+    const sessionsToUpdate = updatedSessions.map((s, index) => ({
+      id: s.id,
+      session_number: index + 1
+    }))
+
+    // 7. Mettre à jour en base de données
+    for (const s of sessionsToUpdate) {
       const { error: updateError } = await supabase
         .from('sessions')
         .update({ session_number: s.session_number })
