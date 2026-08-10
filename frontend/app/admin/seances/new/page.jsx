@@ -1,6 +1,4 @@
-'use client'
 import * as React from "react"
-import { useSearchParams } from "next/navigation"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -14,12 +12,11 @@ import Link from "next/link"
 import { getObjectifs } from "@/app/actions/objectifs"
 import { getAthletes } from "@/app/actions/athletes"
 
-async function NewSeanceContent() {
-  const searchParams = useSearchParams()
-  const mode = searchParams.get('mode') || 'create'
-  const duplicateId = searchParams.get('duplicateId')
+async function NewSeanceContent({ searchParams }) {
+  const mode = searchParams.mode || 'create'
+  const duplicateId = searchParams.duplicateId
 
-  // Récupération des objectifs et athlètes
+  // Récupération des objectifs et athlètes côté serveur
   const [objectifs, athletes] = await Promise.all([
     getObjectifs(),
     getAthletes()
@@ -49,7 +46,7 @@ async function NewSeanceContent() {
   )
 }
 
-export default function NewSeancePage() {
+export default function NewSeancePage({ searchParams }) {
   return (
     <SidebarProvider
       style={{
@@ -60,7 +57,7 @@ export default function NewSeancePage() {
       <SidebarInset>
         <SiteHeader />
         <React.Suspense fallback={<div className="flex justify-center p-8">Chargement...</div>}>
-          <NewSeanceContent />
+          <NewSeanceContent searchParams={searchParams} />
         </React.Suspense>
       </SidebarInset>
     </SidebarProvider>
