@@ -1,3 +1,4 @@
+// frontend/app/actions/sessions.js
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -15,7 +16,7 @@ const SESSION_SELECT = `
     exercise:exercices_library(*)
   ),
   athletes (id, first_name, last_name, email, avatar_url),
-  objectif:objectifs!objectif_id(id, label, total_sessions, sessions(id, date))
+  objectif:objectifs!objectif_id(id, label, total_sessions, sessions(id, date, session_number))
 `
 
 export async function getSessions() {
@@ -23,11 +24,11 @@ export async function getSessions() {
   const { data, error } = await supabase
     .from('sessions')
     .select(SESSION_SELECT)
-    .order('date', { ascending: false })
+    .order('session_number', { ascending: true }) // Tri par numéro de séance
+    .neq('objectif_id', null)
 
   if (error) {
     console.error("Erreur getSessions:", error.message)
-    // Tentative de repli sans la jointure d'objectif si la relation échoue
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('sessions')
       .select(`
@@ -50,7 +51,6 @@ export async function getSessionById(id) {
   const supabase = await createClient()
   console.log(`[getSessionById] Recherche de la séance avec ID: ${id}`)
 
-  // D'abord, essayons avec la requête complète
   try {
     const { data, error } = await supabase
       .from('sessions')
@@ -60,8 +60,6 @@ export async function getSessionById(id) {
 
     if (error) {
       console.error("[getSessionById] Erreur avec SESSION_SELECT:", error.message)
-
-      // Si erreur, essayons avec une requête plus simple
       const { data: simpleData, error: simpleError } = await supabase
         .from('sessions')
         .select('*')
@@ -85,79 +83,6 @@ export async function getSessionById(id) {
   }
 }
 
-/**
- * Marque une séance comme transmise en mettant à jour le statut et en envoyant un email
- */
-export async function transmitSession(id) {
-  const supabase = await createClient()
-  try {
-    // 1. Récupérer les infos de la séance et de l'athlète
-    const session = await getSessionById(id)
-    if (!session) throw new Error("Séance non trouvée")
-
-    const athlete = session.athletes || session.athlete
-
-    // 2. Envoyer l'email via Resend si l'athlète a un email
-    if (!athlete || !athlete.email) {
-      console.warn("Pas d'email pour l'athlète, impossible d'envoyer")
-      // Mettre à jour le statut en erreur
-      const { error: updateError } = await supabase
-        .from('sessions')
-        .update({ status: 'erreur' })
-        .eq('id', id)
-
-      if (updateError) throw updateError
-      return { success: false, error: "Aucune adresse email pour l'athlète" }
-    }
-
-    // 3. Envoyer l'email via Resend
-    const athleteName = `${athlete.first_name} ${athlete.last_name || ''}`.trim()
-
-    const { error: emailError } = await resend.emails.send({
-      from: 'Prep Athlete <contact@prepathlete.pro>',
-      to: [athlete.email],
-      subject: 'Ton programme de la semaine est disponible !',
-      react: WorkoutProgramEmail({
-        athleteName,
-        programTitle: session.title,
-        notes: session.description,
-        exercises: session.session_exercises,
-        mainRounds: session.main_rounds,
-        duration: session.duration
-      }),
-    });
-
-    // 4. Mettre à jour le statut en fonction du résultat
-    if (emailError) {
-      console.error("Erreur Resend:", emailError)
-      const { error: updateError } = await supabase
-        .from('sessions')
-        .update({ status: 'erreur' })
-        .eq('id', id)
-
-      if (updateError) throw updateError
-      return { success: false, error: emailError.message }
-    }
-
-    // 5. Si tout est OK, marquer comme transmis
-    const { error } = await supabase
-      .from('sessions')
-      .update({ status: 'transmis' })
-      .eq('id', id)
-
-    if (error) throw error
-
-    revalidatePath('/seances')
-    revalidatePath(`/seances/${id}`)
-    revalidatePath('/mes-seances')
-
-    return { success: true }
-  } catch (err) {
-    console.error("Erreur transmitSession:", err)
-    return { success: false, error: err.message }
-  }
-}
-
 export async function createSession(formData) {
   const supabase = await createClient()
 
@@ -167,6 +92,17 @@ export async function createSession(formData) {
   try {
     const { data: { user } } = await supabase.auth.getUser()
 
+    // Calcul du prochain session_number
+    let nextSessionNumber = 1
+    if (rawData.objectif_id) {
+      const { count } = await supabase
+        .from('sessions')
+        .select('session_number', { count: 'exact' })
+        .eq('objectif_id', rawData.objectif_id)
+
+      nextSessionNumber = (count || 0) + 1
+    }
+
     const sessionData = {
       title: rawData.title,
       description: rawData.description || "",
@@ -174,6 +110,7 @@ export async function createSession(formData) {
       status: rawData.status || 'en attente',
       athlete_id: rawData.athlete_id || user?.id,
       objectif_id: rawData.objectif_id || null,
+      session_number: rawData.objectif_id ? nextSessionNumber : null,
       is_template: rawData.is_template === true || rawData.is_template === 'true',
       duration: toNumeric(rawData.duration, 0),
       mainRounds: Math.round(toNumeric(rawData.main_rounds, 1))
@@ -220,6 +157,7 @@ export async function updateSession(id, formData) {
       status: rawData.status,
       athlete_id: rawData.athlete_id,
       objectif_id: rawData.objectif_id || null,
+      session_number: rawData.session_number, // Conservation du numéro
       is_template: rawData.is_template === true || rawData.is_template === 'true',
       duration: toNumeric(rawData.duration, 0),
       mainRounds: Math.round(toNumeric(rawData.main_rounds, 1))
@@ -273,8 +211,33 @@ export async function updateSession(id, formData) {
 export async function deleteSession(id) {
   const supabase = await createClient()
   try {
+    // Récupérer la séance avant suppression
+    const { data: sessionToDelete } = await supabase
+      .from('sessions')
+      .select('objectif_id, session_number')
+      .eq('id', id)
+      .single()
+
+    // Supprimer la séance
     const { error } = await supabase.from('sessions').delete().eq('id', id)
     if (error) throw error
+
+    // Renuméroter les séances suivantes si nécessaire
+    if (sessionToDelete.objectif_id && sessionToDelete.session_number) {
+      const { data: sessionsToUpdate } = await supabase
+        .from('sessions')
+        .select('id, session_number')
+        .eq('objectif_id', sessionToDelete.objectif_id)
+        .gt('session_number', sessionToDelete.session_number)
+        .order('session_number', { ascending: true })
+
+      for (const session of sessionsToUpdate) {
+        await supabase
+          .from('sessions')
+          .update({ session_number: session.session_number - 1 })
+          .eq('id', session.id)
+      }
+    }
 
     revalidatePath('/mes-seances')
     revalidatePath('/seances')
@@ -285,9 +248,152 @@ export async function deleteSession(id) {
   }
 }
 
-/**
- * Met à jour la réalisation d'une séance (Complet/Partiel)
- */
+export async function moveSession(id, newPosition) {
+  const supabase = await createClient()
+
+  try {
+    // 1. Récupérer la séance et son objectif
+    const { data: session } = await supabase
+      .from('sessions')
+      .select('id, objectif_id, session_number')
+      .eq('id', id)
+      .single()
+
+    if (!session.objectif_id || !session.session_number) {
+      return { success: false, error: "Séance sans numéro ou sans objectif" }
+    }
+
+    // 2. Récupérer toutes les séances de l'objectif
+    const { data: allSessions } = await supabase
+      .from('sessions')
+      .select('id, session_number')
+      .eq('objectif_id', session.objectif_id)
+      .order('session_number', { ascending: true })
+
+    // 3. Calculer le nouveau numéro (borné entre 1 et nombre total)
+    const newNumber = Math.min(Math.max(1, newPosition), allSessions.length)
+
+    // 4. Si déplacement vers le bas, décrémenter les séances intermédiaires
+    if (newNumber > session.session_number) {
+      const sessionsToDecrement = allSessions.filter(s =>
+        s.session_number > session.session_number &&
+        s.session_number <= newNumber
+      )
+
+      for (const s of sessionsToDecrement) {
+        await supabase
+          .from('sessions')
+          .update({ session_number: s.session_number - 1 })
+          .eq('id', s.id)
+      }
+    }
+    // 5. Si déplacement vers le haut, incrémenter les séances intermédiaires
+    else if (newNumber < session.session_number) {
+      const sessionsToIncrement = allSessions.filter(s =>
+        s.session_number < session.session_number &&
+        s.session_number >= newNumber
+      )
+
+      for (const s of sessionsToIncrement) {
+        await supabase
+          .from('sessions')
+          .update({ session_number: s.session_number + 1 })
+          .eq('id', s.id)
+      }
+    }
+
+    // 6. Mettre à jour la séance déplacée
+    await supabase
+      .from('sessions')
+      .update({ session_number: newNumber })
+      .eq('id', id)
+
+    revalidatePath('/seances')
+    revalidatePath('/mes-seances')
+    return { success: true }
+  } catch (err) {
+    console.error("Erreur moveSession:", err)
+    return { success: false, error: err.message }
+  }
+}
+
+export async function duplicateSession(originalId) {
+  const supabase = await createClient()
+
+  try {
+    // 1. Récupérer la séance originale avec ses exercices
+    const { data: originalSession } = await supabase
+      .from('sessions')
+      .select(`
+        *,
+        session_exercises (*)
+      `)
+      .eq('id', originalId)
+      .single()
+
+    if (!originalSession) {
+      throw new Error("Séance originale non trouvée")
+    }
+
+    // 2. Trouver le prochain numéro de séance
+    let nextNumber = 1
+    if (originalSession.objectif_id) {
+      const { count } = await supabase
+        .from('sessions')
+        .select('session_number', { count: 'exact' })
+        .eq('objectif_id', originalSession.objectif_id)
+
+      nextNumber = (count || 0) + 1
+    }
+
+    // 3. Créer la nouvelle séance
+    const { data: newSession } = await supabase
+      .from('sessions')
+      .insert({
+        title: `${originalSession.title} (copie)`,
+        description: originalSession.description,
+        date: new Date().toISOString().split('T')[0],
+        status: 'en attente',
+        athlete_id: originalSession.athlete_id,
+        objectif_id: originalSession.objectif_id,
+        session_number: originalSession.objectif_id ? nextNumber : null,
+        duration: originalSession.duration,
+        mainRounds: originalSession.main_rounds,
+        is_template: originalSession.is_template
+      })
+      .select()
+      .single()
+
+    // 4. Dupliquer les exercices
+    if (originalSession.session_exercises && originalSession.session_exercises.length > 0) {
+      const exercisesToInsert = originalSession.session_exercises.map(ex => ({
+        session_id: newSession.id,
+        exercise_id: ex.exercise_id,
+        order_index: ex.order_index,
+        section: ex.section,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        rest_time: ex.rest_time,
+        rounds: ex.rounds,
+        notes: ex.notes,
+        intensity: ex.intensity
+      }))
+
+      await supabase
+        .from('session_exercises')
+        .insert(exercisesToInsert)
+    }
+
+    revalidatePath('/seances')
+    revalidatePath('/mes-seances')
+    return { success: true, data: newSession }
+  } catch (err) {
+    console.error("Erreur duplicateSession:", err)
+    return { success: false, error: err.message }
+  }
+}
+
 export async function updateSessionRealisation(id, realisation) {
   const supabase = await createClient()
 
@@ -298,9 +404,6 @@ export async function updateSessionRealisation(id, realisation) {
       .eq('id', id)
 
     if (error) {
-      // Si la colonne n'existe pas, essayer de l'ajouter via une requête brute
-      // Note: Supabase JavaScript client ne permet pas d'ALTER TABLE directement
-      // Le user doit créer la colonne manuellement via l'interface Supabase
       throw new Error(`Erreur: ${error.message}. Veuillez vérifier que la colonne 'realisation' existe dans la table 'sessions'.`)
     }
 
