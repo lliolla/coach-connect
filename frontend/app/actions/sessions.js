@@ -196,14 +196,6 @@ export async function transmitSession(sessionId) {
       throw new Error("L'athlète n'a pas d'adresse email valide")
     }
 
-    // Ici vous devriez implémenter l'envoi d'email avec votre service d'email
-    // Exemple avec un service fictif:
-    // await sendEmail({
-    //   to: session.athlete.email,
-    //   subject: `Nouveau programme: ${session.title}`,
-    //   html: generateProgramEmail(session)
-    // })
-
     const { error: updateError } = await supabase
       .from('sessions')
       .update({
@@ -226,31 +218,9 @@ export async function moveSession(sessionId, newSessionNumber) {
   const supabase = await createClient()
 
   try {
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('*, objectif:objectifs(id)')
-      .eq('id', sessionId)
-      .single()
-
-    if (sessionError) throw new Error(sessionError.message)
-    if (!session) throw new Error("Séance introuvable")
-    if (!session.objectif) throw new Error("La séance n'est pas liée à un objectif")
-
-    const { data: sessions, error: sessionsError } = await supabase
-      .from('sessions')
-      .select('id, session_number')
-      .eq('objectif_id', session.objectif.id)
-      .order('session_number', { ascending: true })
-
-    if (sessionsError) throw new Error(sessionsError.message)
-
-    if (newSessionNumber < 1 || newSessionNumber > sessions.length) {
-      throw new Error("Numéro de séance invalide")
-    }
-
     const { error } = await supabase.rpc('move_session', {
-      session_id: sessionId,
-      new_session_number: newSessionNumber
+      p_session_id: sessionId,
+      p_new_session_number: newSessionNumber
     })
 
     if (error) throw new Error(error.message)
@@ -286,28 +256,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
   const supabase = await createClient()
 
   try {
-    const { data: session, error: sessionError } = await supabase
-      .from('sessions')
-      .select('*')
-      .eq('id', sessionId)
-      .single()
-
-    if (sessionError) throw new Error(sessionError.message)
-    if (!session) throw new Error("Séance introuvable")
-
-    const { data: newObjectif, error: objectifError } = await supabase
-      .from('objectifs')
-      .select('id, total_sessions')
-      .eq('id', newObjectifId)
-      .single()
-
-    if (objectifError) throw new Error(objectifError.message)
-    if (!newObjectif) throw new Error("Nouvel objectif introuvable")
-
-    if (await isObjectifFull(newObjectifId)) {
-      throw new Error("Le nouvel objectif est plein")
-    }
-
     const { error } = await supabase.rpc('move_session_to_another_objectif', {
       p_session_id: sessionId,
       p_new_objectif_id: newObjectifId,
