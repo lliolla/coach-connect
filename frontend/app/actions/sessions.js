@@ -266,3 +266,65 @@ export async function moveSession(sessionId, newSessionNumber) {
     return { success: false, error: error.message }
   }
 }
+
+export async function moveSessionWithinObjectif(sessionId, newPosition) {
+  const supabase = await createClient()
+
+  try {
+    // 1. Récupérer la séance et son objectif
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*, objectif:objectifs(id)')
+      .eq('id', sessionId)
+      .single()
+
+    if (sessionError) throw new Error(sessionError.message)
+    if (!session) throw new Error("Séance introuvable")
+    if (!session.objectif) throw new Error("La séance n'est pas liée à un objectif")
+
+    // 2. Récupérer toutes les séances de l'objectif
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('id, session_number')
+      .eq('objectif_id', session.objectif.id)
+      .order('session_number', { ascending: true })
+
+    if (sessionsError) throw new Error(sessionsError.message)
+
+    // 3. Vérifier que la nouvelle position est valide
+    if (newPosition < 1 || newPosition > sessions.length) {
+      throw new Error("Position invalide")
+    }
+
+    // 4. Trouver l'index actuel de la séance
+    const currentIndex = sessions.findIndex(s => s.id === sessionId)
+    if (currentIndex === -1) throw new Error("Séance non trouvée dans l'objectif")
+
+    // 5. Réordonner les séances
+    const updatedSessions = [...sessions]
+    const [movedSession] = updatedSessions.splice(currentIndex, 1)
+    updatedSessions.splice(newPosition - 1, 0, movedSession)
+
+    // 6. Mettre à jour les numéros de séance
+    const sessionsToUpdate = updatedSessions.map((s, index) => ({
+      id: s.id,
+      session_number: index + 1
+    }))
+
+    // 7. Mettre à jour en base de données
+    for (const s of sessionsToUpdate) {
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({ session_number: s.session_number })
+        .eq('id', s.id)
+
+      if (updateError) throw new Error(updateError.message)
+    }
+
+    revalidatePath('/admin/seances')
+    return { success: true }
+  } catch (error) {
+    console.error("Erreur lors du déplacement dans l'objectif:", error)
+    return { success: false, error: error.message }
+  }
+}
