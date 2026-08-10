@@ -367,23 +367,11 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   </div>
                 )}
 
-                {/* Réalisation - ligne séparée si applicable */}
-                {showRealisation && !isObjectifs && (
+                {/* DPD - affichage direct du contenu */}
+                {showRealisation && !isObjectifs && program.realisation && (
                   <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Réalisation</p>
-                    <Select
-                      value={program.realisation || ""}
-                      onValueChange={(value) => onRealisationChange?.(program.id, value)}
-                      className="h-9 w-full"
-                    >
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Complet">Complet</SelectItem>
-                        <SelectItem value="Partiel">Partiel</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <p className="text-sm font-medium text-muted-foreground">DPD</p>
+                    <p className="text-sm">{program.realisation}</p>
                   </div>
                 )}
               </div>
