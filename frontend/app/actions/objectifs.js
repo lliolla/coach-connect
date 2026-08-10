@@ -12,7 +12,7 @@ export async function getObjectifs() {
     // Récupérer les objectifs avec les champs minimaux requis
     const { data, error } = await supabase
       .from('objectifs')
-      .select('id, label, description, total_sessions, weeksCount, duree, completed')
+      .select('id, label, description, total_sessions, weeksCount, duree, completed, athletes_objectifs(athlete_id)')
       .order('label', { ascending: true })
 
     if (error) throw error
@@ -25,7 +25,8 @@ export async function getObjectifs() {
       total_sessions: obj.total_sessions || 20,
       weeksCount: obj.weeksCount || 4,
       duree: obj.duree || 4,
-      completed: obj.completed || false
+      completed: obj.completed || false,
+      athlete_id: obj.athletes_objectifs?.[0]?.athlete_id || null
     }))
   } catch (error) {
     console.error("Erreur lors de la récupération des objectifs:", error)
