@@ -328,3 +328,111 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
     return { success: false, error: error.message }
   }
 }
+
+export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, newPosition) {
+  const supabase = await createClient()
+
+  try {
+    // 1. Vérifier que la séance existe
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single()
+
+    if (sessionError) throw new Error(sessionError.message)
+    if (!session) throw new Error("Séance introuvable")
+
+    // 2. Vérifier que le nouvel objectif existe
+    const { data: newObjectif, error: objectifError } = await supabase
+      .from('objectifs')
+      .select('id, total_sessions')
+      .eq('id', newObjectifId)
+      .single()
+
+    if (objectifError) throw new Error(objectifError.message)
+    if (!newObjectif) throw new Error("Nouvel objectif introuvable")
+
+    // 3. Vérifier que le nouvel objectif n'est pas plein
+    if (await isObjectifFull(newObjectifId)) {
+      throw new Error("Le nouvel objectif est plein")
+    }
+
+    // 4. Récupérer toutes les séances du nouvel objectif
+    const { data: newObjectifSessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('id, session_number')
+      .eq('objectif_id', newObjectifId)
+      .order('session_number', { ascending: true })
+
+    if (sessionsError) throw new Error(sessionsError.message)
+
+    // 5. Vérifier que la nouvelle position est valide
+    if (newPosition < 1 || newPosition > newObjectifSessions.length + 1) {
+      throw new Error("Position invalide dans le nouvel objectif")
+    }
+
+    // 6. Mettre à jour la séance avec le nouvel objectif et numéro
+    const { error: updateError } = await supabase
+      .from('sessions')
+      .update({
+        objectif_id: newObjectifId,
+        session_number: newPosition
+      })
+      .eq('id', sessionId)
+
+    if (updateError) throw new Error(updateError.message)
+
+    // 7. Réordonner les séances dans le nouvel objectif
+    const updatedSessions = newObjectifSessions.map(s => {
+      if (s.session_number >= newPosition) {
+        return { ...s, session_number: s.session_number + 1 }
+      }
+      return s
+    })
+
+    // 8. Mettre à jour les numéros de séance dans le nouvel objectif
+    for (const s of updatedSessions) {
+      const { error: reorderError } = await supabase
+        .from('sessions')
+        .update({ session_number: s.session_number })
+        .eq('id', s.id)
+
+      if (reorderError) throw new Error(reorderError.message)
+    }
+
+    // 9. Si la séance venait d'un autre objectif, réordonner les séances restantes
+    if (session.objectif_id && session.objectif_id !== newObjectifId) {
+      const { data: oldObjectifSessions, error: oldSessionsError } = await supabase
+        .from('sessions')
+        .select('id, session_number')
+        .eq('objectif_id', session.objectif_id)
+        .order('session_number', { ascending: true })
+
+      if (oldSessionsError) throw new Error(oldSessionsError.message)
+
+      const reorderedOldSessions = oldObjectifSessions
+        .filter(s => s.id !== sessionId)
+        .map((s, index) => ({
+          id: s.id,
+          session_number: index + 1
+        }))
+
+      for (const s of reorderedOldSessions) {
+        const { error: reorderError } = await supabase
+          .from('sessions')
+          .update({ session_number: s.session_number })
+          .eq('id', s.id)
+
+        if (reorderError) throw new Error(reorderError.message)
+      }
+    }
+
+    revalidatePath('/admin/seances')
+    revalidatePath('/admin/objectifs')
+    return { success: true }
+  } catch (error) {
+    console.error("Erreur lors du déplacement vers un autre objectif:", error)
+    return { success: false, error: error.message }
+  }
+}
