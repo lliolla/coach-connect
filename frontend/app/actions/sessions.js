@@ -101,6 +101,8 @@ export async function createSession(sessionData) {
       rounds: ex.rounds !== "" ? parseInt(ex.rounds) || 1 : 1
     }))
 
+    console.log('[createSession] exercisesToInsert:', JSON.stringify(exercisesToInsert, null, 2))
+
     const { error: exercisesError } = await supabase
       .from('session_exercises')
       .insert(exercisesToInsert)
