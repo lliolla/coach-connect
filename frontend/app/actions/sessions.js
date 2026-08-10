@@ -6,9 +6,9 @@ import { getSession } from './sessions'
 
 const SESSION_SELECT = `
   *,
-  exercices:exercices_sessions (
+  exercices:session_exercises (
     *,
-    exercice:exercices (*)
+    exercice:exercices_library (*)
   ),
   objectif:objectifs (*)
 `
