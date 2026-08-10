@@ -356,17 +356,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   </div>
                 )}
 
-                {/* Progression - ligne séparée */}
-                {!isObjectifs && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground">Progression</p>
-                    <div className="flex items-center gap-2">
-                      <Target size={14} className="text-primary" />
-                      <span className="font-medium">{progression || 0} séances</span>
-                    </div>
-                  </div>
-                )}
-
                 {/* DPD - affichage direct du contenu */}
                 {showRealisation && !isObjectifs && program.realisation && (
                   <div className="mb-3">
