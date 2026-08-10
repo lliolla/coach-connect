@@ -15,7 +15,10 @@ export async function getObjectifs() {
       .select('id, label, description, total_sessions, weeksCount, duree, completed, athletes_objectifs(athlete_id)')
       .order('label', { ascending: true })
 
-    if (error) throw error
+    if (error) {
+      console.error("Erreur Supabase lors de la récupération des objectifs:", error)
+      return []
+    }
 
     // Garantir le format {id, label} même si d'autres champs sont manquants
     return data.map(obj => ({
@@ -29,8 +32,7 @@ export async function getObjectifs() {
       athlete_id: obj.athletes_objectifs?.[0]?.athlete_id || null
     }))
   } catch (error) {
-    console.error("Erreur lors de la récupération des objectifs:", error)
-    // Retourner un tableau vide plutôt que de throw pour éviter de bloquer l'UI
+    console.error("Erreur inattendue lors de la récupération des objectifs:", error)
     return []
   }
 }
@@ -48,7 +50,10 @@ export async function getObjectifById(id) {
       .eq('id', id)
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error("Erreur Supabase lors de la récupération de l'objectif:", error)
+      return null
+    }
 
     return {
       ...objectif,
@@ -56,7 +61,7 @@ export async function getObjectifById(id) {
       athlete_id: objectif.athletes_objectifs?.[0]?.athlete_id || null
     }
   } catch (err) {
-    console.error("Erreur lors de la récupération de l'objectif:", err)
+    console.error("Erreur inattendue lors de la récupération de l'objectif:", err)
     return null
   }
 }
@@ -79,7 +84,10 @@ export async function createObjectif(formData) {
       .insert([cleanData])
       .select()
 
-    if (objError) throw objError
+    if (objError) {
+      console.error("Erreur Supabase lors de la création de l'objectif:", objError)
+      throw new Error(objError.message)
+    }
 
     const objective = objectives[0]
 
@@ -91,19 +99,28 @@ export async function createObjectif(formData) {
           objectif_id: objective.id
         }])
 
-      if (linkError) throw linkError
+      if (linkError) {
+        console.error("Erreur Supabase lors de la liaison athlète-objectif:", linkError)
+        throw new Error(linkError.message)
+      }
     }
 
     if (formData.sessionIds && Array.isArray(formData.sessionIds) && formData.sessionIds.length > 0) {
-      await supabase
+      const { error: sessionError } = await supabase
         .from('sessions')
         .update({ objectif_id: objective.id })
         .in('id', formData.sessionIds)
+
+      if (sessionError) {
+        console.error("Erreur Supabase lors de la mise à jour des séances:", sessionError)
+        throw new Error(sessionError.message)
+      }
     }
 
     revalidatePath('/objectifs')
     return { success: true, data: objective }
   } catch (err) {
+    console.error("Erreur inattendue lors de la création de l'objectif:", err)
     return { success: false, error: err.message }
   }
 }
@@ -130,15 +147,23 @@ export async function updateObjectif(formData) {
       .eq('id', formData.id)
       .select()
 
-    if (objError) throw objError
+    if (objError) {
+      console.error("Erreur Supabase lors de la mise à jour de l'objectif:", objError)
+      throw new Error(objError.message)
+    }
 
     const objective = objectives[0]
 
     if (formData.athlete_id) {
-      await supabase
+      const { error: deleteError } = await supabase
         .from('athletes_objectifs')
         .delete()
         .eq('objectif_id', formData.id)
+
+      if (deleteError) {
+        console.error("Erreur Supabase lors de la suppression de la liaison athlète-objectif:", deleteError)
+        throw new Error(deleteError.message)
+      }
 
       const { error: linkError } = await supabase
         .from('athletes_objectifs')
@@ -147,26 +172,40 @@ export async function updateObjectif(formData) {
           objectif_id: formData.id
         }])
 
-      if (linkError) throw linkError
+      if (linkError) {
+        console.error("Erreur Supabase lors de la création de la liaison athlète-objectif:", linkError)
+        throw new Error(linkError.message)
+      }
     }
 
     if (formData.sessionIds && Array.isArray(formData.sessionIds)) {
-      await supabase
+      const { error: nullError } = await supabase
         .from('sessions')
         .update({ objectif_id: null })
         .eq('objectif_id', formData.id)
 
+      if (nullError) {
+        console.error("Erreur Supabase lors de la suppression des liens séances-objectif:", nullError)
+        throw new Error(nullError.message)
+      }
+
       if (formData.sessionIds.length > 0) {
-        await supabase
+        const { error: sessionError } = await supabase
           .from('sessions')
           .update({ objectif_id: formData.id })
           .in('id', formData.sessionIds)
+
+        if (sessionError) {
+          console.error("Erreur Supabase lors de la mise à jour des séances:", sessionError)
+          throw new Error(sessionError.message)
+        }
       }
     }
 
     revalidatePath('/objectifs')
     return { success: true, data: objective }
   } catch (err) {
+    console.error("Erreur inattendue lors de la mise à jour de l'objectif:", err)
     return { success: false, error: err.message }
   }
 }
@@ -175,21 +214,30 @@ export async function deleteObjectif(id) {
   const supabase = await createClient()
 
   try {
-    await supabase
+    const { error: sessionError } = await supabase
       .from('sessions')
       .update({ objectif_id: null })
       .eq('objectif_id', id)
+
+    if (sessionError) {
+      console.error("Erreur Supabase lors de la suppression des liens séances-objectif:", sessionError)
+      throw new Error(sessionError.message)
+    }
 
     const { error } = await supabase
       .from('objectifs')
       .delete()
       .eq('id', id)
 
-    if (error) throw error
+    if (error) {
+      console.error("Erreur Supabase lors de la suppression de l'objectif:", error)
+      throw new Error(error.message)
+    }
 
     revalidatePath('/objectifs')
     return { success: true }
   } catch (err) {
+    console.error("Erreur inattendue lors de la suppression de l'objectif:", err)
     return { success: false, error: err.message }
   }
 }
