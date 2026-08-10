@@ -1,4 +1,3 @@
-
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -518,19 +517,72 @@ export async function moveSessionToAnotherObjectif(
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase.rpc(
+    // 1. Vérifier que la séance existe
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*, objectif:objectifs(id)')
+      .eq('id', sessionId)
+      .single()
+
+    if (sessionError) {
+      throw new Error(sessionError.message)
+    }
+
+    if (!session) {
+      throw new Error('Séance introuvable')
+    }
+
+    // 2. Vérifier que le nouvel objectif existe
+    const { data: newObjectif, error: objectifError } = await supabase
+      .from('objectifs')
+      .select('id, total_sessions')
+      .eq('id', newObjectifId)
+      .single()
+
+    if (objectifError) {
+      throw new Error(objectifError.message)
+    }
+
+    if (!newObjectif) {
+      throw new Error('Nouvel objectif introuvable')
+    }
+
+    // 3. Vérifier que le nouvel objectif n'est pas plein
+    if (await isObjectifFull(newObjectifId)) {
+      throw new Error('Le nouvel objectif est plein')
+    }
+
+    // 4. Récupérer toutes les séances du nouvel objectif
+    const { data: newObjectifSessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('id, session_number')
+      .eq('objectif_id', newObjectifId)
+      .order('session_number', { ascending: true })
+
+    if (sessionsError) {
+      throw new Error(sessionsError.message)
+    }
+
+    // 5. Vérifier que la nouvelle position est valide
+    if (newPosition < 1 || newPosition > newObjectifSessions.length + 1) {
+      throw new Error('Position invalide dans le nouvel objectif')
+    }
+
+    // 6. Appel à la procédure stockée pour déplacer la séance
+    const { error: rpcError } = await supabase.rpc(
       'move_session_to_another_objectif',
       {
         p_session_id: sessionId,
         p_new_objectif_id: newObjectifId,
-        p_new_position: newPosition,
+        p_new_position: newPosition
       }
     )
 
-    if (error) {
-      throw new Error(error.message)
+    if (rpcError) {
+      throw new Error(rpcError.message)
     }
 
+    // 7. Réactualiser les chemins
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
@@ -554,4 +606,3 @@ export async function moveSessionToAnotherObjectif(
     }
   }
 }
-
