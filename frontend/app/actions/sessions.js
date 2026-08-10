@@ -525,7 +525,7 @@ export async function moveSessionToAnotherObjectif(
       .single()
 
     if (sessionError) {
-      throw new Error(sessionError.message)
+      throw new Error(`Erreur lors de la vérification de la séance: ${sessionError.message}`)
     }
 
     if (!session) {
@@ -540,7 +540,7 @@ export async function moveSessionToAnotherObjectif(
       .single()
 
     if (objectifError) {
-      throw new Error(objectifError.message)
+      throw new Error(`Erreur lors de la vérification de l'objectif: ${objectifError.message}`)
     }
 
     if (!newObjectif) {
@@ -560,7 +560,7 @@ export async function moveSessionToAnotherObjectif(
       .order('session_number', { ascending: true })
 
     if (sessionsError) {
-      throw new Error(sessionsError.message)
+      throw new Error(`Erreur lors de la récupération des séances: ${sessionsError.message}`)
     }
 
     // 5. Vérifier que la nouvelle position est valide
@@ -579,7 +579,7 @@ export async function moveSessionToAnotherObjectif(
     )
 
     if (rpcError) {
-      throw new Error(rpcError.message)
+      throw new Error(`Erreur lors du déplacement de la séance: ${rpcError.message}`)
     }
 
     // 7. Réactualiser les chemins
