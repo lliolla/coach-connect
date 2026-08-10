@@ -196,3 +196,31 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId) {
   revalidatePath('/admin/modeles')
   revalidatePath('/athlete/mes-seances')
 }
+
+// Nouvelle fonction wrapper pour la compatibilité avec le frontend
+export async function moveSession(sessionId, newPosition) {
+  try {
+    await moveSessionWithinObjectif(sessionId, newPosition)
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
+
+// Nouvelle fonction pour la transmission de session
+export async function transmitSession(sessionId) {
+  const supabase = await createClient()
+  try {
+    const { error } = await supabase.rpc('transmit_session', {
+      p_session_id: sessionId
+    })
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath('/admin/seances')
+    revalidatePath('/athlete/mes-seances')
+    return { success: true }
+  } catch (error) {
+    return { success: false, error: error.message }
+  }
+}
