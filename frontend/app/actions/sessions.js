@@ -224,14 +224,14 @@ export async function updateSession(id, sessionData) {
       session_id: id,
       exercise_id: ex.exercise_id,
       sets: ex.sets || 1,
-      reps: ex.reps || 0,
-      weight: ex.weight || 0,
-      rest_time: ex.rest_time || 60,
+      reps: toSafeNumber(ex.reps, 0),
+      weight: toSafeNumber(ex.weight, 0),
+      rest_time: toSafeNumber(ex.rest_time, 60),
       order_index: index,
       notes: ex.notes || '',
-      intensity: ex.intensity || 0,
+      intensity: toSafeNumber(ex.intensity, 0),
       section: ex.section || 'main',
-      rounds: ex.rounds || 1,
+      rounds: toSafeNumber(ex.rounds, 1),
     }))
 
     if (exercisesToInsert.length > 0) {
