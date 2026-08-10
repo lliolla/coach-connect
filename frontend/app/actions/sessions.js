@@ -90,15 +90,15 @@ export async function createSession(sessionData) {
     const exercisesToInsert = exercises.map(ex => ({
       session_id: newSession.id,
       exercise_id: ex.exercise_id,
-      sets: ex.sets || 1,
-      reps: ex.reps,
-      weight: ex.weight,
-      rest_time: ex.rest_time,
+      sets: ex.sets !== "" ? parseInt(ex.sets) || 1 : 1,
+      reps: ex.reps !== "" ? parseInt(ex.reps) || 0 : 0,
+      weight: ex.weight !== "" ? parseFloat(ex.weight) || 0 : 0,
+      rest_time: ex.rest_time !== "" ? parseInt(ex.rest_time) || 60 : 60,
       order_index: ex.order_index,
-      notes: ex.notes,
-      intensity: ex.intensity,
-      section: ex.section,
-      rounds: ex.rounds
+      notes: ex.notes || "",
+      intensity: ex.intensity || "",
+      section: ex.section || 'main',
+      rounds: ex.rounds !== "" ? parseInt(ex.rounds) || 1 : 1
     }))
 
     const { error: exercisesError } = await supabase
