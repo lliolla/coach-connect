@@ -130,6 +130,7 @@ export async function createSession(sessionData) {
 
   revalidatePath('/admin/seances')
   revalidatePath('/admin/modeles')
+  revalidatePath('/admin/objectifs')
   return newSession
 }
 
@@ -172,6 +173,7 @@ export async function updateSession(id, sessionData) {
 
   revalidatePath('/admin/seances')
   revalidatePath('/admin/modeles')
+  revalidatePath('/admin/objectifs')
   return updatedSession
 }
 
@@ -226,6 +228,8 @@ export async function moveSession(sessionId, newSessionNumber) {
     if (error) throw new Error(error.message)
 
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
+    revalidatePath('/admin/objectifs')
     return { success: true }
   } catch (error) {
     console.error("Erreur lors du déplacement:", error)
@@ -245,6 +249,8 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
     if (error) throw new Error(error.message)
 
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
+    revalidatePath('/admin/objectifs')
     return { success: true }
   } catch (error) {
     console.error("Erreur lors du déplacement dans l'objectif:", error)
@@ -265,6 +271,7 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
     if (error) throw new Error(error.message)
 
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
     return { success: true }
   } catch (error) {

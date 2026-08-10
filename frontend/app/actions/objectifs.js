@@ -119,6 +119,7 @@ export async function createObjectif(formData) {
 
     revalidatePath('/admin/objectifs')
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
     return { success: true, data: objective }
   } catch (err) {
     console.error("Erreur inattendue lors de la création de l'objectif:", err)
@@ -205,6 +206,7 @@ export async function updateObjectif(formData) {
 
     revalidatePath('/admin/objectifs')
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
     return { success: true, data: objective }
   } catch (err) {
     console.error("Erreur inattendue lors de la mise à jour de l'objectif:", err)
@@ -238,6 +240,7 @@ export async function deleteObjectif(id) {
 
     revalidatePath('/admin/objectifs')
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
     return { success: true }
   } catch (err) {
     console.error("Erreur inattendue lors de la suppression de l'objectif:", err)
