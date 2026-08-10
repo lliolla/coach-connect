@@ -1,4 +1,6 @@
+'use client'
 import * as React from "react"
+import { useSearchParams } from "next/navigation"
 import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import {
@@ -9,18 +11,11 @@ import { CardSeance } from "@/components/seance/card_seance"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
-import { getObjectifs } from "@/app/actions/objectifs"
-import { getAthletes } from "@/app/actions/athletes"
 
-async function NewSeanceContent({ searchParams }) {
-  const mode = searchParams.mode || 'create'
-  const duplicateId = searchParams.duplicateId
-
-  // Récupération des objectifs et athlètes côté serveur
-  const [objectifs, athletes] = await Promise.all([
-    getObjectifs(),
-    getAthletes()
-  ])
+function NewSeanceContent() {
+  const searchParams = useSearchParams()
+  const mode = searchParams.get('mode') || 'create'
+  const duplicateId = searchParams.get('duplicateId')
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
@@ -34,19 +29,13 @@ async function NewSeanceContent({ searchParams }) {
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardSeance
-          mode={mode}
-          duplicateId={duplicateId}
-          isTracking={true}
-          objectifs={objectifs}
-          athletes={athletes}
-        />
+        <CardSeance mode={mode} duplicateId={duplicateId} isTracking={true} />
       </div>
     </div>
   )
 }
 
-export default function NewSeancePage({ searchParams }) {
+export default function NewSeancePage() {
   return (
     <SidebarProvider
       style={{
@@ -57,7 +46,7 @@ export default function NewSeancePage({ searchParams }) {
       <SidebarInset>
         <SiteHeader />
         <React.Suspense fallback={<div className="flex justify-center p-8">Chargement...</div>}>
-          <NewSeanceContent searchParams={searchParams} />
+          <NewSeanceContent />
         </React.Suspense>
       </SidebarInset>
     </SidebarProvider>
