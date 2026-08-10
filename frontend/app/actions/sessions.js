@@ -90,7 +90,7 @@ export async function createSession(sessionData) {
     const exercisesToInsert = exercises.map(ex => ({
       session_id: newSession.id,
       exercise_id: ex.exercise_id,
-      sets: ex.sets,
+      sets: ex.sets || 1,
       reps: ex.reps,
       weight: ex.weight,
       rest_time: ex.rest_time,
