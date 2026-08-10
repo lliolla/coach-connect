@@ -281,6 +281,7 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
   const supabase = await createClient()
 
   try {
+    // 1. Récupérer la séance et son objectif
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select('*, objectif:objectifs(id)')
@@ -291,6 +292,7 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
     if (!session) throw new Error("Séance introuvable")
     if (!session.objectif) throw new Error("La séance n'est pas liée à un objectif")
 
+    // 2. Récupérer toutes les séances de l'objectif
     const { data: sessions, error: sessionsError } = await supabase
       .from('sessions')
       .select('id, session_number')
@@ -299,29 +301,41 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
 
     if (sessionsError) throw new Error(sessionsError.message)
 
+    // 3. Vérifier que la nouvelle position est valide
     if (newPosition < 1 || newPosition > sessions.length) {
       throw new Error("Position invalide")
     }
 
+    // 4. Trouver l'index actuel de la séance
     const currentIndex = sessions.findIndex(s => s.id === sessionId)
     if (currentIndex === -1) throw new Error("Séance non trouvée dans l'objectif")
 
+    // 5. Si la position n'a pas changé, ne rien faire
+    if (currentIndex + 1 === newPosition) {
+      return { success: true }
+    }
+
+    // 6. Réordonner les séances
     const updatedSessions = [...sessions]
     const [movedSession] = updatedSessions.splice(currentIndex, 1)
     updatedSessions.splice(newPosition - 1, 0, movedSession)
 
-    const sessionsToUpdate = updatedSessions.map((s, index) => ({
-      id: s.id,
-      session_number: index + 1
-    }))
-
-    for (const s of sessionsToUpdate) {
-      const { error: updateError } = await supabase
+    // 7. Mettre à jour les numéros de séance
+    const batchUpdates = updatedSessions.map((s, index) => {
+      return supabase
         .from('sessions')
-        .update({ session_number: s.session_number })
+        .update({ session_number: index + 1 })
         .eq('id', s.id)
+    })
 
-      if (updateError) throw new Error(updateError.message)
+    // 8. Exécuter toutes les mises à jour en parallèle
+    const results = await Promise.all(batchUpdates)
+
+    // 9. Vérifier les erreurs
+    for (const result of results) {
+      if (result.error) {
+        throw new Error(result.error.message)
+      }
     }
 
     revalidatePath('/admin/seances')
