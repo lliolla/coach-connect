@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-
 const SESSION_SELECT = `
   *,
   exercices:session_exercises (
@@ -58,33 +57,64 @@ export async function isObjectifFull(objectifId) {
 export async function createSession(sessionData) {
   const supabase = await createClient()
 
-  if (sessionData.objectif_id) {
+  // Extraire les exercices du sessionData
+  const { exercises, ...sessionFields } = sessionData
+
+  if (sessionFields.objectif_id) {
     const { count, error } = await supabase
       .from('sessions')
       .select('*', { count: 'exact', head: true })
-      .eq('objectif_id', sessionData.objectif_id)
+      .eq('objectif_id', sessionFields.objectif_id)
 
     if (error) throw new Error(error.message)
-    if (await isObjectifFull(sessionData.objectif_id)) {
+    if (await isObjectifFull(sessionFields.objectif_id)) {
       throw new Error("L'objectif est plein")
     }
 
-    sessionData.session_number = count + 1
+    sessionFields.session_number = count + 1
   } else {
-    sessionData.session_number = null
+    sessionFields.session_number = null
   }
 
-  const { data, error } = await supabase
+  // Créer la session
+  const { data: newSession, error: sessionError } = await supabase
     .from('sessions')
-    .insert(sessionData)
+    .insert(sessionFields)
     .select(SESSION_SELECT)
     .single()
 
-  if (error) throw new Error(error.message)
+  if (sessionError) throw new Error(sessionError.message)
+
+  // Créer les exercices associés si ils existent
+  if (exercises && exercises.length > 0) {
+    const exercisesToInsert = exercises.map(ex => ({
+      session_id: newSession.id,
+      exercise_id: ex.exercise_id,
+      sets: ex.sets,
+      reps: ex.reps,
+      weight: ex.weight,
+      rest_time: ex.rest_time,
+      order_index: ex.order_index,
+      notes: ex.notes,
+      intensity: ex.intensity,
+      section: ex.section,
+      rounds: ex.rounds
+    }))
+
+    const { error: exercisesError } = await supabase
+      .from('session_exercises')
+      .insert(exercisesToInsert)
+
+    if (exercisesError) {
+      // En cas d'erreur, supprimer la session créée pour éviter les orphelins
+      await supabase.from('sessions').delete().eq('id', newSession.id)
+      throw new Error(exercisesError.message)
+    }
+  }
 
   revalidatePath('/admin/seances')
   revalidatePath('/admin/modeles')
-  return data
+  return newSession
 }
 
 export async function updateSession(sessionId, updates) {
@@ -197,7 +227,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId) {
   revalidatePath('/athlete/mes-seances')
 }
 
-// Nouvelle fonction wrapper pour la compatibilité avec le frontend
 export async function moveSession(sessionId, newPosition) {
   try {
     await moveSessionWithinObjectif(sessionId, newPosition)
@@ -207,7 +236,6 @@ export async function moveSession(sessionId, newPosition) {
   }
 }
 
-// Nouvelle fonction pour la transmission de session
 export async function transmitSession(sessionId) {
   const supabase = await createClient()
   try {
