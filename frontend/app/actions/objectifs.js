@@ -9,15 +9,15 @@ export async function getObjectifs() {
   const supabase = await createClient()
 
   try {
-    // 1. Récupérer les objectifs avec les champs minimaux requis
+    // Récupérer les objectifs avec les champs minimaux requis
     const { data, error } = await supabase
       .from('objectifs')
-      .select('id, label, description, total_sessions, weeksCount, duree, completed, athletes_objectifs(athlete_id)')
+      .select('id, label, description, total_sessions, weeksCount, duree, completed')
       .order('label', { ascending: true })
 
     if (error) throw error
 
-    // 2. Garantir le format {id, label} même si d'autres champs sont manquants
+    // Garantir le format {id, label} même si d'autres champs sont manquants
     return data.map(obj => ({
       id: obj.id,
       label: obj.label || 'Sans nom', // Garantit que label existe toujours
@@ -25,8 +25,7 @@ export async function getObjectifs() {
       total_sessions: obj.total_sessions || 20,
       weeksCount: obj.weeksCount || 4,
       duree: obj.duree || 4,
-      completed: obj.completed || false,
-      athlete_id: obj.athletes_objectifs?.[0]?.athlete_id || null
+      completed: obj.completed || false
     }))
   } catch (error) {
     console.error("Erreur lors de la récupération des objectifs:", error)
