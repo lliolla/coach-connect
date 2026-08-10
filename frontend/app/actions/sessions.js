@@ -175,7 +175,6 @@ export async function updateSession(id, sessionData) {
   return updatedSession
 }
 
-// ===== FONCTIONS EXPORTÉES (correction) =====
 export async function transmitSession(sessionId) {
   const supabase = await createClient()
 
