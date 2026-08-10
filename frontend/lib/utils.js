@@ -26,3 +26,27 @@ export function getSessionNumber(currentSessionId, objectif) {
   const totalPlanned = objectif.total_sessions || objectif.sessions.length;
   return `${session.session_number} / ${totalPlanned}`;
 }
+
+/**
+ * Vérifie si un objectif est plein.
+ * @param {number} objectifId - ID de l'objectif.
+ * @returns {Promise<boolean>} - True si l'objectif est plein.
+ */
+export async function isObjectifFull(objectifId) {
+  const response = await fetch(`/api/objectifs/${objectifId}/check-full`);
+  const data = await response.json();
+  return data.isFull;
+}
+
+/**
+ * Formate une durée en minutes en format lisible.
+ * @param {number} minutes - Durée en minutes.
+ * @returns {string} - Durée formatée.
+ */
+export function formatDuration(minutes) {
+  if (!minutes) return "0min";
+  if (minutes < 60) return `${minutes}min`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes > 0 ? `${hours}h${remainingMinutes}` : `${hours}h`;
+}

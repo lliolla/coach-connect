@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { IconActivity, IconClock, IconUser } from "@tabler/icons-react"
 import Link from "next/link"
+import { formatDuration } from "@/lib/utils"
 
 export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) {
   const [date, setDate] = React.useState(new Date())
@@ -16,7 +17,17 @@ export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) 
   const realSessions = React.useMemo(() => {
     return sessions
       .filter(s => s.is_template !== true && s.is_template !== "true")
-      .sort((a, b) => (a.session_number || 0) - (b.session_number || 0));
+      .sort((a, b) => {
+        // Tri par session_number pour les séances avec objectif
+        if (a.objectif_id && b.objectif_id) {
+          return (a.session_number || 0) - (b.session_number || 0);
+        }
+        // Les séances avec objectif viennent avant celles sans objectif
+        if (a.objectif_id && !b.objectif_id) return -1;
+        if (!a.objectif_id && b.objectif_id) return 1;
+        // Pour les séances sans objectif, trier par date
+        return new Date(a.date) - new Date(b.date);
+      });
   }, [sessions])
 
   const filteredSessions = React.useMemo(() => {
@@ -35,14 +46,6 @@ export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) 
         return sessionDate.toDateString() === date?.toDateString();
     }
   )
-
-  const formatDuration = (minutes) => {
-    if (!minutes) return "0min"
-    if (minutes < 60) return `${minutes}min`
-    const hours = Math.floor(minutes / 60)
-    const remainingMinutes = minutes % 60
-    return remainingMinutes > 0 ? `${hours}h${remainingMinutes}` : `${hours}h`
-  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -96,7 +99,7 @@ export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) 
                   </div>
                 </div>
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href={`${basePath}/modeles/${session.id}?mode=view&context=seances`}>Détails</Link>
+                    <Link href={`${basePath}/seances/${session.id}?mode=view&context=seances`}>Détails</Link>
                 </Button>
               </div>
             ))

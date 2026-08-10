@@ -33,7 +33,7 @@ export async function getSessions() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('sessions')
-    .select('*')
+    .select('*, objectif:objectifs(*), athletes:athletes(*)')
     .order('session_number', { ascending: true, nulls: 'last' });
 
   if (error) throw new Error(error.message);
@@ -41,15 +41,15 @@ export async function getSessions() {
 }
 
 /**
- * Récupère une séance par son ID.
+ * Récupère une séance par son ID avec ses relations.
  * @param {string} sessionId - UUID de la séance.
- * @returns {Promise<Object>} - La séance.
+ * @returns {Promise<Object>} - La séance avec ses relations.
  */
 export async function getSessionById(sessionId) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('sessions')
-    .select('*')
+    .select('*, objectif:objectifs(*), athletes:athletes(*), session_exercises:session_exercises(*, exercise:exercices_library(*))')
     .eq('id', sessionId)
     .single();
 
@@ -83,14 +83,49 @@ export async function createSession(sessionData) {
     sessionData.session_number = null;
   }
 
-  const { data, error } = await supabase
+  // Créer la séance
+  const { data: session, error: sessionError } = await supabase
     .from('sessions')
-    .insert(sessionData)
+    .insert({
+      title: sessionData.title,
+      description: sessionData.description,
+      athlete_id: sessionData.athlete_id,
+      objectif_id: sessionData.objectif_id,
+      date: sessionData.date,
+      duration: sessionData.duration,
+      main_rounds: sessionData.main_rounds,
+      is_template: sessionData.is_template,
+      status: sessionData.status || "prévu",
+      session_number: sessionData.session_number
+    })
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (sessionError) throw sessionError;
+
+  // Créer les exercices associés
+  if (sessionData.exercises && sessionData.exercises.length > 0) {
+    const exercisesToInsert = sessionData.exercises.map(ex => ({
+      session_id: session.id,
+      exercise_id: ex.exercise_id,
+      sets: ex.sets || 1,
+      reps: ex.reps,
+      weight: ex.weight,
+      rest_time: ex.rest_time,
+      order_index: ex.order_index,
+      notes: ex.notes,
+      intensity: ex.intensity,
+      section: ex.section
+    }));
+
+    const { error: exercisesError } = await supabase
+      .from('session_exercises')
+      .insert(exercisesToInsert);
+
+    if (exercisesError) throw exercisesError;
+  }
+
+  return session;
 }
 
 /**
@@ -149,15 +184,61 @@ export async function updateSession(sessionId, updates) {
     }
   }
 
-  const { data, error } = await supabase
+  // Mettre à jour la séance
+  const { data: session, error: sessionError } = await supabase
     .from('sessions')
-    .update(updates)
+    .update({
+      title: updates.title,
+      description: updates.description,
+      athlete_id: updates.athlete_id,
+      objectif_id: updates.objectif_id,
+      date: updates.date,
+      duration: updates.duration,
+      main_rounds: updates.main_rounds,
+      is_template: updates.is_template,
+      status: updates.status,
+      session_number: updates.session_number
+    })
     .eq('id', sessionId)
     .select()
     .single();
 
-  if (error) throw error;
-  return data;
+  if (sessionError) throw sessionError;
+
+  // Mettre à jour les exercices si fournis
+  if (updates.exercises) {
+    // Supprimer les anciens exercices
+    const { error: deleteError } = await supabase
+      .from('session_exercises')
+      .delete()
+      .eq('session_id', sessionId);
+
+    if (deleteError) throw deleteError;
+
+    // Ajouter les nouveaux exercices
+    if (updates.exercises.length > 0) {
+      const exercisesToInsert = updates.exercises.map(ex => ({
+        session_id: sessionId,
+        exercise_id: ex.exercise_id,
+        sets: ex.sets || 1,
+        reps: ex.reps,
+        weight: ex.weight,
+        rest_time: ex.rest_time,
+        order_index: ex.order_index,
+        notes: ex.notes,
+        intensity: ex.intensity,
+        section: ex.section
+      }));
+
+      const { error: insertError } = await supabase
+        .from('session_exercises')
+        .insert(exercisesToInsert);
+
+      if (insertError) throw insertError;
+    }
+  }
+
+  return session;
 }
 
 /**
@@ -206,10 +287,10 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
 export async function duplicateSession(sessionId) {
   const supabase = await createClient();
 
-  // Récupérer la séance originale
+  // Récupérer la séance originale avec ses exercices
   const { data: originalSession, error: fetchError } = await supabase
     .from('sessions')
-    .select('*')
+    .select('*, session_exercises:session_exercises(*)')
     .eq('id', sessionId)
     .single();
 
@@ -235,9 +316,15 @@ export async function duplicateSession(sessionId) {
   const { data: newSession, error: insertError } = await supabase
     .from('sessions')
     .insert({
-      ...originalSession,
-      id: undefined, // Générer un nouvel UUID
-      created_at: undefined,
+      title: `${originalSession.title} (copie)`,
+      description: originalSession.description,
+      athlete_id: null, // On ne duplique pas l'athlète
+      objectif_id: originalSession.objectif_id,
+      date: new Date().toISOString().split('T')[0],
+      duration: originalSession.duration,
+      main_rounds: originalSession.main_rounds,
+      is_template: true, // La duplication crée toujours un modèle
+      status: "prévu",
       session_number: originalSession.objectif_id ? nextNumber : null,
     })
     .select()
@@ -246,25 +333,57 @@ export async function duplicateSession(sessionId) {
   if (insertError) throw insertError;
 
   // Dupliquer les exercices
-  const { data: exercises, error: exercisesError } = await supabase
-    .from('session_exercises')
-    .select('*')
-    .eq('session_id', sessionId);
+  if (originalSession.session_exercises && originalSession.session_exercises.length > 0) {
+    const exercisesToInsert = originalSession.session_exercises.map(ex => ({
+      session_id: newSession.id,
+      exercise_id: ex.exercise_id,
+      sets: ex.sets || 1,
+      reps: ex.reps,
+      weight: ex.weight,
+      rest_time: ex.rest_time,
+      order_index: ex.order_index,
+      notes: ex.notes,
+      intensity: ex.intensity,
+      section: ex.section
+    }));
 
-  if (exercisesError) throw exercisesError;
-
-  if (exercises && exercises.length > 0) {
-    const { error: insertExercisesError } = await supabase
+    const { error: exercisesError } = await supabase
       .from('session_exercises')
-      .insert(
-        exercises.map(ex => ({
-          ...ex,
-          session_id: newSession.id,
-        }))
-      );
+      .insert(exercisesToInsert);
 
-    if (insertExercisesError) throw insertExercisesError;
+    if (exercisesError) throw exercisesError;
   }
 
   return newSession;
+}
+
+/**
+ * Transmet une séance à l'athlète.
+ * @param {string} sessionId - UUID de la séance.
+ * @returns {Promise<{success: boolean, error?: string}>} - Résultat de l'opération.
+ */
+export async function transmitSession(sessionId) {
+  const supabase = await createClient();
+
+  try {
+    const { data: session, error: fetchError } = await supabase
+      .from('sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!session) throw new Error('Séance non trouvée');
+
+    const { error: updateError } = await supabase
+      .from('sessions')
+      .update({ status: 'transmis' })
+      .eq('id', sessionId);
+
+    if (updateError) throw updateError;
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 }
