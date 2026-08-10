@@ -38,13 +38,21 @@ export async function getSessionById(id) {
 
 export async function isObjectifFull(objectifId) {
   const supabase = await createClient()
-  const { count, error } = await supabase
+  const { data: objectif, error: objectifError } = await supabase
+    .from('objectifs')
+    .select('total_sessions')
+    .eq('id', objectifId)
+    .single()
+
+  if (objectifError) throw new Error(objectifError.message)
+
+  const { count, error: countError } = await supabase
     .from('sessions')
     .select('*', { count: 'exact', head: true })
     .eq('objectif_id', objectifId)
 
-  if (error) throw new Error(error.message)
-  return count >= 10
+  if (countError) throw new Error(countError.message)
+  return count >= objectif.total_sessions
 }
 
 export async function createSession(sessionData) {
@@ -57,7 +65,9 @@ export async function createSession(sessionData) {
       .eq('objectif_id', sessionData.objectif_id)
 
     if (error) throw new Error(error.message)
-    if (count >= 10) throw new Error("L'objectif est plein")
+    if (await isObjectifFull(sessionData.objectif_id)) {
+      throw new Error("L'objectif est plein")
+    }
 
     sessionData.session_number = count + 1
   } else {
@@ -92,7 +102,6 @@ export async function updateSession(sessionId, updates) {
       })
       updates.session_number = null
     } else if (currentSession.objectif_id && updates.objectif_id === null) {
-      // Cas à corriger: retrait d'un objectif sans renumérotation
       updates.objectif_id = null
       updates.session_number = null
     } else if (updates.objectif_id && currentSession.objectif_id === null) {
@@ -102,7 +111,9 @@ export async function updateSession(sessionId, updates) {
         .eq('objectif_id', updates.objectif_id)
 
       if (error) throw new Error(error.message)
-      if (count >= 10) throw new Error("L'objectif est plein")
+      if (await isObjectifFull(updates.objectif_id)) {
+        throw new Error("L'objectif est plein")
+      }
 
       updates.session_number = count + 1
     }
@@ -141,13 +152,9 @@ export async function duplicateSession(sessionId) {
   const session = await getSessionById(sessionId)
 
   if (session.objectif_id) {
-    const { count, error } = await supabase
-      .from('sessions')
-      .select('*', { count: 'exact', head: true })
-      .eq('objectif_id', session.objectif_id)
-
-    if (error) throw new Error(error.message)
-    if (count >= 10) throw new Error("L'objectif est plein")
+    if (await isObjectifFull(session.objectif_id)) {
+      throw new Error("L'objectif est plein")
+    }
   }
 
   const { data, error } = await supabase.rpc('duplicate_session', {
