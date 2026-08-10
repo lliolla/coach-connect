@@ -59,7 +59,7 @@ begin
         main_rounds,
         duration,
         objectif_id,
-        case when v_objectif_id is not null then v_new_session_number else null end,
+        v_new_session_number,
         realisation,
         now()
     from public.sessions
