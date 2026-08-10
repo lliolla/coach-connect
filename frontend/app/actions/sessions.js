@@ -131,6 +131,7 @@ export async function createSession(sessionData) {
   revalidatePath('/admin/seances')
   revalidatePath('/admin/modeles')
   revalidatePath('/admin/objectifs')
+  revalidatePath('/athlete/mes-seances')
   return newSession
 }
 
@@ -174,6 +175,7 @@ export async function updateSession(id, sessionData) {
   revalidatePath('/admin/seances')
   revalidatePath('/admin/modeles')
   revalidatePath('/admin/objectifs')
+  revalidatePath('/athlete/mes-seances')
   return updatedSession
 }
 
@@ -209,6 +211,7 @@ export async function transmitSession(sessionId) {
     if (updateError) throw new Error(updateError.message)
 
     revalidatePath('/admin/seances')
+    revalidatePath('/athlete/mes-seances')
     return { success: true }
   } catch (error) {
     console.error("Erreur lors de la transmission:", error)
@@ -230,6 +233,7 @@ export async function moveSession(sessionId, newSessionNumber) {
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
+    revalidatePath('/athlete/mes-seances')
     return { success: true }
   } catch (error) {
     console.error("Erreur lors du déplacement:", error)
@@ -251,6 +255,7 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
+    revalidatePath('/athlete/mes-seances')
     return { success: true }
   } catch (error) {
     console.error("Erreur lors du déplacement dans l'objectif:", error)
@@ -273,6 +278,7 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
+    revalidatePath('/athlete/mes-seances')
     return { success: true }
   } catch (error) {
     console.error("Erreur lors du déplacement vers un autre objectif:", error)
