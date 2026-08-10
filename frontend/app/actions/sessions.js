@@ -431,23 +431,60 @@ export async function updateSessionRealisation(
 
 export async function moveSession(
   sessionId,
-  newSessionNumber
+  newPosition
 ) {
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase.rpc(
+    // 1. Vérifier que la séance existe
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*, objectif:objectifs(id)')
+      .eq('id', sessionId)
+      .single()
+
+    if (sessionError) {
+      throw new Error(`Erreur lors de la vérification de la séance: ${sessionError.message}`)
+    }
+
+    if (!session) {
+      throw new Error('Séance introuvable')
+    }
+
+    if (!session.objectif) {
+      throw new Error("La séance n'est pas liée à un objectif")
+    }
+
+    // 2. Récupérer toutes les séances de l'objectif
+    const { data: sessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('id, session_number')
+      .eq('objectif_id', session.objectif.id)
+      .order('session_number', { ascending: true })
+
+    if (sessionsError) {
+      throw new Error(`Erreur lors de la récupération des séances: ${sessionsError.message}`)
+    }
+
+    // 3. Vérifier que la nouvelle position est valide
+    if (newPosition < 1 || newPosition > sessions.length) {
+      throw new Error('Position invalide')
+    }
+
+    // 4. Appel à la procédure stockée pour déplacer la séance
+    const { error: rpcError } = await supabase.rpc(
       'move_session',
       {
         p_session_id: sessionId,
-        p_new_session_number: newSessionNumber,
+        p_new_session_number: newPosition
       }
     )
 
-    if (error) {
-      throw new Error(error.message)
+    if (rpcError) {
+      throw new Error(`Erreur lors du déplacement de la séance: ${rpcError.message}`)
     }
 
+    // 5. Réactualiser les chemins
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
@@ -459,7 +496,7 @@ export async function moveSession(
     }
   } catch (error) {
     console.error(
-      'Erreur lors du déplacement:',
+      'Erreur lors du déplacement de la séance:',
       error
     )
 
