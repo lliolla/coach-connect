@@ -1,3 +1,4 @@
+// frontend/app/admin/seances/page.jsx
 'use client'
 
 import * as React from "react"

@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MoreVertical, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
-import { cn, getSessionProgression } from "@/lib/utils";
-import { transmitSession } from "@/app/actions/sessions";
+import { cn, getSessionNumber } from "@/lib/utils";
+import { transmitSession, moveSession } from "@/app/actions/sessions";
 
 import {
   DropdownMenu,
@@ -80,6 +80,40 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
     }
   };
 
+  const handleMoveUp = async (program) => {
+    if (!program.session_number || program.session_number <= 1) return;
+
+    const toastId = toast.loading("Déplacement en cours...");
+    try {
+      const result = await moveSession(program.id, program.session_number - 1);
+      if (result.success) {
+        toast.success("Séance déplacée", { id: toastId });
+        router.refresh();
+      } else {
+        toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Une erreur inattendue est survenue", { id: toastId });
+    }
+  };
+
+  const handleMoveDown = async (program) => {
+    if (!program.session_number) return;
+
+    const toastId = toast.loading("Déplacement en cours...");
+    try {
+      const result = await moveSession(program.id, program.session_number + 1);
+      if (result.success) {
+        toast.success("Séance déplacée", { id: toastId });
+        router.refresh();
+      } else {
+        toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Une erreur inattendue est survenue", { id: toastId });
+    }
+  };
+
   const getBasePath = (id) => {
     const isAthlete = context === "athlete-seances";
     if (isAthlete) return `/admin/seances/${id}`; // Modifié pour l'interface admin
@@ -131,13 +165,13 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                 <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Exercices</th>
               )}
               {showRealisation && !isObjectifs && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Réalisation</th>}
-              {!isObjectifs && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Progression</th>}
+              {!isObjectifs && <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-black uppercase tracking-wider">Numéro</th>}
               <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-black uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-transparent divide-y divide-border">
             {paginatedPrograms.map((program) => {
-              const progression = isObjectifs ? null : getSessionProgression(program.id, program.rawObjectif);
+              const sessionNumber = isObjectifs ? null : getSessionNumber(program.id, program.rawObjectif);
 
               return (
                 <tr key={program.id} className="hover:bg-muted/5 transition-colors group">
@@ -225,10 +259,10 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   )}
                   {!isObjectifs && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {progression ? (
+                      {sessionNumber ? (
                           <div className="inline-flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
                             <Target size={10} />
-                            {progression} SÉANCES
+                            {sessionNumber}
                           </div>
                       ) : (
                         <span className="text-gray-400 italic text-xs">Hors objectif</span>
@@ -286,7 +320,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
       <div className="md:hidden">
         <div className="space-y-4 p-4">
           {paginatedPrograms.map((program) => {
-            const progression = isObjectifs ? null : getSessionProgression(program.id, program.rawObjectif);
+            const sessionNumber = isObjectifs ? null : getSessionNumber(program.id, program.rawObjectif);
 
             return (
               <div key={program.id} className="border rounded-lg p-4 bg-card shadow-sm">
@@ -356,11 +390,31 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                   </div>
                 )}
 
-                {/* DPD - affichage direct du contenu */}
+                {/* Numéro de séance - ligne séparée */}
+                {!isObjectifs && sessionNumber && (
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-muted-foreground">Numéro de séance</p>
+                    <p className="text-sm">{sessionNumber}</p>
+                  </div>
+                )}
+
+                {/* Réalisation - ligne séparée si applicable */}
                 {showRealisation && !isObjectifs && program.realisation && (
                   <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground">DPD</p>
-                    <p className="text-sm">{program.realisation}</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Réalisation</p>
+                    <Select
+                      value={program.realisation || ""}
+                      onValueChange={(value) => onRealisationChange?.(program.id, value)}
+                      className="h-9 w-full"
+                    >
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Sélectionner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Complet">Complet</SelectItem>
+                        <SelectItem value="Partiel">Partiel</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
               </div>
