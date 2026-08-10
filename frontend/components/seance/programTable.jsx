@@ -1,11 +1,11 @@
-// frontend/components/seance/programTable.jsx
+'use client'
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { MoreVertical, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
 import { cn, getSessionNumber } from "@/lib/utils";
-import { transmitSession, moveSession } from "@/app/actions/sessions";
+import { transmitSession, moveSession, moveSessionToAnotherObjectif } from "@/app/actions/sessions";
 
 import {
   DropdownMenu,
@@ -13,19 +13,46 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getObjectifs } from "@/app/actions/objectifs";
 
 const ITEMS_PER_PAGE = 10;
 
 const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "", onRealisationChange, showRealisation = false }) => {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
+  const [objectifs, setObjectifs] = useState([]);
+  const [isLoadingObjectifs, setIsLoadingObjectifs] = useState(false);
 
   const isTracking = context === "seances" || context === "athlete-seances";
   const showAthlete = context === "seances";
   const isObjectifs = context === "objectifs";
+
+  // Charger les objectifs pour le déplacement
+  React.useEffect(() => {
+    const fetchObjectifs = async () => {
+      setIsLoadingObjectifs(true);
+      try {
+        const data = await getObjectifs();
+        setObjectifs(data || []);
+      } catch (error) {
+        console.error("Erreur lors du chargement des objectifs:", error);
+        toast.error("Impossible de charger les objectifs");
+      } finally {
+        setIsLoadingObjectifs(false);
+      }
+    };
+
+    if (!isObjectifs) {
+      fetchObjectifs();
+    }
+  }, [isObjectifs]);
 
   // Filtrage par Search Term
   const filteredPrograms = useMemo(() => {
@@ -67,7 +94,6 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
   const handleTransmit = async (program) => {
     const toastId = toast.loading("Transmission du programme en cours...");
     try {
-      // 1. Appel de la Server Action pour persister en DB et envoyer l'email
       const result = await transmitSession(program.id);
       if (result.success) {
         toast.success("Programme transmis avec succès", { id: toastId });
@@ -114,11 +140,30 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
     }
   };
 
+  const handleMoveToAnotherObjectif = async (program, newObjectifId) => {
+    if (!program.session_number) return;
+
+    const toastId = toast.loading("Déplacement vers un autre objectif...");
+    try {
+      // Trouver le prochain numéro disponible dans le nouvel objectif
+      const newPosition = 1; // On place toujours en première position pour simplifier
+
+      const result = await moveSessionToAnotherObjectif(program.id, newObjectifId, newPosition);
+      if (result.success) {
+        toast.success("Séance déplacée vers un nouvel objectif", { id: toastId });
+        router.refresh();
+      } else {
+        toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Une erreur inattendue est survenue", { id: toastId });
+    }
+  };
+
   const getBasePath = (id) => {
     const isAthlete = context === "athlete-seances";
-    if (isAthlete) return `/admin/seances/${id}`; // Modifié pour l'interface admin
+    if (isAthlete) return `/admin/seances/${id}`;
     if (isObjectifs) return `/admin/objectifs/${id}`;
-    // Toujours utiliser /admin/seances pour l'édition, même en mode tracking
     return `/admin/seances/${id}`;
   }
 
@@ -140,7 +185,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
 
   return (
     <div className="rounded-xl border shadow-sm bg-card overflow-hidden">
-      {/* Version Desktop - Tableau classique (inchangé) */}
+      {/* Version Desktop - Tableau classique */}
       <div className="hidden md:block overflow-x-auto">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-muted/30">
@@ -286,6 +331,41 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" onClick={() => handleDuplicate(program.id)} title="Dupliquer">
                           <Copy size={14}/></Button>
                       )}
+                      {!isObjectifs && program.objectif_id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/5" title="Déplacer">
+                              <ChevronDown size={14} />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
+                              <ChevronLeft size={14} className="mr-2" /> Monter
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
+                              <ChevronRight size={14} className="mr-2" /> Descendre
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
+                                <Target size={14} className="mr-2" /> Vers un autre objectif
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                  {objectifs.map((objectif) => (
+                                    <DropdownMenuItem
+                                      key={objectif.id}
+                                      onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
+                                      disabled={objectif.id === program.objectif_id}
+                                    >
+                                      {objectif.label}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={() => handleDelete(program)} title="Supprimer">
                         <Trash2 size={14}/></Button>
                     </div>
@@ -301,6 +381,44 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                           <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
                           <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
                           {!isObjectifs && <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}><Copy size={14} className="mr-2"/> Dupliquer</DropdownMenuItem>}
+                          {!isObjectifs && program.objectif_id && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <Target size={14} className="mr-2" /> Déplacer
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                  <DropdownMenuSubContent>
+                                    <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
+                                      <ChevronLeft size={14} className="mr-2" /> Monter
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
+                                      <ChevronRight size={14} className="mr-2" /> Descendre
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
+                                        <Target size={14} className="mr-2" /> Vers un autre objectif
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                          {objectifs.map((objectif) => (
+                                            <DropdownMenuItem
+                                              key={objectif.id}
+                                              onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
+                                              disabled={objectif.id === program.objectif_id}
+                                            >
+                                              {objectif.label}
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </DropdownMenuSubContent>
+                                      </DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                              </DropdownMenuSub>
+                            </>
+                          )}
                           {!isObjectifs && <DropdownMenuSeparator />}
                           <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
                             <Trash2 size={14} className="mr-2"/> Supprimer
@@ -364,6 +482,44 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                           <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
                             <Copy size={14} className="mr-2" /> Dupliquer
                           </DropdownMenuItem>
+                        )}
+                        {!isObjectifs && program.objectif_id && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuSub>
+                              <DropdownMenuSubTrigger>
+                                <Target size={14} className="mr-2" /> Déplacer
+                              </DropdownMenuSubTrigger>
+                              <DropdownMenuPortal>
+                                <DropdownMenuSubContent>
+                                  <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
+                                    <ChevronLeft size={14} className="mr-2" /> Monter
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
+                                    <ChevronRight size={14} className="mr-2" /> Descendre
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
+                                      <Target size={14} className="mr-2" /> Vers un autre objectif
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                      <DropdownMenuSubContent>
+                                        {objectifs.map((objectif) => (
+                                          <DropdownMenuItem
+                                            key={objectif.id}
+                                            onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
+                                            disabled={objectif.id === program.objectif_id}
+                                          >
+                                            {objectif.label}
+                                          </DropdownMenuItem>
+                                        ))}
+                                      </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                  </DropdownMenuSub>
+                                </DropdownMenuSubContent>
+                              </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                          </>
                         )}
                         {!isObjectifs && <DropdownMenuSeparator />}
                         <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
