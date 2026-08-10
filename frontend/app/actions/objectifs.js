@@ -12,7 +12,7 @@ export async function getObjectifs() {
     // 1. Récupérer les objectifs avec les champs minimaux requis
     const { data, error } = await supabase
       .from('objectifs')
-      .select('id, label, description, total_sessions, weeksCount, duree, completed')
+      .select('id, label, description, total_sessions, weeksCount, duree, completed, athletes_objectifs(athlete_id)')
       .order('label', { ascending: true })
 
     if (error) throw error
@@ -25,7 +25,8 @@ export async function getObjectifs() {
       total_sessions: obj.total_sessions || 20,
       weeksCount: obj.weeksCount || 4,
       duree: obj.duree || 4,
-      completed: obj.completed || false
+      completed: obj.completed || false,
+      athlete_id: obj.athletes_objectifs?.[0]?.athlete_id || null
     }))
   } catch (error) {
     console.error("Erreur lors de la récupération des objectifs:", error)
@@ -43,29 +44,16 @@ export async function getObjectifById(id) {
   try {
     const { data: objectif, error } = await supabase
       .from('objectifs')
-      .select('*')
+      .select('*, athletes_objectifs(athlete_id), sessions(*)')
       .eq('id', id)
       .single()
 
     if (error) throw error
 
-    const { count: sessionsCount, error: countError } = await supabase
-      .from('sessions')
-      .select('id', { count: 'exact' })
-      .eq('objectif_id', id)
-
-    if (countError) throw countError
-
-    const { data: athleteLink, error: linkError } = await supabase
-      .from('athletes_objectifs')
-      .select('athlete_id')
-      .eq('objectif_id', id)
-      .single()
-
     return {
       ...objectif,
-      sessions_count: sessionsCount || 0,
-      athlete_id: athleteLink?.athlete_id || null
+      sessions_count: objectif.sessions?.length || 0,
+      athlete_id: objectif.athletes_objectifs?.[0]?.athlete_id || null
     }
   } catch (err) {
     console.error("Erreur lors de la récupération de l'objectif:", err)
