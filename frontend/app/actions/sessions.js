@@ -404,6 +404,8 @@ export async function updateSessionRealisation(
     revalidatePath('/mes-seances')
     revalidatePath('/admin/suivis')
     revalidatePath('/admin/seances')
+    revalidatePath('/admin/modeles')
+    revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
     revalidatePath('/')
 
