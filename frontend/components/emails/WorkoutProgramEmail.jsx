@@ -1,3 +1,4 @@
+// frontend/components/emails/WorkoutProgramEmail.jsx
 import { Body, Container, Head, Heading, Html, Preview, Text, Link, Section, Hr, Img } from '@react-email/components';
 import * as React from 'react';
 
@@ -24,7 +25,7 @@ export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercise
         <Container style={container}>
           <Heading style={h1}>Hello {athleteName} ! 👋</Heading>
           <Text style={text}>
-            Voici ton nouveau programme pour cette semaine : <strong>{programTitle}</strong>. 
+            Voici ton nouveau programme pour cette semaine : <strong>{programTitle}</strong>.
             {duration && <span> Prévois environ <strong>{duration} min</strong> pour cette séance.</span>}
           </Text>
           {notes && (
@@ -36,20 +37,20 @@ export const WorkoutProgramEmail = ({ athleteName, programTitle, notes, exercise
           {Object.entries(sections).map(([key, list]) => list.length > 0 && (
             <Section key={key} style={sectionContainer}>
               <Heading style={h2}>
-                {key === 'warmup' ? 'Échauffement' : 
-                 key === 'main' ? `Corps de séance ${mainRounds ? `(${mainRounds} tours)` : ''}` : 
-                 key === 'cooldown' ? 'Retour au calme' : 
+                {key === 'warmup' ? 'Échauffement' :
+                 key === 'main' ? `Corps de séance ${mainRounds ? `(${mainRounds} tours)` : ''}` :
+                 key === 'cooldown' ? 'Retour au calme' :
                  key.charAt(0).toUpperCase() + key.slice(1)}
               </Heading>
               {list.map((ex, i) => (
                 <Section key={i} style={exerciseRow}>
                   {ex.exercise?.image_data && (
-                    <Img 
-                      src={ex.exercise.image_data} 
-                      width="50" 
-                      height="50" 
-                      alt={ex.exercise.name} 
-                      style={exerciseImage} 
+                    <Img
+                      src={ex.exercise.image_data}
+                      width="50"
+                      height="50"
+                      alt={ex.exercise.name}
+                      style={exerciseImage}
                     />
                   )}
                   <Text style={exerciseText}>
