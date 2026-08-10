@@ -4,28 +4,54 @@ import { revalidatePath } from 'next/cache'
 
 /**
  * Récupère tous les objectifs avec leurs séances liées
+ * et formate les données pour correspondre à la structure attendue par CardSeance
  */
 export async function getObjectifs() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('objectifs')
     .select(`
-      *,
+      id,
+      label,
+      description,
+      total_sessions,
+      weeksCount,
+      duree,
+      completed,
       sessions (*)
     `)
     .order('label', { ascending: true })
 
   if (error) {
-    // Si la jointure échoue (colonne sessions.objectif_id absente), on récupère juste les objectifs
+    // Si la jointure échoue, on récupère juste les objectifs avec les champs nécessaires
     const { data: simpleData, error: simpleError } = await supabase
       .from('objectifs')
-      .select('*')
+      .select('id, label, description, total_sessions, weeksCount, duree, completed')
       .order('label', { ascending: true })
 
     if (simpleError) throw new Error(simpleError.message)
-    return simpleData
+    return simpleData.map(obj => ({
+      id: obj.id,
+      label: obj.label,
+      description: obj.description,
+      total_sessions: obj.total_sessions,
+      weeksCount: obj.weeksCount,
+      duree: obj.duree,
+      completed: obj.completed
+    }))
   }
-  return data
+
+  // Formatage des données pour correspondre à la structure attendue
+  return data.map(obj => ({
+    id: obj.id,
+    label: obj.label,
+    description: obj.description,
+    total_sessions: obj.total_sessions,
+    weeksCount: obj.weeksCount,
+    duree: obj.duree,
+    completed: obj.completed,
+    sessions: obj.sessions || []
+  }))
 }
 
 /**
@@ -86,8 +112,7 @@ export async function createObjectif(formData) {
       description: formData.description,
       total_sessions: parseInt(formData.total_sessions) || 20,
       weeksCount: parseInt(formData.weeksCount) || 4,
-       total_sessions: parseInt(formData.total_sessions) || 20, // Utilisation de total_sessions
-      duree: parseInt(formData.duree) || 4, // Utilisation de duree
+      duree: parseInt(formData.duree) || 4,
       completed: formData.completed || false
     }
 
@@ -144,7 +169,7 @@ export async function updateObjectif(formData) {
       label: formData.label,
       description: formData.description,
       total_sessions: parseInt(formData.total_sessions) || 20,
-       duree: parseInt(formData.duree) || 4, // Utilisation de duree
+      duree: parseInt(formData.duree) || 4,
       completed: formData.completed || false
     }
 
@@ -193,7 +218,6 @@ export async function updateObjectif(formData) {
           .in('id', formData.sessionIds)
       }
     }
-    // Si sessionIds n'est pas fourni, on conserve les relations existantes
 
     revalidatePath('/objectifs')
     return { success: true, data: objective }
