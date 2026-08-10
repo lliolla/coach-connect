@@ -11,11 +11,25 @@ import { CardSeance } from "@/components/seance/card_seance"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
+import { getObjectifs } from "@/app/actions/objectifs"
 
 function NewSeanceContent() {
   const searchParams = useSearchParams()
   const mode = searchParams.get('mode') || 'create'
   const duplicateId = searchParams.get('duplicateId')
+  const [objectifs, setObjectifs] = React.useState([])
+
+  React.useEffect(() => {
+    const fetchObjectifs = async () => {
+      try {
+        const data = await getObjectifs()
+        setObjectifs(data || [])
+      } catch (error) {
+        console.error("Erreur lors de la récupération des objectifs:", error)
+      }
+    }
+    fetchObjectifs()
+  }, [])
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
@@ -29,7 +43,12 @@ function NewSeanceContent() {
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardSeance mode={mode} duplicateId={duplicateId} isTracking={true} />
+        <CardSeance
+          mode={mode}
+          duplicateId={duplicateId}
+          isTracking={true}
+          objectifs={objectifs}
+        />
       </div>
     </div>
   )

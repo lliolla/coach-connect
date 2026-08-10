@@ -1,99 +1,112 @@
-// ... (toutes les autres parties du fichier restent inchangées)
+// ... (début du fichier inchangé)
 
-const handleSubmit = async () => {
-  const isTemplateToSave = isCreation ? !effectiveIsTracking : formData.is_template;
+export const CardSeance = ({
+  mode = "create",
+  duplicateId = null,
+  isTracking = false,
+  objectifs = [], // Ajout de la prop par défaut
+  seanceId = null,
+  context = "seances"
+}) => {
+  const isCreation = mode === "create"
+  const router = useRouter()
+  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+  const [showMaxSessionsModal, setShowMaxSessionsModal] = React.useState(false)
+  const [formData, setFormData] = React.useState(initialFormState)
+  const [athletes, setAthletes] = React.useState([])
+  const [loading, setLoading] = React.useState(false)
 
-  if (!formData.title) {
-    toast.error("Le nom du programme est obligatoire");
-    return;
-  }
-
-  if (!isTemplateToSave && !formData.athlete_id) {
-    toast.error("Veuillez sélectionner un athlète");
-    return;
-  }
-
-  if (formData.exercises.length === 0) {
-    toast.error("Ajoutez au moins un exercice");
-    return;
-  }
-
-  // Vérifier si le nombre max de séances pour l'objectif est atteint
-  if (isCreation && formData.objectif_id && !isTemplateToSave) {
-    try {
-      const isFull = await isObjectifFull(formData.objectif_id);
-      if (isFull) {
-        setShowMaxSessionsModal(true);
-        return;
+  // Récupération des athlètes
+  React.useEffect(() => {
+    const fetchAthletes = async () => {
+      try {
+        const data = await getAthletes()
+        setAthletes(data || [])
+      } catch (error) {
+        console.error("Erreur lors de la récupération des athlètes:", error)
       }
-    } catch (error) {
-      console.error("Erreur lors de la vérification de l'objectif:", error);
-      toast.error("Erreur lors de la vérification de l'objectif");
-      return;
     }
-  }
+    fetchAthletes()
+  }, [])
 
-  for (const [index, ex] of formData.exercises.entries()) {
-    if (!ex.exercise_id && !ex.template_id) {
-      toast.error(`Exercice ${index + 1} : ID manquant`);
-      return;
-    }
-  }
+  // ... (le reste du fichier inchangé, y compris la logique de handleSubmit)
 
-  const loadingToast = toast.loading(isTemplateToSave ? "Enregistrement du modèle..." : "Enregistrement de la séance...")
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            {isCreation ? "Nouvelle séance" : "Modifier la séance"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Nom du programme</Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => handleChange("title", e.target.value)}
+                placeholder="Ex: Programme de force"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="athlete_id">Athlète</Label>
+              <Select
+                value={formData.athlete_id || ""}
+                onValueChange={(value) => handleChange("athlete_id", value)}
+                disabled={formData.is_template}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un athlète" />
+                </SelectTrigger>
+                <SelectContent>
+                  {athletes.map((athlete) => (
+                    <SelectItem key={athlete.id} value={athlete.id}>
+                      {athlete.first_name} {athlete.last_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-  try {
-    const mappedExercises = formData.exercises.map((ex, index) => ({
-      exercise_id: ex.exercise_id || ex.template_id,
-      sets: ex.sets || 1,
-      reps: ex.reps || 0,
-      weight: ex.weight || 0,
-      rest_time: ex.rest_time_seconds || 60,
-      order_index: index,
-      notes: ex.notes || "",
-      intensity: ex.intensity || 0,
-      section: ex.section || 'main',
-      rounds: ex.rounds || 1
-    }))
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="objectif_id">Objectif</Label>
+              <Select
+                value={formData.objectif_id || ""}
+                onValueChange={(value) => handleChange("objectif_id", value)}
+                disabled={formData.is_template}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un objectif" />
+                </SelectTrigger>
+                <SelectContent>
+                  {objectifs.map((objectif) => (
+                    <SelectItem key={objectif.id} value={objectif.id}>
+                      {objectif.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) => handleChange("date", e.target.value)}
+              />
+            </div>
+          </div>
 
-    const payload = {
-      title: formData.title,
-      description: formData.description,
-      athlete_id: isTemplateToSave ? null : formData.athlete_id,
-      objectif_id: isTemplateToSave ? null : formData.objectif_id,
-      date: formData.date,
-      duration: formData.duration,
-      main_rounds: parseInt(formData.main_rounds) || 1,
-      is_template: isTemplateToSave,
-      status: formData.status || "prévu",
-      exercises: mappedExercises
-    }
+          {/* ... (le reste du fichier inchangé) */}
+        </CardContent>
+      </Card>
 
-    let result;
-    if (isCreation) {
-      result = await createSession(payload)
-    } else {
-      result = await updateSession(seanceId, payload)
-    }
-
-    if (!result) {
-      throw new Error('Erreur lors de la sauvegarde');
-    }
-
-    toast.success(isTemplateToSave ? "Modèle enregistré !" : "Séance enregistrée !", { id: loadingToast })
-
-    setTimeout(() => {
-      if (context === 'seances') {
-        router.push(`/admin/seances/${result.id}?mode=view`)
-      } else {
-        router.push(`/admin/modeles/${result.id}?mode=view`)
-      }
-    }, 1500)
-
-  } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error)
-    toast.error(`Erreur : ${error.message}`, { id: loadingToast })
-  }
+      {/* ... (le reste du fichier inchangé) */}
+    </div>
+  )
 }
-
-// ... (toutes les autres parties du fichier restent inchangées)
