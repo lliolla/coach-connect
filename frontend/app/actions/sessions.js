@@ -103,6 +103,20 @@ export async function createSession(sessionData) {
 
     console.log('[createSession] exercisesToInsert:', JSON.stringify(exercisesToInsert, null, 2))
 
+    console.log(
+      '[createSession] numeric fields:',
+      exercisesToInsert.map((ex, index) => ({
+        index,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        rest_time: ex.rest_time,
+        order_index: ex.order_index,
+        intensity: ex.intensity,
+        rounds: ex.rounds
+      }))
+    )
+
     const { error: exercisesError } = await supabase
       .from('session_exercises')
       .insert(exercisesToInsert)
