@@ -1,17 +1,14 @@
-```javascript
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 
-const SESSION_SELECT = `
-  *,
+const SESSION_SELECT = `  *,
   exercices:session_exercises (
     *,
     exercice:exercices_library (*)
   ),
-  objectif:objectifs (*)
-`
+  objectif:objectifs (*)`
 
 export async function getSessions() {
   const supabase = await createClient()
@@ -21,9 +18,7 @@ export async function getSessions() {
     .select(SESSION_SELECT)
     .order('created_at', { ascending: false })
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  if (error) throw new Error(error.message)
 
   return data
 }
@@ -37,9 +32,7 @@ export async function getSessionById(id) {
     .eq('id', id)
     .single()
 
-  if (error) {
-    throw new Error(error.message)
-  }
+  if (error) throw new Error(error.message)
 
   return data
 }
@@ -59,10 +52,7 @@ export async function isObjectifFull(objectifId) {
 
   const { count, error: countError } = await supabase
     .from('sessions')
-    .select('*', {
-      count: 'exact',
-      head: true,
-    })
+    .select('*', { count: 'exact', head: true })
     .eq('objectif_id', objectifId)
 
   if (countError) {
@@ -78,13 +68,13 @@ export async function createSession(sessionData) {
   if (!sessionData.is_template) {
     if (!sessionData.objectif_id) {
       throw new Error(
-        'Une séance classique doit obligatoirement être rattachée à un objectif'
+        "Une séance classique doit obligatoirement être rattachée à un objectif"
       )
     }
 
     if (!sessionData.athlete_id) {
       throw new Error(
-        'Une séance classique doit obligatoirement être rattachée à un athlète'
+        "Une séance classique doit obligatoirement être rattachée à un athlète"
       )
     }
   } else {
@@ -97,10 +87,7 @@ export async function createSession(sessionData) {
   if (sessionFields.objectif_id) {
     const { count, error } = await supabase
       .from('sessions')
-      .select('*', {
-        count: 'exact',
-        head: true,
-      })
+      .select('*', { count: 'exact', head: true })
       .eq('objectif_id', sessionFields.objectif_id)
 
     if (error) {
@@ -116,10 +103,7 @@ export async function createSession(sessionData) {
     sessionFields.session_number = null
   }
 
-  const {
-    data: newSession,
-    error: sessionError,
-  } = await supabase
+  const { data: newSession, error: sessionError } = await supabase
     .from('sessions')
     .insert(sessionFields)
     .select(SESSION_SELECT)
@@ -131,17 +115,13 @@ export async function createSession(sessionData) {
 
   if (exercises && exercises.length > 0) {
     const toSafeNumber = (value, defaultValue = 0) => {
-      if (
-        value === undefined ||
-        value === null ||
-        value === ''
-      ) {
+      if (value === undefined || value === null || value === '') {
         return defaultValue
       }
 
       const num = Number(value)
 
-      return Number.isNaN(num) ? defaultValue : num
+      return isNaN(num) ? defaultValue : num
     }
 
     const exercisesToInsert = exercises.map((ex) => ({
@@ -185,10 +165,7 @@ export async function updateSession(id, sessionData) {
 
   const { exercises, ...sessionFields } = sessionData
 
-  const {
-    data: updatedSession,
-    error: sessionError,
-  } = await supabase
+  const { data: updatedSession, error: sessionError } = await supabase
     .from('sessions')
     .update(sessionFields)
     .eq('id', id)
@@ -200,9 +177,7 @@ export async function updateSession(id, sessionData) {
   }
 
   if (exercises) {
-    const {
-      error: deleteExercisesError,
-    } = await supabase
+    const { error: deleteExercisesError } = await supabase
       .from('session_exercises')
       .delete()
       .eq('session_id', id)
@@ -211,38 +186,22 @@ export async function updateSession(id, sessionData) {
       throw new Error(deleteExercisesError.message)
     }
 
-    const toSafeNumber = (value, defaultValue = 0) => {
-      if (
-        value === undefined ||
-        value === null ||
-        value === ''
-      ) {
-        return defaultValue
-      }
-
-      const num = Number(value)
-
-      return Number.isNaN(num) ? defaultValue : num
-    }
-
     const exercisesToInsert = exercises.map((ex, index) => ({
       session_id: id,
       exercise_id: ex.exercise_id,
-      sets: toSafeNumber(ex.sets, 1),
-      reps: toSafeNumber(ex.reps, 0),
-      weight: toSafeNumber(ex.weight, 0),
-      rest_time: toSafeNumber(ex.rest_time, 60),
+      sets: ex.sets || 1,
+      reps: ex.reps || 0,
+      weight: ex.weight || 0,
+      rest_time: ex.rest_time || 60,
       order_index: index,
       notes: ex.notes || '',
-      intensity: toSafeNumber(ex.intensity, 0),
+      intensity: ex.intensity || 0,
       section: ex.section || 'main',
-      rounds: toSafeNumber(ex.rounds, 1),
+      rounds: ex.rounds || 1,
     }))
 
     if (exercisesToInsert.length > 0) {
-      const {
-        error: exercisesError,
-      } = await supabase
+      const { error: exercisesError } = await supabase
         .from('session_exercises')
         .insert(exercisesToInsert)
 
@@ -264,10 +223,7 @@ export async function transmitSession(sessionId) {
   const supabase = await createClient()
 
   try {
-    const {
-      data: session,
-      error: sessionError,
-    } = await supabase
+    const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select(`
         *,
@@ -286,23 +242,17 @@ export async function transmitSession(sessionId) {
     }
 
     if (!session.athlete) {
-      throw new Error(
-        "La séance n'est pas liée à un athlète"
-      )
+      throw new Error("La séance n'est pas liée à un athlète")
     }
 
     if (
       !session.athlete.email ||
       !session.athlete.email.includes('@')
     ) {
-      throw new Error(
-        "L'athlète n'a pas d'adresse email valide"
-      )
+      throw new Error("L'athlète n'a pas d'adresse email valide")
     }
 
-    const {
-      error: updateError,
-    } = await supabase
+    const { error: updateError } = await supabase
       .from('sessions')
       .update({
         status: 'transmis',
@@ -315,25 +265,15 @@ export async function transmitSession(sessionId) {
     }
 
     revalidatePath('/admin/seances')
-    revalidatePath('/admin/modeles')
-    revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
 
-    return {
-      success: true,
-    }
+    return { success: true }
   } catch (error) {
-    console.error(
-      'Erreur lors de la transmission:',
-      error
-    )
+    console.error('Erreur lors de la transmission:', error)
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : String(error),
+      error: error.message,
     }
   }
 }
@@ -354,45 +294,28 @@ export async function deleteSession(id) {
     revalidatePath('/mes-seances')
     revalidatePath('/seances')
     revalidatePath('/modeles')
-    revalidatePath('/suivis')
-
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/suivis')
     revalidatePath('/admin/objectifs')
-
     revalidatePath('/athlete/mes-seances')
 
-    return {
-      success: true,
-    }
+    return { success: true }
   } catch (error) {
-    console.error(
-      'Erreur lors de la suppression de la séance:',
-      error
-    )
+    console.error('Erreur lors de la suppression de la séance:', error)
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : String(error),
+      error: error.message,
     }
   }
 }
 
 /**
  * Met à jour la réalisation d'une séance.
- *
- * Valeurs attendues :
- * - "Complet"
- * - "Partiel"
+ * Valeurs attendues : "Complet" ou "Partiel"
  */
-export async function updateSessionRealisation(
-  id,
-  realisation
-) {
+export async function updateSessionRealisation(id, realisation) {
   const supabase = await createClient()
 
   try {
@@ -404,59 +327,40 @@ export async function updateSessionRealisation(
       .eq('id', id)
 
     if (error) {
-      console.error(
-        'Erreur Supabase updateSessionRealisation:',
-        error
+      throw new Error(
+        `Erreur: ${error.message}. Vérifiez que la colonne 'realisation' existe dans la table 'sessions'.`
       )
-
-      return {
-        success: false,
-        error: error.message,
-      }
     }
 
     revalidatePath('/suivis')
     revalidatePath('/seances')
     revalidatePath('/mes-seances')
-
     revalidatePath('/admin/suivis')
     revalidatePath('/admin/seances')
-
     revalidatePath('/athlete/mes-seances')
 
-    return {
-      success: true,
-    }
+    return { success: true }
   } catch (error) {
     console.error(
-      'Erreur lors de la mise à jour de la réalisation:',
+      "Erreur lors de la mise à jour de la réalisation:",
       error
     )
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : String(error),
+      error: error.message,
     }
   }
 }
 
-export async function moveSession(
-  sessionId,
-  newSessionNumber
-) {
+export async function moveSession(sessionId, newSessionNumber) {
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase.rpc(
-      'move_session',
-      {
-        p_session_id: sessionId,
-        p_new_session_number: newSessionNumber,
-      }
-    )
+    const { error } = await supabase.rpc('move_session', {
+      p_session_id: sessionId,
+      p_new_session_number: newSessionNumber,
+    })
 
     if (error) {
       throw new Error(error.message)
@@ -467,21 +371,13 @@ export async function moveSession(
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
 
-    return {
-      success: true,
-    }
+    return { success: true }
   } catch (error) {
-    console.error(
-      'Erreur lors du déplacement:',
-      error
-    )
+    console.error('Erreur lors du déplacement:', error)
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : String(error),
+      error: error.message,
     }
   }
 }
@@ -510,9 +406,7 @@ export async function moveSessionWithinObjectif(
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
 
-    return {
-      success: true,
-    }
+    return { success: true }
   } catch (error) {
     console.error(
       "Erreur lors du déplacement dans l'objectif:",
@@ -521,10 +415,7 @@ export async function moveSessionWithinObjectif(
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : String(error),
+      error: error.message,
     }
   }
 }
@@ -537,17 +428,118 @@ export async function moveSessionToAnotherObjectif(
   const supabase = await createClient()
 
   try {
-    const { error } = await supabase.rpc(
-      'move_session_to_another_objectif',
-      {
-        p_session_id: sessionId,
-        p_new_objectif_id: newObjectifId,
-        p_new_position: newPosition,
-      }
-    )
+    // 1. Vérifier que la séance existe
+    const { data: session, error: sessionError } = await supabase
+      .from('sessions')
+      .select('*, objectif:objectifs(id)')
+      .eq('id', sessionId)
+      .single()
 
-    if (error) {
-      throw new Error(error.message)
+    if (sessionError) {
+      throw new Error(sessionError.message)
+    }
+
+    if (!session) {
+      throw new Error('Séance introuvable')
+    }
+
+    // 2. Vérifier que le nouvel objectif existe
+    const { data: newObjectif, error: objectifError } = await supabase
+      .from('objectifs')
+      .select('id, total_sessions')
+      .eq('id', newObjectifId)
+      .single()
+
+    if (objectifError) {
+      throw new Error(objectifError.message)
+    }
+
+    if (!newObjectif) {
+      throw new Error('Nouvel objectif introuvable')
+    }
+
+    // 3. Vérifier que le nouvel objectif n'est pas plein
+    if (await isObjectifFull(newObjectifId)) {
+      throw new Error('Le nouvel objectif est plein')
+    }
+
+    // 4. Récupérer toutes les séances du nouvel objectif
+    const { data: newObjectifSessions, error: sessionsError } = await supabase
+      .from('sessions')
+      .select('id, session_number')
+      .eq('objectif_id', newObjectifId)
+      .order('session_number', { ascending: true })
+
+    if (sessionsError) {
+      throw new Error(sessionsError.message)
+    }
+
+    // 5. Vérifier que la nouvelle position est valide
+    if (newPosition < 1 || newPosition > newObjectifSessions.length + 1) {
+      throw new Error('Position invalide dans le nouvel objectif')
+    }
+
+    // 6. Mettre à jour la séance avec le nouvel objectif et numéro
+    const { error: updateError } = await supabase
+      .from('sessions')
+      .update({
+        objectif_id: newObjectifId,
+        session_number: newPosition
+      })
+      .eq('id', sessionId)
+
+    if (updateError) {
+      throw new Error(updateError.message)
+    }
+
+    // 7. Réordonner les séances dans le nouvel objectif
+    const updatedSessions = newObjectifSessions.map(s => {
+      if (s.session_number >= newPosition) {
+        return { ...s, session_number: s.session_number + 1 }
+      }
+      return s
+    })
+
+    for (const s of updatedSessions) {
+      const { error: reorderError } = await supabase
+        .from('sessions')
+        .update({ session_number: s.session_number })
+        .eq('id', s.id)
+
+      if (reorderError) {
+        throw new Error(reorderError.message)
+      }
+    }
+
+    // 8. Si la séance venait d'un autre objectif, réordonner les séances restantes
+    if (session.objectif_id && session.objectif_id !== newObjectifId) {
+      const { data: oldObjectifSessions, error: oldSessionsError } = await supabase
+        .from('sessions')
+        .select('id, session_number')
+        .eq('objectif_id', session.objectif_id)
+        .order('session_number', { ascending: true })
+
+      if (oldSessionsError) {
+        throw new Error(oldSessionsError.message)
+      }
+
+      const reorderedOldSessions = oldObjectifSessions
+        .filter(s => s.id !== sessionId)
+        .map((s, index) => ({
+          id: s.id,
+          session_number: index + 1
+        }))
+
+      for (const s of reorderedOldSessions) {
+        const { error: reorderError } = await supabase
+          .from('sessions')
+          .update({ session_number: s.session_number })
+          .eq('id', s.id)
+
+        if (reorderError) {
+          throw new Error(reorderError.message)
+        }
+      }
     }
 
     revalidatePath('/admin/seances')
@@ -555,9 +547,7 @@ export async function moveSessionToAnotherObjectif(
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
 
-    return {
-      success: true,
-    }
+    return { success: true }
   } catch (error) {
     console.error(
       "Erreur lors du déplacement vers un autre objectif:",
@@ -566,11 +556,7 @@ export async function moveSessionToAnotherObjectif(
 
     return {
       success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : String(error),
+      error: error.message,
     }
   }
 }
-
