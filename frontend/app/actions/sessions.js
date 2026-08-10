@@ -179,10 +179,15 @@ export async function transmitSession(sessionId) {
   const supabase = await createClient()
 
   try {
-    // 1. Récupérer la séance
+    // 1. Récupérer la séance avec les informations de l'athlète et de l'objectif
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select('*, athlete:athletes(*), objectif:objectifs(*)')
+      .select(`
+        *,
+        athlete:athletes(*),
+        objectif:objectifs(*),
+        exercices:session_exercises(*, exercice:exercices_library(*))
+      `)
       .eq('id', sessionId)
       .single()
 
@@ -194,10 +199,60 @@ export async function transmitSession(sessionId) {
       throw new Error("La séance n'est pas liée à un athlète")
     }
 
-    // 3. Mettre à jour le statut de la séance
+    // 3. Vérifier que l'athlète a un email valide
+    if (!session.athlete.email || !session.athlete.email.includes('@')) {
+      throw new Error("L'athlète n'a pas d'adresse email valide")
+    }
+
+    // 4. Préparer le contenu de l'email
+    const emailContent = {
+      to: session.athlete.email,
+      subject: `Nouveau programme d'entraînement: ${session.title}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #2563eb;">Nouveau programme d'entraînement</h1>
+          <p>Bonjour ${session.athlete.first_name},</p>
+          <p>Votre coach vous a envoyé un nouveau programme d'entraînement:</p>
+
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h2 style="margin-top: 0;">${session.title}</h2>
+            ${session.objectif ? `<p><strong>Objectif:</strong> ${session.objectif.label}</p>` : ''}
+            <p><strong>Date:</strong> ${new Date(session.date).toLocaleDateString('fr-FR')}</p>
+          </div>
+
+          <h3>Exercices:</h3>
+          <ul style="list-style: none; padding: 0;">
+            ${session.exercices.map(ex => `
+              <li style="background: #f9fafb; padding: 10px; margin-bottom: 8px; border-radius: 4px;">
+                <strong>${ex.exercice.name}</strong><br>
+                ${ex.sets ? `${ex.sets} séries` : ''}
+                ${ex.reps ? ` de ${ex.reps} répétitions` : ''}
+                ${ex.weight ? ` avec ${ex.weight}kg` : ''}
+                ${ex.notes ? `<br><em>Notes:</em> ${ex.notes}` : ''}
+              </li>
+            `).join('')}
+          </ul>
+
+          <p style="margin-top: 20px;">Bonne séance!</p>
+          <p>Votre coach</p>
+        </div>
+      `
+    }
+
+    // 5. Envoyer l'email via le service d'email (à adapter selon votre service)
+    // Exemple avec un service fictif:
+    // const emailResponse = await sendEmail(emailContent)
+    // if (!emailResponse.success) {
+    //   throw new Error("Échec de l'envoi de l'email")
+    // }
+
+    // 6. Mettre à jour le statut de la séance
     const { error: updateError } = await supabase
       .from('sessions')
-      .update({ status: 'transmis', transmitted_at: new Date().toISOString() })
+      .update({
+        status: 'transmis',
+        transmitted_at: new Date().toISOString()
+      })
       .eq('id', sessionId)
 
     if (updateError) throw new Error(updateError.message)
@@ -206,6 +261,18 @@ export async function transmitSession(sessionId) {
     return { success: true }
   } catch (error) {
     console.error("Erreur lors de la transmission:", error)
+    // Mettre à jour le statut en erreur si la transmission échoue
+    try {
+      await supabase
+        .from('sessions')
+        .update({
+          status: 'erreur',
+          error_message: error.message
+        })
+        .eq('id', sessionId)
+    } catch (updateError) {
+      console.error("Erreur lors de la mise à jour du statut en erreur:", updateError)
+    }
     return { success: false, error: error.message }
   }
 }
