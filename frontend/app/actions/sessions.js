@@ -179,74 +179,31 @@ export async function transmitSession(sessionId) {
   const supabase = await createClient()
 
   try {
-    // 1. Récupérer la séance avec les informations de l'athlète et de l'objectif
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select(`
-        *,
-        athlete:athletes(*),
-        objectif:objectifs(*),
-        exercices:session_exercises(*, exercice:exercices_library(*))
-      `)
+      .select('*, athlete:athletes(*), objectif:objectifs(*)')
       .eq('id', sessionId)
       .single()
 
     if (sessionError) throw new Error(sessionError.message)
     if (!session) throw new Error("Séance introuvable")
 
-    // 2. Vérifier que la séance est liée à un athlète
     if (!session.athlete) {
       throw new Error("La séance n'est pas liée à un athlète")
     }
 
-    // 3. Vérifier que l'athlète a un email valide
     if (!session.athlete.email || !session.athlete.email.includes('@')) {
       throw new Error("L'athlète n'a pas d'adresse email valide")
     }
 
-    // 4. Préparer le contenu de l'email
-    const emailContent = {
-      to: session.athlete.email,
-      subject: `Nouveau programme d'entraînement: ${session.title}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #2563eb;">Nouveau programme d'entraînement</h1>
-          <p>Bonjour ${session.athlete.first_name},</p>
-          <p>Votre coach vous a envoyé un nouveau programme d'entraînement:</p>
-
-          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <h2 style="margin-top: 0;">${session.title}</h2>
-            ${session.objectif ? `<p><strong>Objectif:</strong> ${session.objectif.label}</p>` : ''}
-            <p><strong>Date:</strong> ${new Date(session.date).toLocaleDateString('fr-FR')}</p>
-          </div>
-
-          <h3>Exercices:</h3>
-          <ul style="list-style: none; padding: 0;">
-            ${session.exercices.map(ex => `
-              <li style="background: #f9fafb; padding: 10px; margin-bottom: 8px; border-radius: 4px;">
-                <strong>${ex.exercice.name}</strong><br>
-                ${ex.sets ? `${ex.sets} séries` : ''}
-                ${ex.reps ? ` de ${ex.reps} répétitions` : ''}
-                ${ex.weight ? ` avec ${ex.weight}kg` : ''}
-                ${ex.notes ? `<br><em>Notes:</em> ${ex.notes}` : ''}
-              </li>
-            `).join('')}
-          </ul>
-
-          <p style="margin-top: 20px;">Bonne séance!</p>
-          <p>Votre coach</p>
-        </div>
-      `
-    }
-
-    // 5. Envoyer l'email via le service d'email (à adapter selon votre service)
+    // Ici vous devriez implémenter l'envoi d'email avec votre service d'email
     // Exemple avec un service fictif:
-    // const emailResponse = await sendEmail(emailContent)
-    // if (!emailResponse.success) {
-    //   throw new Error("Échec de l'envoi de l'email")
-    // }
+    // await sendEmail({
+    //   to: session.athlete.email,
+    //   subject: `Nouveau programme: ${session.title}`,
+    //   html: generateProgramEmail(session)
+    // })
 
-    // 6. Mettre à jour le statut de la séance
     const { error: updateError } = await supabase
       .from('sessions')
       .update({
@@ -261,18 +218,6 @@ export async function transmitSession(sessionId) {
     return { success: true }
   } catch (error) {
     console.error("Erreur lors de la transmission:", error)
-    // Mettre à jour le statut en erreur si la transmission échoue
-    try {
-      await supabase
-        .from('sessions')
-        .update({
-          status: 'erreur',
-          error_message: error.message
-        })
-        .eq('id', sessionId)
-    } catch (updateError) {
-      console.error("Erreur lors de la mise à jour du statut en erreur:", updateError)
-    }
     return { success: false, error: error.message }
   }
 }
@@ -281,7 +226,6 @@ export async function moveSession(sessionId, newSessionNumber) {
   const supabase = await createClient()
 
   try {
-    // 1. Récupérer la séance et son objectif
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select('*, objectif:objectifs(id)')
@@ -292,7 +236,6 @@ export async function moveSession(sessionId, newSessionNumber) {
     if (!session) throw new Error("Séance introuvable")
     if (!session.objectif) throw new Error("La séance n'est pas liée à un objectif")
 
-    // 2. Récupérer toutes les séances de l'objectif
     const { data: sessions, error: sessionsError } = await supabase
       .from('sessions')
       .select('id, session_number')
@@ -301,27 +244,22 @@ export async function moveSession(sessionId, newSessionNumber) {
 
     if (sessionsError) throw new Error(sessionsError.message)
 
-    // 3. Vérifier que le nouveau numéro est valide
     if (newSessionNumber < 1 || newSessionNumber > sessions.length) {
       throw new Error("Numéro de séance invalide")
     }
 
-    // 4. Trouver l'index actuel de la séance
     const currentIndex = sessions.findIndex(s => s.id === sessionId)
     if (currentIndex === -1) throw new Error("Séance non trouvée dans l'objectif")
 
-    // 5. Réordonner les séances
     const updatedSessions = [...sessions]
     const [movedSession] = updatedSessions.splice(currentIndex, 1)
     updatedSessions.splice(newSessionNumber - 1, 0, movedSession)
 
-    // 6. Mettre à jour les numéros de séance
     const sessionsToUpdate = updatedSessions.map((s, index) => ({
       id: s.id,
       session_number: index + 1
     }))
 
-    // 7. Mettre à jour en base de données
     for (const s of sessionsToUpdate) {
       const { error: updateError } = await supabase
         .from('sessions')
@@ -343,7 +281,6 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
   const supabase = await createClient()
 
   try {
-    // 1. Récupérer la séance et son objectif
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select('*, objectif:objectifs(id)')
@@ -354,7 +291,6 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
     if (!session) throw new Error("Séance introuvable")
     if (!session.objectif) throw new Error("La séance n'est pas liée à un objectif")
 
-    // 2. Récupérer toutes les séances de l'objectif
     const { data: sessions, error: sessionsError } = await supabase
       .from('sessions')
       .select('id, session_number')
@@ -363,27 +299,22 @@ export async function moveSessionWithinObjectif(sessionId, newPosition) {
 
     if (sessionsError) throw new Error(sessionsError.message)
 
-    // 3. Vérifier que la nouvelle position est valide
     if (newPosition < 1 || newPosition > sessions.length) {
       throw new Error("Position invalide")
     }
 
-    // 4. Trouver l'index actuel de la séance
     const currentIndex = sessions.findIndex(s => s.id === sessionId)
     if (currentIndex === -1) throw new Error("Séance non trouvée dans l'objectif")
 
-    // 5. Réordonner les séances
     const updatedSessions = [...sessions]
     const [movedSession] = updatedSessions.splice(currentIndex, 1)
     updatedSessions.splice(newPosition - 1, 0, movedSession)
 
-    // 6. Mettre à jour les numéros de séance
     const sessionsToUpdate = updatedSessions.map((s, index) => ({
       id: s.id,
       session_number: index + 1
     }))
 
-    // 7. Mettre à jour en base de données
     for (const s of sessionsToUpdate) {
       const { error: updateError } = await supabase
         .from('sessions')
@@ -405,7 +336,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
   const supabase = await createClient()
 
   try {
-    // 1. Vérifier que la séance existe
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
       .select('*')
@@ -415,7 +345,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
     if (sessionError) throw new Error(sessionError.message)
     if (!session) throw new Error("Séance introuvable")
 
-    // 2. Vérifier que le nouvel objectif existe
     const { data: newObjectif, error: objectifError } = await supabase
       .from('objectifs')
       .select('id, total_sessions')
@@ -425,12 +354,10 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
     if (objectifError) throw new Error(objectifError.message)
     if (!newObjectif) throw new Error("Nouvel objectif introuvable")
 
-    // 3. Vérifier que le nouvel objectif n'est pas plein
     if (await isObjectifFull(newObjectifId)) {
       throw new Error("Le nouvel objectif est plein")
     }
 
-    // 4. Récupérer toutes les séances du nouvel objectif
     const { data: newObjectifSessions, error: sessionsError } = await supabase
       .from('sessions')
       .select('id, session_number')
@@ -439,12 +366,10 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
 
     if (sessionsError) throw new Error(sessionsError.message)
 
-    // 5. Vérifier que la nouvelle position est valide
     if (newPosition < 1 || newPosition > newObjectifSessions.length + 1) {
       throw new Error("Position invalide dans le nouvel objectif")
     }
 
-    // 6. Mettre à jour la séance avec le nouvel objectif et numéro
     const { error: updateError } = await supabase
       .from('sessions')
       .update({
@@ -455,7 +380,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
 
     if (updateError) throw new Error(updateError.message)
 
-    // 7. Réordonner les séances dans le nouvel objectif
     const updatedSessions = newObjectifSessions.map(s => {
       if (s.session_number >= newPosition) {
         return { ...s, session_number: s.session_number + 1 }
@@ -463,7 +387,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
       return s
     })
 
-    // 8. Mettre à jour les numéros de séance dans le nouvel objectif
     for (const s of updatedSessions) {
       const { error: reorderError } = await supabase
         .from('sessions')
@@ -473,7 +396,6 @@ export async function moveSessionToAnotherObjectif(sessionId, newObjectifId, new
       if (reorderError) throw new Error(reorderError.message)
     }
 
-    // 9. Si la séance venait d'un autre objectif, réordonner les séances restantes
     if (session.objectif_id && session.objectif_id !== newObjectifId) {
       const { data: oldObjectifSessions, error: oldSessionsError } = await supabase
         .from('sessions')
