@@ -11,11 +11,19 @@ import { CardSeance } from "@/components/seance/card_seance"
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
+import { getObjectifs } from "@/app/actions/objectifs"
+import { getAthletes } from "@/app/actions/athletes"
 
-function NewSeanceContent() {
+async function NewSeanceContent() {
   const searchParams = useSearchParams()
   const mode = searchParams.get('mode') || 'create'
   const duplicateId = searchParams.get('duplicateId')
+
+  // Récupération des objectifs et athlètes
+  const [objectifs, athletes] = await Promise.all([
+    getObjectifs(),
+    getAthletes()
+  ])
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:p-6">
@@ -29,7 +37,13 @@ function NewSeanceContent() {
       </div>
 
       <div className="max-w-4xl mx-auto w-full py-8">
-        <CardSeance mode={mode} duplicateId={duplicateId} isTracking={true} />
+        <CardSeance
+          mode={mode}
+          duplicateId={duplicateId}
+          isTracking={true}
+          objectifs={objectifs}
+          athletes={athletes}
+        />
       </div>
     </div>
   )
