@@ -96,7 +96,7 @@ export async function createSession(sessionData) {
       rest_time: ex.rest_time !== "" ? parseInt(ex.rest_time) || 60 : 60,
       order_index: ex.order_index,
       notes: ex.notes || "",
-      intensity: ex.intensity || "",
+      intensity: ex.intensity !== "" && ex.intensity != null ? Number(ex.intensity) : 0,
       section: ex.section || 'main',
       rounds: ex.rounds !== "" ? parseInt(ex.rounds) || 1 : 1
     }))
