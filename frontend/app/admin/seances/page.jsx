@@ -11,13 +11,13 @@ import { AppSidebar } from "@/components/nav/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  IconPlus, 
-  IconSearch, 
-  IconCheck, 
-  IconBarbell, 
-  IconActivity, 
-  IconLoader2, 
+import {
+  IconPlus,
+  IconSearch,
+  IconCheck,
+  IconBarbell,
+  IconActivity,
+  IconLoader2,
   IconFilter,
   IconFilterCheck,
   IconX,
@@ -95,7 +95,6 @@ export default function SeancesPage() {
         getAthletes(),
         getObjectifs()
       ])
-      console.log("Données objectifs reçues:", objectifsData);
       setSessions(Array.isArray(sessionData) ? sessionData : [])
       setAvailableAthletes(athletesData || [])
       setAllObjectifs(objectifsData || [])
@@ -123,6 +122,7 @@ export default function SeancesPage() {
         const matchesObjectif = objectifFilter === "all" || session.objectif_id?.toString() === objectifFilter;
         return matchesTemplate && matchesAthlete && matchesStatus && matchesObjectif;
       })
+      .sort((a, b) => (a.session_number || 0) - (b.session_number || 0))
       .map(session => {
         const athleteData = session.athletes || session.athlete;
         const athleteName = athleteData

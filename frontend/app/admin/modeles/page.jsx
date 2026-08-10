@@ -1,3 +1,4 @@
+// frontend/app/admin/modeles/page.jsx
 'use client'
 
 import * as React from "react"
@@ -10,11 +11,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { 
-  IconSearch, 
-  IconPlus, 
-  IconCalendarEvent, 
-  IconAlertTriangle, 
+import {
+  IconSearch,
+  IconPlus,
+  IconCalendarEvent,
+  IconAlertTriangle,
   IconCheck
 } from "@tabler/icons-react"
 import { toast } from "sonner"
@@ -33,7 +34,7 @@ export default function ModelesPage() {
   const [sessions, setSessions] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-  
+
   // States for Modals
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false)
   const [sessionToDelete, setSessionToDelete] = React.useState(null)
@@ -99,9 +100,10 @@ export default function ModelesPage() {
 
   const programsForTable = React.useMemo(() => {
     if (!sessions || !Array.isArray(sessions)) return [];
-    
+
     return sessions
       .filter(session => session.is_template === true || String(session.is_template) === "true")
+      .sort((a, b) => (a.session_number || 0) - (b.session_number || 0))
       .map(session => ({
         id: session.id,
         programName: session.title,
@@ -139,8 +141,8 @@ export default function ModelesPage() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div className="relative w-full max-w-md">
               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <Input 
-                placeholder="Rechercher un modèle..." 
+              <Input
+                placeholder="Rechercher un modèle..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -148,11 +150,11 @@ export default function ModelesPage() {
             </div>
           </div>
 
-          <div className="mb-6"> 
+          <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Liste des Modèles</h2>
-            <ProgramTable 
-              programs={programsForTable} 
-              onDelete={(program) => openDeleteConfirm(null, program)} 
+            <ProgramTable
+              programs={programsForTable}
+              onDelete={(program) => openDeleteConfirm(null, program)}
             />
           </div>
 

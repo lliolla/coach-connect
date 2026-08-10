@@ -1,3 +1,4 @@
+// frontend/app/(athlete)/mes-seances/page.jsx
 'use client'
 
 import * as React from "react"
@@ -8,7 +9,7 @@ import {
   SidebarProvider,
 } from "@/components/ui/sidebar"
 import { CalendarView } from "@/components/seance/calendar-view"
-import { 
+import {
   IconBarbell,
   IconLoader2,
   IconCalendarEvent
@@ -33,10 +34,10 @@ export default function AthleteSeancesPage() {
       }
 
       const currentUserId = user.athlete_profile.id;
-      setUserId(currentUserId); 
+      setUserId(currentUserId);
 
-      const allSessions = await getSessions(); 
-      
+      const allSessions = await getSessions();
+
       // Filter sessions for the current athlete
       const userSessions = (allSessions || []).filter(s => s.athlete_id === currentUserId);
 
@@ -57,14 +58,15 @@ export default function AthleteSeancesPage() {
   const programsForTable = React.useMemo(() => {
     return sessions
       .filter(session => session.is_template !== true && String(session.is_template) !== "true")
+      .sort((a, b) => (a.session_number || 0) - (b.session_number || 0))
       .map(session => ({
         id: session.id,
         title: session.title,
         description: session.description,
-        personName: "Moi", 
+        personName: "Moi",
         programName: session.title,
         numberOfExercises: session.session_exercises?.length || 0,
-        rawObjectif: session.objectif, // Ajouté pour le calcul de progression
+        rawObjectif: session.objectif,
         exercises: session.session_exercises?.map(se => ({
           name: se.exercise?.name || se.exercice_library?.name || "Exercice"
         })) || [],
@@ -98,8 +100,8 @@ export default function AthleteSeancesPage() {
                 <p className="text-muted-foreground">Chargement de vos séances...</p>
               </div>
             ) : (
-              <ProgramTable 
-                programs={programsForTable} 
+              <ProgramTable
+                programs={programsForTable}
                 context="athlete-seances"
               />
             )}

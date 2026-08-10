@@ -1,3 +1,4 @@
+// frontend/components/seance/calendar-view.jsx
 'use client'
 
 import * as React from "react"
@@ -11,25 +12,27 @@ import Link from "next/link"
 export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) {
   const [date, setDate] = React.useState(new Date())
 
-  // Filtrer les sessions réelles (pas les modèles) et appliquer la recherche
+  // Filtrer les sessions réelles (pas les modèles) et trier par session_number
   const realSessions = React.useMemo(() => {
-    return sessions.filter(s => s.is_template !== true && s.is_template !== "true")
+    return sessions
+      .filter(s => s.is_template !== true && s.is_template !== "true")
+      .sort((a, b) => (a.session_number || 0) - (b.session_number || 0));
   }, [sessions])
 
   const filteredSessions = React.useMemo(() => {
-    if (!searchTerm) return realSessions
-    const lowerSearch = searchTerm.toLowerCase()
+    if (!searchTerm) return realSessions;
+    const lowerSearch = searchTerm.toLowerCase();
     return realSessions.filter(s => {
-      const athleteName = s.athletes ? `${s.athletes.first_name} ${s.athletes.last_name}`.toLowerCase() : ""
-      return s.title.toLowerCase().includes(lowerSearch) || athleteName.includes(lowerSearch)
-    })
+      const athleteName = s.athletes ? `${s.athletes.first_name} ${s.athletes.last_name}`.toLowerCase() : "";
+      return s.title.toLowerCase().includes(lowerSearch) || athleteName.includes(lowerSearch);
+    });
   }, [realSessions, searchTerm])
 
   const sessionsForSelectedDate = filteredSessions.filter(
     (s) => {
         if (!s.date) return false;
         const sessionDate = new Date(s.date);
-        return sessionDate.toDateString() === date?.toDateString()
+        return sessionDate.toDateString() === date?.toDateString();
     }
   )
 
@@ -75,6 +78,11 @@ export function CalendarView({ sessions = [], searchTerm = "", basePath = "" }) 
                   <div>
                     <div className="flex items-center gap-2">
                         <p className="font-semibold">{session.title}</p>
+                        {session.objectif && session.session_number && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1">
+                            Séance {session.session_number} / {session.objectif.total_sessions}
+                          </Badge>
+                        )}
                         <Badge variant="outline" className="text-[10px] h-4 px-1 flex items-center gap-1 border-primary/20 text-primary bg-primary/5">
                             <IconUser size={10} />
                             {session.athletes ? `${session.athletes.first_name} ${session.athletes.last_name?.charAt(0)}.` : 'Inconnu'}
