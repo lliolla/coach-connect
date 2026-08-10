@@ -20,7 +20,7 @@ export async function getObjectifs() {
     // 2. Garantir le format {id, label} même si d'autres champs sont manquants
     return data.map(obj => ({
       id: obj.id,
-      label: obj.label || 'Sans nom',
+      label: obj.label || 'Sans nom', // Garantit que label existe toujours
       description: obj.description || '',
       total_sessions: obj.total_sessions || 20,
       weeksCount: obj.weeksCount || 4,
