@@ -8,50 +8,64 @@ import { revalidatePath } from 'next/cache'
  */
 export async function getObjectifs() {
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from('objectifs')
-    .select(`
-      id,
-      label,
-      description,
-      total_sessions,
-      weeksCount,
-      duree,
-      completed,
-      sessions (*)
-    `)
-    .order('label', { ascending: true })
 
-  if (error) {
-    // Si la jointure échoue, on récupère juste les objectifs avec les champs nécessaires
-    const { data: simpleData, error: simpleError } = await supabase
+  try {
+    // 1. Récupérer les objectifs avec une jointure sur les séances
+    const { data, error } = await supabase
       .from('objectifs')
-      .select('id, label, description, total_sessions, weeksCount, duree, completed')
+      .select(`
+        id,
+        label,
+        description,
+        total_sessions,
+        weeksCount,
+        duree,
+        completed,
+        sessions:objectif_sessions(*)
+      `)
       .order('label', { ascending: true })
 
-    if (simpleError) throw new Error(simpleError.message)
-    return simpleData.map(obj => ({
-      id: obj.id,
-      label: obj.label,
+    if (error) throw error
+
+    // 2. Formater les données pour garantir la structure attendue
+    return data.map(obj => ({
+      id: obj.id, // Garanti d'être présent
+      label: obj.label, // Garanti d'être présent
       description: obj.description,
       total_sessions: obj.total_sessions,
       weeksCount: obj.weeksCount,
       duree: obj.duree,
-      completed: obj.completed
+      completed: obj.completed,
+      sessions: obj.sessions || []
     }))
-  }
+  } catch (error) {
+    console.error("Erreur lors de la récupération des objectifs (jointure échouée):", error)
 
-  // Formatage des données pour correspondre à la structure attendue
-  return data.map(obj => ({
-    id: obj.id,
-    label: obj.label,
-    description: obj.description,
-    total_sessions: obj.total_sessions,
-    weeksCount: obj.weeksCount,
-    duree: obj.duree,
-    completed: obj.completed,
-    sessions: obj.sessions || []
-  }))
+    // 3. Si la jointure échoue, récupérer uniquement les champs nécessaires
+    try {
+      const { data: simpleData, error: simpleError } = await supabase
+        .from('objectifs')
+        .select('id, label, description, total_sessions, weeksCount, duree, completed')
+        .order('label', { ascending: true })
+
+      if (simpleError) throw simpleError
+
+      // 4. Formater les données pour garantir la structure attendue
+      return simpleData.map(obj => ({
+        id: obj.id, // Garanti d'être présent
+        label: obj.label, // Garanti d'être présent
+        description: obj.description,
+        total_sessions: obj.total_sessions,
+        weeksCount: obj.weeksCount,
+        duree: obj.duree,
+        completed: obj.completed,
+        sessions: [] // Tableau vide par défaut
+      }))
+    } catch (simpleError) {
+      console.error("Erreur lors de la récupération des objectifs (fallback échoué):", simpleError)
+      throw new Error("Impossible de récupérer les objectifs")
+    }
+  }
 }
 
 /**
