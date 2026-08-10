@@ -57,13 +57,18 @@ export async function isObjectifFull(objectifId) {
 export async function createSession(sessionData) {
   const supabase = await createClient()
 
-  // Validation des règles métier
-  if (!sessionData.is_template && !sessionData.objectif_id) {
-    throw new Error("Une séance classique doit être rattachée à un objectif")
-  }
-
-  if (!sessionData.is_template && !sessionData.athlete_id) {
-    throw new Error("Une séance classique doit être rattachée à un athlète")
+  // Validation stricte des règles métier
+  if (!sessionData.is_template) {
+    if (!sessionData.objectif_id) {
+      throw new Error("Une séance classique doit obligatoirement être rattachée à un objectif")
+    }
+    if (!sessionData.athlete_id) {
+      throw new Error("Une séance classique doit obligatoirement être rattachée à un athlète")
+    }
+  } else {
+    // Pour les modèles, forcer les valeurs nulles
+    sessionData.objectif_id = null
+    sessionData.athlete_id = null
   }
 
   // Extraire les exercices du sessionData
@@ -118,8 +123,6 @@ export async function createSession(sessionData) {
       section: ex.section || 'main',
       rounds: toSafeNumber(ex.rounds, 1)
     }))
-
-    console.log('[createSession] exercisesToInsert:', JSON.stringify(exercisesToInsert, null, 2))
 
     const { error: exercisesError } = await supabase
       .from('session_exercises')

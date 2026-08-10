@@ -8,7 +8,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  if (effectiveIsTracking && !formData.athlete_id) {
+  if (!isTemplateToSave && !formData.athlete_id) {
     toast.error("Veuillez sélectionner un athlète");
     return;
   }
@@ -45,22 +45,22 @@ const handleSubmit = async () => {
   try {
     const mappedExercises = formData.exercises.map((ex, index) => ({
       exercise_id: ex.exercise_id || ex.template_id,
-      sets: ex.sets || 1,  // Garantit une valeur numérique
-      reps: ex.reps || 0,  // Garantit une valeur numérique
-      weight: ex.weight || 0,  // Garantit une valeur numérique
-      rest_time: ex.rest_time_seconds || 60,  // Garantit une valeur numérique
+      sets: ex.sets || 1,
+      reps: ex.reps || 0,
+      weight: ex.weight || 0,
+      rest_time: ex.rest_time_seconds || 60,
       order_index: index,
       notes: ex.notes || "",
-      intensity: ex.intensity || 0,  // Garantit une valeur numérique
+      intensity: ex.intensity || 0,
       section: ex.section || 'main',
-      rounds: ex.rounds || 1  // Garantit une valeur numérique
+      rounds: ex.rounds || 1
     }))
 
     const payload = {
       title: formData.title,
       description: formData.description,
       athlete_id: isTemplateToSave ? null : formData.athlete_id,
-      objectif_id: formData.objectif_id,
+      objectif_id: isTemplateToSave ? null : formData.objectif_id,
       date: formData.date,
       duration: formData.duration,
       main_rounds: parseInt(formData.main_rounds) || 1,
@@ -80,10 +80,8 @@ const handleSubmit = async () => {
       throw new Error('Erreur lors de la sauvegarde');
     }
 
-    // Déplacer le toast.success et la redirection DANS le try, après la confirmation de succès
     toast.success(isTemplateToSave ? "Modèle enregistré !" : "Séance enregistrée !", { id: loadingToast })
 
-    // Rediriger après succès
     setTimeout(() => {
       if (context === 'seances') {
         router.push(`/admin/seances/${result.id}?mode=view`)
@@ -95,7 +93,6 @@ const handleSubmit = async () => {
   } catch (error) {
     console.error("Erreur lors de l'enregistrement:", error)
     toast.error(`Erreur : ${error.message}`, { id: loadingToast })
-    // Ne pas rediriger en cas d'erreur
   }
 }
 
