@@ -169,6 +169,7 @@ export async function createSession(sessionData) {
   revalidatePath('/admin/modeles')
   revalidatePath('/admin/objectifs')
   revalidatePath('/athlete/mes-seances')
+  revalidatePath('/')
 
   return newSession
 }
@@ -249,6 +250,7 @@ export async function updateSession(id, sessionData) {
   revalidatePath('/admin/modeles')
   revalidatePath('/admin/objectifs')
   revalidatePath('/athlete/mes-seances')
+  revalidatePath('/')
 
   return updatedSession
 }
@@ -307,6 +309,7 @@ export async function transmitSession(sessionId) {
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
+    revalidatePath('/')
 
     return {
       success: true,
@@ -344,13 +347,12 @@ export async function deleteSession(id) {
     revalidatePath('/seances')
     revalidatePath('/modeles')
     revalidatePath('/suivis')
-
     revalidatePath('/admin/seances')
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/suivis')
     revalidatePath('/admin/objectifs')
-
     revalidatePath('/athlete/mes-seances')
+    revalidatePath('/')
 
     return {
       success: true,
@@ -403,6 +405,7 @@ export async function updateSessionRealisation(
     revalidatePath('/admin/suivis')
     revalidatePath('/admin/seances')
     revalidatePath('/athlete/mes-seances')
+    revalidatePath('/')
 
     return {
       success: true,
@@ -446,6 +449,7 @@ export async function moveSession(
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
+    revalidatePath('/')
 
     return {
       success: true,
@@ -489,6 +493,7 @@ export async function moveSessionWithinObjectif(
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
+    revalidatePath('/')
 
     return {
       success: true,
@@ -587,6 +592,7 @@ export async function moveSessionToAnotherObjectif(
     revalidatePath('/admin/modeles')
     revalidatePath('/admin/objectifs')
     revalidatePath('/athlete/mes-seances')
+    revalidatePath('/')
 
     return {
       success: true,
