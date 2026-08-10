@@ -1,26 +1,191 @@
-create or replace function remove_session_from_objectif_and_renumber(
-  p_session_id uuid,
-  p_old_objectif_id uuid
-)
-returns void
-language plpgsql
-as $$
-begin
-  -- 1. Mettre objectif_id et session_number à null pour la séance spécifiée
-  update sessions
-  set objectif_id = null, session_number = null
-  where id = p_session_id;
+'use server'
 
-  -- 2. Renuméroter les séances restantes de l'ancien objectif
-  update sessions s
-  set session_number = new_numbers.new_number
-  from (
-    select
-      id,
-      row_number() over (order by session_number) as new_number
-    from sessions
-    where objectif_id = p_old_objectif_id
-  ) new_numbers
-  where s.id = new_numbers.id;
-end;
-$$;
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+import { getSession } from './sessions'
+
+const SESSION_SELECT = `
+  *,
+  exercices:exercices_sessions (
+    *,
+    exercice:exercices (*)
+  ),
+  objectif:objectifs (*)
+`
+
+export async function getSessions() {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('sessions')
+    .select(SESSION_SELECT)
+    .order('created_at', { ascending: false })
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function getSessionById(id) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('sessions')
+    .select(SESSION_SELECT)
+    .eq('id', id)
+    .single()
+
+  if (error) throw new Error(error.message)
+  return data
+}
+
+export async function isObjectifFull(objectifId) {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('objectif_id', objectifId)
+
+  if (error) throw new Error(error.message)
+  return count >= 10
+}
+
+export async function createSession(sessionData) {
+  const supabase = await createClient()
+
+  if (sessionData.objectif_id) {
+    const { count, error } = await supabase
+      .from('sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('objectif_id', sessionData.objectif_id)
+
+    if (error) throw new Error(error.message)
+    if (count >= 10) throw new Error("L'objectif est plein")
+
+    sessionData.session_number = count + 1
+  } else {
+    sessionData.session_number = null
+  }
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .insert(sessionData)
+    .select(SESSION_SELECT)
+    .single()
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/seances')
+  revalidatePath('/admin/modeles')
+  return data
+}
+
+export async function updateSession(sessionId, updates) {
+  const supabase = await createClient()
+  const currentSession = await getSessionById(sessionId)
+
+  const objectifIdChanged = updates.objectif_id !== undefined &&
+    updates.objectif_id !== currentSession.objectif_id
+
+  if (objectifIdChanged) {
+    if (updates.objectif_id && currentSession.objectif_id) {
+      await supabase.rpc('move_session_to_another_objectif', {
+        p_session_id: sessionId,
+        p_new_objectif_id: updates.objectif_id,
+      })
+      updates.session_number = null
+    } else if (currentSession.objectif_id && updates.objectif_id === null) {
+      // Cas à corriger: retrait d'un objectif sans renumérotation
+      updates.objectif_id = null
+      updates.session_number = null
+    } else if (updates.objectif_id && currentSession.objectif_id === null) {
+      const { count, error } = await supabase
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('objectif_id', updates.objectif_id)
+
+      if (error) throw new Error(error.message)
+      if (count >= 10) throw new Error("L'objectif est plein")
+
+      updates.session_number = count + 1
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .update(updates)
+    .eq('id', sessionId)
+    .select(SESSION_SELECT)
+    .single()
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/seances')
+  revalidatePath('/admin/modeles')
+  revalidatePath('/athlete/mes-seances')
+  return data
+}
+
+export async function deleteSession(sessionId) {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('delete_session_and_renumber', {
+    p_session_id: sessionId,
+  })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/seances')
+  revalidatePath('/admin/modeles')
+  revalidatePath('/athlete/mes-seances')
+}
+
+export async function duplicateSession(sessionId) {
+  const supabase = await createClient()
+  const session = await getSessionById(sessionId)
+
+  if (session.objectif_id) {
+    const { count, error } = await supabase
+      .from('sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('objectif_id', session.objectif_id)
+
+    if (error) throw new Error(error.message)
+    if (count >= 10) throw new Error("L'objectif est plein")
+  }
+
+  const { data, error } = await supabase.rpc('duplicate_session', {
+    p_session_id: sessionId,
+    p_new_title: `Copie de ${session.title}`,
+  })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/seances')
+  revalidatePath('/admin/modeles')
+  return data
+}
+
+export async function moveSessionWithinObjectif(sessionId, newPosition) {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('move_session_within_objectif', {
+    p_session_id: sessionId,
+    p_new_position: newPosition,
+  })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/seances')
+  revalidatePath('/admin/modeles')
+  revalidatePath('/athlete/mes-seances')
+}
+
+export async function moveSessionToAnotherObjectif(sessionId, newObjectifId) {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('move_session_to_another_objectif', {
+    p_session_id: sessionId,
+    p_new_objectif_id: newObjectifId,
+  })
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath('/admin/seances')
+  revalidatePath('/admin/modeles')
+  revalidatePath('/athlete/mes-seances')
+}
