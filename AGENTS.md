@@ -52,3 +52,16 @@ This project is a web application for athlete preparation management. It is a fu
 ## Development
 - **Frontend:** `npm run dev` in `frontend` directory.
 - **Deployment:** Vercel.
+
+## RÈGLES DE MODIFICATION DU CODE
+
+- Ne jamais réécrire ou refactoriser massivement un fichier pour corriger une fonctionnalité ponctuelle.
+- Avant toute modification, identifier précisément le fichier et la fonctionnalité concernés.
+- Ne modifier que les fichiers strictement nécessaires à la tâche demandée.
+- Ne jamais supprimer une fonctionnalité existante pour résoudre un problème sans validation explicite.
+- Avant toute modification importante, analyser le code existant et expliquer brièvement ce qui sera changé.
+- Après modification, vérifier avec `git diff` que seules les modifications demandées ont été effectuées.
+- Ne jamais lancer de refactoring global sans demande explicite.
+- Ne jamais utiliser `/lint` avec une instruction de correction automatique lorsque le rapport ne contient pas d'erreur explicite.
+- Si `npm run build` réussit, ne pas modifier du code uniquement à cause d'un avertissement ambigu d'Aider.
+- Les commits Git sont interdits sans validation explicite de l'utilisateur.

@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { IconArrowLeft } from "@tabler/icons-react"
 import Link from "next/link"
-import { CardObjectif } from "@/components/objectifs/CardObjectif"
+import CardObjectif from "@/components/objectifs/CardObjectif"
 import { getAthletes } from "@/app/actions/athletes"
 import { toast } from "sonner"
 import {
