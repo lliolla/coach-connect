@@ -1,3 +1,4 @@
+// frontend/components/seance/programTable.jsx
 'use client'
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { MoreVertical, Eye, Edit2, Copy, Trash2, ChevronLeft, ChevronRight, Mail, Send, Target, Calendar, ChevronDown } from 'lucide-react';
 import { toast } from "sonner";
 import { cn, getSessionNumber } from "@/lib/utils";
-import { transmitSession, moveSession, moveSessionToAnotherObjectif } from "@/app/actions/sessions";
+import { transmitSession, moveSession, moveSessionWithinObjectif, moveSessionToAnotherObjectif } from "@/app/actions/sessions";
 
 import {
   DropdownMenu,
@@ -113,7 +114,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
     try {
       const result = await moveSession(program.id, program.session_number - 1);
       if (result.success) {
-        toast.success("Séance déplacée", { id: toastId });
+        toast.success(result.message || "Séance déplacée", { id: toastId });
         router.refresh();
       } else {
         toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
@@ -130,7 +131,7 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
     try {
       const result = await moveSession(program.id, program.session_number + 1);
       if (result.success) {
-        toast.success("Séance déplacée", { id: toastId });
+        toast.success(result.message || "Séance déplacée", { id: toastId });
         router.refresh();
       } else {
         toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
@@ -151,6 +152,23 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
       const result = await moveSessionToAnotherObjectif(program.id, newObjectifId, newPosition);
       if (result.success) {
         toast.success("Séance déplacée vers un nouvel objectif", { id: toastId });
+        router.refresh();
+      } else {
+        toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
+      }
+    } catch (err) {
+      toast.error("Une erreur inattendue est survenue", { id: toastId });
+    }
+  };
+
+  const handleMoveWithinObjectif = async (program, newPosition) => {
+    if (!program.session_number) return;
+
+    const toastId = toast.loading("Déplacement dans l'objectif...");
+    try {
+      const result = await moveSessionWithinObjectif(program.id, newPosition);
+      if (result.success) {
+        toast.success(result.message || "Séance déplacée", { id: toastId });
         router.refresh();
       } else {
         toast.error("Erreur lors du déplacement : " + result.error, { id: toastId });
@@ -363,250 +381,14 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                                 </DropdownMenuSubContent>
                               </DropdownMenuPortal>
                             </DropdownMenuSub>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5" onClick={() => handleDelete(program)} title="Supprimer">
-                        <Trash2 size={14}/></Button>
-                    </div>
-                    <div className="md:hidden">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {isTracking && !isObjectifs && context !== "athlete-seances" && <DropdownMenuItem onSelect={() => handleTransmit(program)}><Send size={14} className="mr-2"/> Transmettre</DropdownMenuItem>}
-                          <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}><Eye size={14} className="mr-2"/> Voir</Link></DropdownMenuItem>
-                          <DropdownMenuItem asChild><Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}><Edit2 size={14} className="mr-2"/> Modifier</Link></DropdownMenuItem>
-                          {!isObjectifs && <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}><Copy size={14} className="mr-2"/> Dupliquer</DropdownMenuItem>}
-                          {!isObjectifs && program.objectif_id && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                  <Target size={14} className="mr-2" /> Déplacer
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                  <DropdownMenuSubContent>
-                                    <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
-                                      <ChevronLeft size={14} className="mr-2" /> Monter
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
-                                      <ChevronRight size={14} className="mr-2" /> Descendre
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSub>
-                                      <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
-                                        <Target size={14} className="mr-2" /> Vers un autre objectif
-                                      </DropdownMenuSubTrigger>
-                                      <DropdownMenuPortal>
-                                        <DropdownMenuSubContent>
-                                          {objectifs.map((objectif) => (
-                                            <DropdownMenuItem
-                                              key={objectif.id}
-                                              onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
-                                              disabled={objectif.id === program.objectif_id}
-                                            >
-                                              {objectif.label}
-                                            </DropdownMenuItem>
-                                          ))}
-                                        </DropdownMenuSubContent>
-                                      </DropdownMenuPortal>
-                                    </DropdownMenuSub>
-                                  </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                              </DropdownMenuSub>
-                            </>
-                          )}
-                          {!isObjectifs && <DropdownMenuSeparator />}
-                          <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
-                            <Trash2 size={14} className="mr-2"/> Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Version Mobile - Cartes compactes réorganisées */}
-      <div className="md:hidden">
-        <div className="space-y-4 p-4">
-          {paginatedPrograms.map((program) => {
-            const sessionNumber = isObjectifs ? null : getSessionNumber(program.id, program.rawObjectif);
-
-            return (
-              <div key={program.id} className="border rounded-lg p-4 bg-card shadow-sm">
-                {/* En-tête avec nom, enveloppe et menu */}
-                <div className="flex justify-between items-start mb-4">
-                  <h3 className="font-bold text-lg flex-1 pr-2">{program.programName}</h3>
-                  <div className="flex items-center gap-2">
-                    <Mail
-                      size={24}
-                      className={cn(
-                        "flex-shrink-0 transition-colors duration-300",
-                        program.status === 'transmis' ? "text-green-500 cursor-not-allowed" :
-                        program.status === 'erreur' ? "text-red-500" :
-                        "text-amber-500"
-                      )}
-                      onClick={program.status === 'transmis' ? undefined : () => handleTransmit(program)}
-                      title={
-                        program.status === 'transmis' ? "Email déjà envoyé" :
-                        program.status === 'erreur' ? "Échec de l'envoi — cliquer pour réessayer" :
-                        "Envoyer par email"
-                      }
-                    />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-10 w-10 p-0 flex-shrink-0">
-                          <MoreVertical className="h-5 w-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
-                            <Eye size={14} className="mr-2" /> Voir
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
-                            <Edit2 size={14} className="mr-2" /> Modifier
-                          </Link>
-                        </DropdownMenuItem>
-                        {!isObjectifs && (
-                          <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
-                            <Copy size={14} className="mr-2" /> Dupliquer
-                          </DropdownMenuItem>
-                        )}
-                        {!isObjectifs && program.objectif_id && (
-                          <>
-                            <DropdownMenuSeparator />
                             <DropdownMenuSub>
                               <DropdownMenuSubTrigger>
-                                <Target size={14} className="mr-2" /> Déplacer
+                                <Target size={14} className="mr-2" /> Changer de position
                               </DropdownMenuSubTrigger>
                               <DropdownMenuPortal>
                                 <DropdownMenuSubContent>
-                                  <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
-                                    <ChevronLeft size={14} className="mr-2" /> Monter
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
-                                    <ChevronRight size={14} className="mr-2" /> Descendre
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
-                                      <Target size={14} className="mr-2" /> Vers un autre objectif
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuPortal>
-                                      <DropdownMenuSubContent>
-                                        {objectifs.map((objectif) => (
-                                          <DropdownMenuItem
-                                            key={objectif.id}
-                                            onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
-                                            disabled={objectif.id === program.objectif_id}
-                                          >
-                                            {objectif.label}
-                                          </DropdownMenuItem>
-                                        ))}
-                                      </DropdownMenuSubContent>
-                                    </DropdownMenuPortal>
-                                  </DropdownMenuSub>
-                                </DropdownMenuSubContent>
-                              </DropdownMenuPortal>
-                            </DropdownMenuSub>
-                          </>
-                        )}
-                        {!isObjectifs && <DropdownMenuSeparator />}
-                        <DropdownMenuItem onSelect={() => handleDelete(program)} className="text-red-600 focus:text-red-700 font-medium">
-                          <Trash2 size={14} className="mr-2" /> Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                {/* Athlète - ligne séparée */}
-                {showAthlete && !isObjectifs && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground">Athlète</p>
-                    <p className="text-sm">{program.personName || '-'}</p>
-                  </div>
-                )}
-
-                {/* Objectif - ligne séparée */}
-                {!isObjectifs && program.objectifName && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground">Objectif</p>
-                    <p className="text-sm">{program.objectifName}</p>
-                  </div>
-                )}
-
-                {/* Numéro de séance - ligne séparée */}
-                {!isObjectifs && sessionNumber && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground">Numéro de séance</p>
-                    <p className="text-sm">{sessionNumber}</p>
-                  </div>
-                )}
-
-                {/* Réalisation - ligne séparée si applicable */}
-                {showRealisation && !isObjectifs && program.realisation && (
-                  <div className="mb-3">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Réalisation</p>
-                    <Select
-                      value={program.realisation || ""}
-                      onValueChange={(value) => onRealisationChange?.(program.id, value)}
-                      className="h-9 w-full"
-                    >
-                      <SelectTrigger className="h-9 text-xs">
-                        <SelectValue placeholder="Sélectionner" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Complet">Complet</SelectItem>
-                        <SelectItem value="Partiel">Partiel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Pagination commune */}
-      <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
-        </p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
-            onClick={handlePrevPage}
-            disabled={currentPage === 1}
-          >
-            <ChevronLeft size={12} className="mr-1" /> Précédent
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            Suivant <ChevronRight size={12} className="ml-1" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default ProgramTable;
+                                  {[...Array(program.rawObjectif?.sessions?.length || 0)].map((_, index) => (
+                                    <DropdownMenuItem
+                                      key={index}
+                                      onSelect={() => handleMoveWithinObjectif(program, index + 1)}
+                                      disabled={(program.session
