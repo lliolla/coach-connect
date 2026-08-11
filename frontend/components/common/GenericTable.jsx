@@ -1,4 +1,3 @@
-// frontend/components/common/GenericTable.jsx
 'use client'
 import * as React from "react"
 import Link from 'next/link'
@@ -17,7 +16,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { toast } from "sonner"
-import { cn, getSessionProgression } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { transmitSession } from "@/app/actions/sessions"
 import {
   DropdownMenu,
@@ -30,6 +29,22 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const ITEMS_PER_PAGE = 10
+
+export function getSessionProgression(sessionId, rawObjectif) {
+  if (!rawObjectif || !rawObjectif.sessions) return null
+
+  const sessions = rawObjectif.sessions
+  const sortedSessions = [...sessions].sort((a, b) => new Date(a.date) - new Date(b.date))
+  const index = sortedSessions.findIndex(s => s.id === sessionId)
+
+  if (index === -1) return null
+
+  return {
+    current: index + 1,
+    total: sessions.length,
+    label: `Séance ${index + 1} / ${sessions.length}`
+  }
+}
 
 export default function GenericTable({
   data,
@@ -226,7 +241,7 @@ export default function GenericTable({
                       {progression ? (
                         <div className="inline-flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
                           <Target size={10} />
-                          {progression} SÉANCES
+                          {progression.current} / {progression.total}
                         </div>
                       ) : (
                         <span className="text-gray-400 italic text-xs">Hors objectif</span>

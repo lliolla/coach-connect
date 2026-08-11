@@ -1,4 +1,3 @@
-// frontend/components/seance/programTable.jsx
 'use client'
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -25,7 +24,7 @@ import { getObjectifs } from "@/app/actions/objectifs";
 
 const ITEMS_PER_PAGE = 10;
 
-const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "", onRealisationChange, showRealisation = false }) => {
+export default function ProgramTable({ programs, onDelete, context = "sessions", searchTerm = "", onRealisationChange, showRealisation = false }) {
   const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [objectifs, setObjectifs] = useState([]);
@@ -391,4 +390,269 @@ const ProgramTable = ({ programs, onDelete, context = "sessions", searchTerm = "
                                     <DropdownMenuItem
                                       key={index}
                                       onSelect={() => handleMoveWithinObjectif(program, index + 1)}
-                                      disabled={(program.session
+                                      disabled={program.session_number === index + 1}
+                                    >
+                                      Position {index + 1}
+                                    </DropdownMenuItem>
+                                  ))}
+                                </DropdownMenuSubContent>
+                              </DropdownMenuPortal>
+                            </DropdownMenuSub>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/5"
+                        onClick={() => handleDelete(program)}
+                        title="Supprimer"
+                      >
+                        <Trash2 size={14}/>
+                      </Button>
+                    </div>
+                    <div className="md:hidden">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {isTracking && !isObjectifs && context !== "athlete-seances" && (
+                            <DropdownMenuItem onSelect={() => handleTransmit(program)}>
+                              <Send size={14} className="mr-2"/> Transmettre
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem asChild>
+                            <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
+                              <Eye size={14} className="mr-2"/> Voir
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
+                              <Edit2 size={14} className="mr-2"/> Modifier
+                            </Link>
+                          </DropdownMenuItem>
+                          {!isObjectifs && (
+                            <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
+                              <Copy size={14} className="mr-2"/> Dupliquer
+                            </DropdownMenuItem>
+                          )}
+                          {!isObjectifs && program.objectif_id && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>
+                                  <Target size={14} className="mr-2" /> Déplacer
+                                </DropdownMenuSubTrigger>
+                                <DropdownMenuPortal>
+                                  <DropdownMenuSubContent>
+                                    <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
+                                      <ChevronLeft size={14} className="mr-2" /> Monter
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
+                                      <ChevronRight size={14} className="mr-2" /> Descendre
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSub>
+                                      <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
+                                        <Target size={14} className="mr-2" /> Vers un autre objectif
+                                      </DropdownMenuSubTrigger>
+                                      <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                          {objectifs.map((objectif) => (
+                                            <DropdownMenuItem
+                                              key={objectif.id}
+                                              onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
+                                              disabled={objectif.id === program.objectif_id}
+                                            >
+                                              {objectif.label}
+                                            </DropdownMenuItem>
+                                          ))}
+                                        </DropdownMenuSubContent>
+                                      </DropdownMenuPortal>
+                                    </DropdownMenuSub>
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuPortal>
+                              </DropdownMenuSub>
+                            </>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onSelect={() => handleDelete(program)}
+                            className="text-red-600 focus:text-red-700 font-medium"
+                          >
+                            <Trash2 size={14} className="mr-2"/> Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Version Mobile */}
+      <div className="md:hidden">
+        {paginatedPrograms.map((program) => {
+          const sessionNumber = isObjectifs ? null : getSessionNumber(program.id, program.rawObjectif);
+          return (
+            <div key={program.id} className="p-4 border-b border-border last:border-0">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1">
+                  <h3 className="font-bold text-sm">{program.programName}</h3>
+                  {isObjectifs ? (
+                    <p className="text-xs text-gray-600 truncate">{program.description || '-'}</p>
+                  ) : (
+                    <p className="text-xs text-gray-600 truncate">{program.objectifName || '-'}</p>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {isTracking && !isObjectifs && context !== "athlete-seances" && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleTransmit(program)}>
+                      <Send size={14} />
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`${getBasePath(program.id)}?mode=view&context=${context}`}>
+                          <Eye size={14} className="mr-2"/> Voir
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href={`${getBasePath(program.id)}?mode=edit&context=${context}`}>
+                          <Edit2 size={14} className="mr-2"/> Modifier
+                        </Link>
+                      </DropdownMenuItem>
+                      {!isObjectifs && (
+                        <DropdownMenuItem onSelect={() => handleDuplicate(program.id)}>
+                          <Copy size={14} className="mr-2"/> Dupliquer
+                        </DropdownMenuItem>
+                      )}
+                      {!isObjectifs && program.objectif_id && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>
+                              <Target size={14} className="mr-2" /> Déplacer
+                            </DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onSelect={() => handleMoveUp(program)} disabled={program.session_number <= 1}>
+                                  <ChevronLeft size={14} className="mr-2" /> Monter
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => handleMoveDown(program)}>
+                                  <ChevronRight size={14} className="mr-2" /> Descendre
+                                </DropdownMenuItem>
+                                <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger disabled={isLoadingObjectifs}>
+                                    <Target size={14} className="mr-2" /> Vers un autre objectif
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuPortal>
+                                    <DropdownMenuSubContent>
+                                      {objectifs.map((objectif) => (
+                                        <DropdownMenuItem
+                                          key={objectif.id}
+                                          onSelect={() => handleMoveToAnotherObjectif(program, objectif.id)}
+                                          disabled={objectif.id === program.objectif_id}
+                                        >
+                                          {objectif.label}
+                                        </DropdownMenuItem>
+                                      ))}
+                                    </DropdownMenuSubContent>
+                                  </DropdownMenuPortal>
+                                </DropdownMenuSub>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                        </>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() => handleDelete(program)}
+                        className="text-red-600 focus:text-red-700 font-medium"
+                      >
+                        <Trash2 size={14} className="mr-2"/> Supprimer
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-xs">
+                {isObjectifs ? (
+                  <div className="flex items-center gap-1">
+                    <Calendar size={12} className="text-gray-400" />
+                    <span>{program.sessionsCount || 0} séances</span>
+                  </div>
+                ) : (
+                  program.exercises?.slice(0, 3).map((ex, i) => (
+                    <span key={i} className="px-2 py-0.5 rounded-full bg-primary/5 text-primary border border-primary/10 text-[10px]">
+                      {ex.name}
+                    </span>
+                  ))
+                )}
+                {showRealisation && !isObjectifs && (
+                  <Select
+                    value={program.realisation || ""}
+                    onValueChange={(value) => onRealisationChange?.(program.id, value)}
+                    className="h-6 w-24"
+                  >
+                    <SelectTrigger className="h-6 text-xs">
+                      <SelectValue placeholder="Réal." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Complet">Complet</SelectItem>
+                      <SelectItem value="Partiel">Partiel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+                {!isObjectifs && sessionNumber && (
+                  <div className="inline-flex items-center gap-1 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
+                    <Target size={10} />
+                    {sessionNumber}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="px-6 py-4 bg-muted/20 border-t border-border flex items-center justify-between">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Page <span className="text-foreground">{currentPage}</span> sur <span className="text-foreground">{totalPages || 1}</span>
+        </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft size={12} className="mr-1" /> Précédent
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-[9px] px-2 font-bold uppercase tracking-widest bg-background hover:bg-muted transition-colors disabled:opacity-40"
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages || totalPages === 0}
+          >
+            Suivant <ChevronRight size={12} className="ml-1" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
