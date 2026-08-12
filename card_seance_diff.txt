@@ -1,0 +1,2116 @@
+diff --git a/frontend/components/seance/card_seance.jsx b/frontend/components/seance/card_seance.jsx
+index 5498acc..cf31b9c 100644
+--- a/frontend/components/seance/card_seance.jsx
++++ b/frontend/components/seance/card_seance.jsx
+@@ -1,78 +1,39 @@
+ 'use client'
+-import * as React from "react"
+-import { useRouter, useSearchParams } from "next/navigation"
+-import {
+-  Card,
+-  CardAction,
+-  CardContent,
+-  CardFooter,
+-  CardHeader,
+-  CardTitle,
+-} from "@/components/ui/card"
+-import { Button } from "@/components/ui/button"
+-import { Input } from "@/components/ui/input"
+-import { Label } from "@/components/ui/label"
+-import {
+-  Check,
+-  ChevronsUpDown,
+-  Plus,
+-  X,
+-  CalendarCheck,
+-  Dumbbell,
+-  Trash2,
+-  Search,
+-  GripVertical,
+-  LayoutGrid,
+-  Clock,
+-  RotateCcw,
+-  MessageSquare,
+-  Zap,
+-  Flame,
+-  Target,
+-  Wind,
+-  ChevronDown,
+-  ChevronRight,
+-  Info,
+-  Scale,
+-  Send,
+-  AlertCircle
+-} from "lucide-react"
+-
+-import { cn } from "@/lib/utils"
+-import {
+-  Command,
+-  CommandEmpty,
+-  CommandGroup,
+-  CommandInput,
+-  CommandItem,
+-  CommandList,
+-} from "@/components/ui/command"
+-import {
+-  Popover,
+-  PopoverContent,
+-  PopoverTrigger,
+-} from "@/components/ui/popover"
+-import { Badge } from "@/components/ui/badge"
+-import { toast } from "sonner"
+-import {
+-  Dialog,
+-  DialogContent,
+-  DialogDescription,
+-  DialogFooter,
+-  DialogHeader,
+-  DialogTitle,
+-} from "@/components/ui/dialog"
++
++import * as React from 'react'
++import { useRouter } from 'next/navigation'
++
++import { Label } from '@/components/ui/label'
+ import {
+   Select,
+   SelectContent,
+-  SelectGroup,
+   SelectItem,
+-  SelectLabel,
+   SelectTrigger,
+   SelectValue,
+-} from "@/components/ui/select"
++} from '@/components/ui/select'
++import { Input } from '@/components/ui/input'
++import { Textarea } from '@/components/ui/textarea'
++import { Button } from '@/components/ui/button'
++
++import {
++  IconPlus,
++  IconTrash,
++  IconGripVertical,
++  IconLoader2,
++} from '@tabler/icons-react'
++
++import { toast } from 'sonner'
++
++import {
++  createSession,
++  getSessionById,
++  updateSession,
++} from '@/app/actions/sessions'
++
++import { getExercices } from '@/app/actions/exercices'
++
++import { cn } from '@/lib/utils'
+ 
+-// DND Kit Imports
+ import {
+   DndContext,
+   closestCenter,
+@@ -80,46 +41,46 @@ import {
+   PointerSensor,
+   useSensor,
+   useSensors,
+-  DragOverlay,
+-  defaultDropAnimationSideEffects,
+-} from '@dnd-kit/core';
++} from '@dnd-kit/core'
++
+ import {
+   arrayMove,
+   SortableContext,
+   sortableKeyboardCoordinates,
+   verticalListSortingStrategy,
+   useSortable,
+-} from '@dnd-kit/sortable';
+-import { CSS } from '@dnd-kit/utilities';
+-import { restrictToVerticalAxis, restrictToWindowEdges } from '@dnd-kit/modifiers';
+-
+-import { getSessionById, getSessions, createSession, updateSession, transmitSession } from "@/app/actions/sessions"
+-import { getExercices } from "@/app/actions/exercices"
+-import { getAthletes } from "@/app/actions/athletes"
+-import { getObjectifs } from "@/app/actions/objectifs"
+-import { getSessionNumber, isObjectifFull } from "@/lib/utils"
+-
+-const initialFormState = {
+-  title: "",
+-  description: "",
+-  athlete_id: null,
+-  objectif_id: null,
++} from '@dnd-kit/sortable'
++
++import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
++
++
++/**
++ * Etat initial d'une séance
++ *
++ * Les noms des champs correspondent à la table sessions
++ * et aux attentes de createSession().
++ */
++const EMPTY_SESSION = {
++  title: '',
+   date: new Date().toISOString().split('T')[0],
+-  duration: 0,
+-  main_rounds: 1,
+-  exercises: []
++  athlete_id: '',
++  objectif_id: '',
++  notes: '',
++  is_template: false,
++  exercises: [],
+ }
+ 
++
+ /**
+- * Composant d'exercice triable (Sortable)
++ * Ligne d'un exercice
+  */
+-const SortableExerciseCard = ({
+-  ex,
++function ExerciseRow({
++  exercise,
+   index,
+-  isView,
+-  updateExerciseDetails,
+-  onRemoveRequest
+-}) => {
++  removeExercise,
++  updateExercise,
++  isDisabled,
++}) {
+   const {
+     attributes,
+     listeners,
+@@ -127,1025 +88,1022 @@ const SortableExerciseCard = ({
+     transform,
+     transition,
+     isDragging,
+-  } = useSortable({ id: ex.sortId });
++  } = useSortable({
++    id: exercise._dndId || `${exercise.exercise_id}-${index}`,
++  })
+ 
+   const style = {
+-    transform: CSS.Transform.toString(transform),
++    transform: transform
++      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
++      : undefined,
+     transition,
+-    zIndex: isDragging ? 50 : 'auto',
+-    opacity: isDragging ? 0.4 : 1,
+-  };
+-
+-  const unitLabel = ex.unit === 'reps' ? 'Répétitions' : (ex.unit === 'secs' ? 'Secondes' : (ex.unit === 'meters' ? 'Mètres' : 'Répétitions'));
++    opacity: isDragging ? 0.5 : 1,
++  }
+ 
+   return (
+-    <Card
++    <tr
+       ref={setNodeRef}
+       style={style}
+-      {...attributes}
+-      {...listeners}
+       className={cn(
+-        "p-4 bg-muted/5 border shadow-none relative overflow-hidden group mb-3 touch-none",
+-        !isView && "cursor-grab active:cursor-grabbing",
+-        isDragging && "border-primary ring-2 ring-primary/20 shadow-xl"
++        'border-b last:border-b-0',
++        isDragging && 'bg-muted/50'
+       )}
+     >
+-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
++      <td className="w-10 px-2">
++        <button
++          type="button"
++          {...attributes}
++          {...listeners}
++          disabled={isDisabled}
++          className={cn(
++            'p-1 rounded',
++            isDisabled
++              ? 'cursor-not-allowed opacity-40'
++              : 'cursor-grab hover:bg-muted'
++          )}
++          aria-label="Déplacer l'exercice"
++        >
++          <IconGripVertical className="h-4 w-4 text-muted-foreground" />
++        </button>
++      </td>
++
++      <td className="px-3 py-3">
++        <div className="font-medium">
++          {exercise.name || 'Exercice'}
++        </div>
+ 
+-      <div className="flex items-start justify-between mb-3">
+-        <div className="flex items-center gap-3">
+-          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+-            <Dumbbell size={18} />
+-          </div>
+-          <div>
+-            <h4 className="font-bold text-sm leading-tight">{ex.name}</h4>
+-            <div className="flex gap-2 items-center mt-1">
+-              <Badge variant="secondary" className="text-[9px] uppercase px-1.5 py-0 h-4">{ex.category}</Badge>
+-              {ex.description && <span className="text-[10px] text-muted-foreground italic truncate max-w-[180px] sm:max-w-[300px]">{ex.description}</span>}
+-            </div>
++        {exercise.description && (
++          <div className="text-xs text-muted-foreground mt-1">
++            {exercise.description}
+           </div>
+-        </div>
+-        <div className="flex items-center gap-1">
+-            {!isView && (
+-                <Button
+-                  variant="ghost"
+-                  size="icon"
+-                  className="h-8 w-8 text-muted-foreground hover:text-destructive active:scale-95 z-10"
+-                  onClick={(e) => {
+-                    e.stopPropagation();
+-                    onRemoveRequest(index);
+-                  }}
+-                >
+-                    <Trash2 size={16} />
+-                </Button>
+-            )}
+-        </div>
+-      </div>
++        )}
++      </td>
+ 
+-      <div className="grid grid-cols-2 gap-3 mb-3 relative z-10" onClick={(e) => e.stopPropagation()}>
+-        <div className="space-y-1">
+-          <Label className="text-[10px] uppercase font-bold text-muted-foreground">{unitLabel}</Label>
+-          <Input
+-            type="number"
+-            min="1"
+-            value={ex.reps}
+-            onChange={(e) => updateExerciseDetails(index, 'reps', e.target.value)}
+-            className="h-9 text-sm font-bold bg-background border-primary/10 focus:border-primary transition-all"
+-            disabled={isView}
+-          />
+-        </div>
+-        <div className="space-y-1">
+-          <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><Scale size={10} /> Poids (kg)</Label>
+-          <Input
+-            type="number"
+-            min="0"
+-            step="0.5"
+-            value={ex.weight}
+-            onChange={(e) => updateExerciseDetails(index, 'weight', e.target.value)}
+-            className="h-9 text-sm font-bold bg-background border-primary/10 focus:border-primary transition-all"
+-            disabled={isView}
+-          />
+-        </div>
+-      </div>
++      <td className="px-2 py-3">
++        <Input
++          type="number"
++          min="1"
++          value={exercise.sets ?? 1}
++          onChange={(e) =>
++            updateExercise(index, 'sets', e.target.value)
++          }
++          className="w-16"
++          disabled={isDisabled}
++        />
++      </td>
+ 
+-      <div className="grid grid-cols-2 gap-3 mb-3 relative z-10" onClick={(e) => e.stopPropagation()}>
+-        <div className="space-y-1">
+-          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Repos (s)</Label>
+-          <Select
+-            value={ex.rest_time_seconds?.toString()}
+-            onValueChange={(v) => updateExerciseDetails(index, 'rest_time_seconds', v)}
+-            disabled={isView}
+-          >
+-            <SelectTrigger className="h-9 text-sm font-bold bg-background border-primary/10 focus:border-primary">
+-                <SelectValue />
+-            </SelectTrigger>
+-            <SelectContent>
+-              {[0, 15, 30, 45, 60, 90, 120, 180, 240, 300].map(s => <SelectItem key={s} value={s.toString()}>{s}s</SelectItem>)}
+-            </SelectContent>
+-          </Select>
+-        </div>
+-        <div className="space-y-1">
+-          <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><Zap size={10} className="text-amber-500"/> Intensité (RPE)</Label>
+-          <Input
+-            placeholder="0-10"
+-            value={ex.intensity}
+-            onChange={(e) => updateExerciseDetails(index, 'intensity', e.target.value)}
+-            className="h-9 text-xs bg-background/50 border-primary/5 font-bold"
+-            disabled={isView}
+-          />
+-        </div>
+-      </div>
++      <td className="px-2 py-3">
++        <Input
++          type="number"
++          min="0"
++          value={exercise.reps ?? 0}
++          onChange={(e) =>
++            updateExercise(index, 'reps', e.target.value)
++          }
++          className="w-16"
++          disabled={isDisabled}
++        />
++      </td>
+ 
+-      <div className="space-y-1 relative z-10" onClick={(e) => e.stopPropagation()}>
+-        <Label className="text-[10px] uppercase font-bold text-muted-foreground flex items-center gap-1"><MessageSquare size={10} className="text-primary"/> Notes</Label>
++      <td className="px-2 py-3">
+         <Input
+-          placeholder="..."
+-          value={ex.notes}
+-          onChange={(e) => updateExerciseDetails(index, 'notes', e.target.value)}
+-          className="h-9 text-xs bg-background/50 border-primary/5 italic"
+-          disabled={isView}
++          type="number"
++          min="0"
++          step="0.5"
++          value={exercise.weight ?? 0}
++          onChange={(e) =>
++            updateExercise(index, 'weight', e.target.value)
++          }
++          className="w-20"
++          disabled={isDisabled}
+         />
+-      </div>
+-    </Card>
+-  );
+-};
++      </td>
+ 
+-export const CardSeance = ({ mode = "edit", seanceId = null, duplicateId = null, isTracking = false }) => {
++      <td className="px-2 py-3">
++        <Input
++          type="number"
++          min="0"
++          value={exercise.rest_time ?? 60}
++          onChange={(e) =>
++            updateExercise(index, 'rest_time', e.target.value)
++          }
++          className="w-20"
++          disabled={isDisabled}
++        />
++      </td>
++
++      <td className="w-12 px-2 py-3">
++        <Button
++          type="button"
++          variant="ghost"
++          size="icon"
++          onClick={() => removeExercise(index)}
++          disabled={isDisabled}
++          aria-label="Supprimer l'exercice"
++        >
++          <IconTrash className="h-4 w-4" />
++        </Button>
++      </td>
++    </tr>
++  )
++}
++
++
++/**
++ * CardSeance
++ */
++export default function CardSeance({
++  objectifs = [],
++  athletes = [],
++  isDisabled = false,
++  isTemplate = false,
++  mode = 'create',
++  seanceId = null,
++  duplicateId = null,
++}) {
+   const router = useRouter()
+-  const searchParams = useSearchParams()
+-  const context = searchParams.get('context') || 'seances'
+-  const effectiveIsTracking = isTracking || context === 'seances'
+-
+-  const isCreation = !seanceId
+-  const isView = mode === "view"
+-  const isDuplicate = mode === "duplicate"
+-
+-  const [openExercises, setOpenExercises] = React.useState({ open: false, section: 'main' })
+-  const [openTemplates, setOpenTemplates] = React.useState(false)
+-  const [showSuccessModal, setShowSuccessModal] = React.useState(false)
+-  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState({ open: false, index: null })
+-  const [showMaxSessionsModal, setShowMaxSessionsModal] = React.useState(false)
+-  const [objectifsList, setObjectifsList] = React.useState([])
+-  const [formData, setFormData] = React.useState(initialFormState)
+-  const [isManualDuration, setIsManualDuration] = React.useState(false)
+-  const [availableExercises, setAvailableExercises] = React.useState([])
+-  const [availableAthletes, setAvailableAthletes] = React.useState([])
+-  const [availableTemplates, setAvailableTemplates] = React.useState([])
+-  const [availableObjectifs, setAvailableObjectifs] = React.useState([])
+-  const [loading, setLoading] = React.useState(false)
+-  const [activeId, setActiveId] = React.useState(null);
+-  const [sessionNumber, setSessionNumber] = React.useState(null)
+-
+-  // État des accordéons (Info ouvert par défaut, les autres fermés)
+-  const [expandedSections, setExpandedSections] = React.useState({
+-    info: true,
+-    warmup: false,
+-    main: false,
+-    cooldown: false
+-  });
+-
+-  const toggleSection = (section) => {
+-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+-  };
+-
+-  // Configuration des capteurs DND
++
++  const [sessionData, setSessionData] = React.useState(() => ({
++    ...EMPTY_SESSION,
++    is_template: isTemplate,
++  }))
++
++  const [exercices, setExercices] = React.useState([])
++  const [availableExercices, setAvailableExercices] = React.useState([])
++
++  const [selectedExercise, setSelectedExercise] = React.useState('')
++
++  const [isLoading, setIsLoading] = React.useState(true)
++  const [isSubmitting, setIsSubmitting] = React.useState(false)
++
+   const sensors = useSensors(
+-    useSensor(PointerSensor, {
+-        activationConstraint: {
+-            distance: 5,
+-        },
+-    }),
++    useSensor(PointerSensor),
+     useSensor(KeyboardSensor, {
+       coordinateGetter: sortableKeyboardCoordinates,
+     })
+-  );
++  )
+ 
++
++  /**
++   * Charge la bibliothèque d'exercices.
++   */
+   React.useEffect(() => {
+-    fetchAvailableExercises()
+-    fetchAthletes()
+-    fetchTemplates()
+-    fetchObjectifsList()
+-    if ((!isCreation && seanceId) || (isDuplicate && duplicateId)) {
+-      fetchSeance(isDuplicate ? duplicateId : seanceId)
++    let cancelled = false
++
++    async function loadExercises() {
++      try {
++        const data = await getExercices()
++
++        if (!cancelled) {
++          setAvailableExercices(data || [])
++        }
++      } catch (error) {
++        console.error(
++          'Erreur lors du chargement des exercices :',
++          error
++        )
++
++        if (!cancelled) {
++          toast.error(
++            'Impossible de charger la bibliothèque des exercices'
++          )
++        }
++      }
+     }
+-  }, [isCreation, seanceId, isDuplicate, duplicateId])
+ 
+-  const fetchSeance = async (idToFetch) => {
+-    try {
+-      setLoading(true)
+-      const data = await getSessionById(idToFetch)
+-
+-      const mappedExercises = (data.session_exercises || []).map((se, idx) => ({
+-        sortId: `ex-${Date.now()}-${idx}`,
+-        exercise_id: se.exercise_id,
+-        template_id: se.exercise_id,
+-        name: se.exercise?.name || "Exercice",
+-        description: se.exercise?.description || "",
+-        category: se.exercise?.category || "",
+-        unit: se.exercise?.unit || "reps",
+-        reps: se.reps || 10,
+-        weight: se.weight || 0,
+-        rest_time_seconds: se.rest_time || se.rest_time_seconds || 60,
+-        notes: se.notes || "",
+-        intensity: se.intensity || "",
+-        section: se.section || 'main',
+-        order_index: se.order_index
+-      })).sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+-
+-      setFormData({
+-        title: isDuplicate ? `${data.title} (Copie)` : (data.title || ""),
+-        description: data.description || "",
+-        athlete_id: isDuplicate ? null : (data.athlete_id?.toString() || null),
+-        objectif_id: isDuplicate ? null : (data.objectif_id?.toString() || null),
+-        date: isDuplicate ? new Date().toISOString().split('T')[0] : (data.date || new Date().toISOString().split('T')[0]),
+-        status: isDuplicate ? "prévu" : (data.status || "prévu"),
+-        exercises: mappedExercises,
+-        duration: data.duration || 0,
+-        main_rounds: data.main_rounds || 1,
+-        is_template: isDuplicate ? true : (data.is_template ?? false)
+-      })
++    loadExercises()
+ 
+-      // Ouvrir les sections qui contiennent des exercices
+-      const sectionsToExpand = { info: true };
+-      if (mappedExercises.some(ex => ex.section === 'warmup')) sectionsToExpand.warmup = true;
+-      if (mappedExercises.some(ex => ex.section === 'main')) sectionsToExpand.main = true;
+-      if (mappedExercises.some(ex => ex.section === 'cooldown')) sectionsToExpand.cooldown = true;
++    return () => {
++      cancelled = true
++    }
++  }, [])
+ 
+-      setExpandedSections(prev => ({ ...prev, ...sectionsToExpand }));
+ 
+-      if (data.duration) setIsManualDuration(true)
++  /**
++   * Charge une séance existante lorsqu'on est en édition
++   * ou lorsqu'on demande une duplication.
++   */
++  React.useEffect(() => {
++    let cancelled = false
+ 
+-      // Mettre à jour le numéro de séance si lié à un objectif
+-      if (data.objectif) {
+-        setSessionNumber(getSessionNumber(seanceId, {
+-          ...data.objectif,
+-          sessions: data.objectif.sessions || []
+-        }))
++    async function loadSession() {
++      const idToLoad = seanceId || duplicateId
++
++      if (!idToLoad) {
++        setSessionData({
++          ...EMPTY_SESSION,
++          is_template: isTemplate,
++        })
++
++        setExercices([])
++        setIsLoading(false)
++
++        return
+       }
+-    } catch (error) {
+-      console.error("Erreur lors du chargement de la séance:", error)
+-      toast.error("Impossible de charger les détails de la séance")
+-    } finally {
+-      setLoading(false)
+-    }
+-  }
+ 
+-  const calculateTotalDuration = React.useCallback(() => {
+-    if (formData.exercises.length === 0) return 0;
++      try {
++        setIsLoading(true)
+ 
+-    const totalSeconds = formData.exercises.reduce((acc, ex) => {
+-      const reps = parseInt(ex.reps) || 0;
+-      const rest = parseInt(ex.rest_time_seconds) || 0;
+-      const multiplier = ex.section === 'main' ? (formData.main_rounds || 1) : 1;
++        const data = await getSessionById(idToLoad)
+ 
+-      const exerciseTime = ((reps * 4) + rest) * multiplier;
+-      return acc + exerciseTime;
+-    }, 300);
++        if (cancelled || !data) {
++          return
++        }
+ 
+-    return Math.round(totalSeconds / 60);
+-  }, [formData.exercises, formData.main_rounds])
++        const loadedExercises = (data.exercices || []).map(
++          (item, index) => {
++            const exerciseLibrary = item.exercice || {}
++
++            return {
++              _dndId:
++                item.id ||
++                `${item.exercise_id || exerciseLibrary.id}-${index}`,
++
++              exercise_id:
++                item.exercise_id ||
++                exerciseLibrary.id,
++
++              name:
++                exerciseLibrary.name ||
++                item.name ||
++                'Exercice',
++
++              description:
++                exerciseLibrary.description || '',
++
++              sets: item.sets ?? 1,
++              reps: item.reps ?? 0,
++              weight: item.weight ?? 0,
++              rest_time: item.rest_time ?? 60,
++
++              notes: item.notes || '',
++              intensity: item.intensity ?? 0,
++              section: item.section || 'main',
++              rounds: item.rounds ?? 1,
++
++              order_index:
++                item.order_index ?? index,
++            }
++          }
++        )
++
++        const loadedSession = {
++          ...EMPTY_SESSION,
++
++          ...data,
++
++          /**
++           * Pour une duplication, on ne conserve pas
++           * l'identifiant de la séance originale.
++           */
++          ...(duplicateId
++            ? {
++                id: undefined,
++                title: data.title
++                  ? `${data.title} - Copie`
++                  : '',
++              }
++            : {}),
+ 
+-  React.useEffect(() => {
+-    if (!isManualDuration) {
+-      setFormData(prev => ({ ...prev, duration: calculateTotalDuration() }))
+-    }
+-  }, [calculateTotalDuration, isManualDuration])
++          is_template:
++            isTemplate || data.is_template || false,
+ 
+-  const fetchAvailableExercises = async () => {
+-    try {
+-      const data = await getExercices()
+-      setAvailableExercises(data)
+-    } catch (error) {
+-      console.error("Erreur lors du chargement des exercices:", error)
+-      toast.error("Impossible de charger la bibliothèque d'exercices")
+-    }
+-  }
++          exercises: loadedExercises,
++        }
+ 
+-  const fetchAthletes = async () => {
+-    try {
+-      const data = await getAthletes()
+-      setAvailableAthletes(data)
+-    } catch (error) {
+-      console.error("Erreur lors du chargement des athlètes:", error)
+-      toast.error("Impossible de charger la liste des athlètes")
++        setSessionData(loadedSession)
++        setExercices(loadedExercises)
++      } catch (error) {
++        console.error(
++          'Erreur lors du chargement de la séance :',
++          error
++        )
++
++        toast.error(
++          'Impossible de charger la séance'
++        )
++      } finally {
++        if (!cancelled) {
++          setIsLoading(false)
++        }
++      }
+     }
+-  }
+ 
+-  const fetchTemplates = async () => {
+-    try {
+-      const data = await getSessions()
+-      const templates = data.filter(s => s.is_template)
+-      setAvailableTemplates(templates)
+-    } catch (error) {
+-      console.error("Erreur lors du chargement des modèles:", error)
+-    }
+-  }
++    loadSession()
+ 
+-  const fetchObjectifsList = async () => {
+-    try {
+-      const data = await getObjectifs()
+-      setAvailableObjectifs(data)
+-      setObjectifsList(data)
+-    } catch (error) {
+-      console.error("Erreur lors du chargement des objectifs:", error)
++    return () => {
++      cancelled = true
+     }
+-  }
++  }, [seanceId, duplicateId, isTemplate])
+ 
+-  const handleInputChange = (e) => {
+-    const { name, value } = e.target
+-    setFormData(prev => ({ ...prev, [name]: value }))
+-  }
+ 
+-  const handleSelectChange = (name, value) => {
+-    setFormData(prev => {
+-      const newData = { ...prev, [name]: value }
++  /**
++   * Met à jour sessionData.
++   */
++  const handleSessionChange = React.useCallback(
++    (field, value) => {
++      setSessionData((previous) => ({
++        ...previous,
++        [field]: value,
++      }))
++    },
++    []
++  )
++
+ 
+-      // Réinitialiser l'objectif si l'athlète change
+-      if (name === 'athlete_id' && value !== prev.athlete_id) {
+-        newData.objectif_id = null
+-        setSessionNumber(null)
++  /**
++   * Met à jour les exercices dans sessionData.
++   */
++  const syncExercises = React.useCallback(
++    (newExercises) => {
++      setExercices(newExercises)
++
++      setSessionData((previous) => ({
++        ...previous,
++        exercises: newExercises,
++      }))
++    },
++    []
++  )
++
++
++  /**
++   * Drag & drop.
++   */
++  const handleDragEnd = React.useCallback(
++    (event) => {
++      if (isDisabled) return
++
++      const { active, over } = event
++
++      if (!over || active.id === over.id) {
++        return
+       }
+ 
+-      return newData
+-    })
+-  }
++      setExercices((currentExercises) => {
++        const oldIndex = currentExercises.findIndex(
++          (exercise) => exercise._dndId === active.id
++        )
+ 
+-  const handleTemplateSelect = (template) => {
+-    const mappedExercises = (template.exercises || template.session_exercises || []).map((ex, idx) => ({
+-      sortId: `ex-${Date.now()}-${idx}`,
+-      exercise_id: ex.exercise_id || ex.template_id || ex.id,
+-      template_id: ex.exercise_id || ex.id_exercises || ex.template_id || ex.id,
+-      reps: ex.reps || 10,
+-      weight: ex.weight || 0,
+-      rest_time_seconds: ex.repos || ex.rest_time || ex.rest_time_seconds || 60,
+-      name: ex.name || (ex.exercices_library ? ex.exercices_library.name : "Exercice"),
+-      description: ex.description || (ex.exercices_library ? ex.exercices_library.description : ""),
+-      category: ex.category || (ex.exercices_library ? ex.exercices_library.category : ""),
+-      unit: ex.unit || (ex.exercices_library ? ex.exercices_library.unit : "reps"),
+-      notes: ex.notes || "",
+-      intensity: ex.intensity || "",
+-      section: ex.section || 'main'
+-    }))
+-
+-    setFormData(prev => ({
+-      ...prev,
+-      title: template.title,
+-      description: template.description || "",
+-      main_rounds: template.main_rounds || 1,
+-      exercises: mappedExercises
+-    }))
+-    setOpenTemplates(false)
+-    setIsManualDuration(false)
+-    toast.success(`Modèle "${template.title}" appliqué`)
+-  }
++        const newIndex = currentExercises.findIndex(
++          (exercise) => exercise._dndId === over.id
++        )
++
++        if (
++          oldIndex === -1 ||
++          newIndex === -1
++        ) {
++          return currentExercises
++        }
++
++        const reordered = arrayMove(
++          currentExercises,
++          oldIndex,
++          newIndex
++        ).map((exercise, index) => ({
++          ...exercise,
++          order_index: index,
++        }))
++
++        setSessionData((previous) => ({
++          ...previous,
++          exercises: reordered,
++        }))
++
++        return reordered
++      })
++    },
++    [isDisabled]
++  )
++
++
++  /**
++   * Supprime un exercice.
++   */
++  const removeExercise = React.useCallback(
++    (index) => {
++      if (isDisabled) return
++
++      const newExercises = exercices
++        .filter((_, exerciseIndex) => exerciseIndex !== index)
++        .map((exercise, newIndex) => ({
++          ...exercise,
++          order_index: newIndex,
++        }))
++
++      syncExercises(newExercises)
++    },
++    [exercices, isDisabled, syncExercises]
++  )
++
++
++  /**
++   * Modifie un exercice.
++   */
++  const updateExercise = React.useCallback(
++    (index, field, value) => {
++      if (isDisabled) return
++
++      const newExercises = exercices.map(
++        (exercise, exerciseIndex) =>
++          exerciseIndex === index
++            ? {
++                ...exercise,
++                [field]: value,
++              }
++            : exercise
++      )
++
++      syncExercises(newExercises)
++    },
++    [exercices, isDisabled, syncExercises]
++  )
++
++
++  /**
++   * Ajoute un exercice.
++   */
++  const addExercise = React.useCallback(() => {
++    if (
++      isDisabled ||
++      !selectedExercise
++    ) {
++      return
++    }
++
++    const exerciseToAdd =
++      availableExercices.find(
++        (exercise) =>
++          String(exercise.id) ===
++          String(selectedExercise)
++      )
++
++    if (!exerciseToAdd) {
++      return
++    }
++
++    const index = exercices.length
+ 
+-  const addExerciseToSeance = (exerciseTemplate, section = 'main') => {
+     const newExercise = {
+-      sortId: `ex-${Date.now()}`,
+-      ...exerciseTemplate,
+-      exercise_id: exerciseTemplate.id,
+-      template_id: exerciseTemplate.id,
++      _dndId: `new-${exerciseToAdd.id}-${Date.now()}`,
++
++      /**
++       * IMPORTANT :
++       * createSession() attend exercise_id,
++       * pas id.
++       */
++      exercise_id: exerciseToAdd.id,
++
++      name: exerciseToAdd.name || '',
++      description: exerciseToAdd.description || '',
++
++      sets: 3,
+       reps: 10,
+       weight: 0,
+-      notes: "",
+-      intensity: "",
+-      rest_time_seconds: 60,
+-      section: section
+-    }
+-    delete newExercise.id
+-
+-    setFormData(prev => ({
+-      ...prev,
+-      exercises: [...prev.exercises, newExercise]
+-    }))
+-    setOpenExercises({ open: false, section: 'main' })
+-    toast.success(`${exerciseTemplate.name} ajouté`)
+-  }
++      rest_time: 60,
+ 
+-  const requestRemoveExercise = (index) => {
+-    setShowDeleteConfirm({ open: true, index })
+-  }
++      notes: '',
++      intensity: 0,
++      section: 'main',
++      rounds: 1,
+ 
+-  const confirmRemoveExercise = () => {
+-    if (showDeleteConfirm.index !== null) {
+-      setFormData(prev => ({
+-        ...prev,
+-        exercises: prev.exercises.filter((_, i) => i !== showDeleteConfirm.index)
+-      }))
+-      setShowDeleteConfirm({ open: false, index: null })
+-      toast.success("Exercice retiré")
++      order_index: index,
+     }
+-  }
+ 
+-  const updateExerciseDetails = (index, field, value) => {
+-    setFormData(prev => {
+-      const newExercises = [...prev.exercises]
+-      let validatedValue = value;
+-      if (['reps', 'weight', 'rest_time_seconds'].includes(field)) {
+-        validatedValue = Math.max(0, parseFloat(value) || 0);
+-      }
+-      newExercises[index] = { ...newExercises[index], [field]: validatedValue }
+-      return { ...prev, exercises: newExercises }
+-    })
+-  }
++    syncExercises([
++      ...exercices,
++      newExercise,
++    ])
+ 
+-  // DND Handlers
+-  const handleDragStart = (event) => {
+-    setActiveId(event.active.id);
+-  };
++    setSelectedExercise('')
++  }, [
++    isDisabled,
++    selectedExercise,
++    availableExercices,
++    exercices,
++    syncExercises,
++  ])
+ 
+-  const handleDragEnd = (event) => {
+-    const { active, over } = event;
+ 
+-    if (over && active.id !== over.id) {
+-      setFormData((prev) => {
+-        const oldIndex = prev.exercises.findIndex((ex) => ex.sortId === active.id);
+-        const newIndex = prev.exercises.findIndex((ex) => ex.sortId === over.id);
++  /**
++   * Prépare les données avant envoi au Server Action.
++   *
++   * On retire les propriétés purement UI comme _dndId,
++   * name et description.
++   */
++  const buildPayload = React.useCallback(() => {
++    return {
++      ...sessionData,
+ 
+-        const updatedExercises = [...prev.exercises];
+-        const activeEx = updatedExercises[oldIndex];
+-        const overEx = updatedExercises[newIndex];
++      exercises: exercices.map(
++        (exercise, index) => ({
++          exercise_id:
++            exercise.exercise_id,
+ 
+-        if (activeEx.section !== overEx.section) {
+-            activeEx.section = overEx.section;
+-        }
++          sets:
++            Number(exercise.sets) || 1,
+ 
+-        return {
+-          ...prev,
+-          exercises: arrayMove(updatedExercises, oldIndex, newIndex),
+-        };
+-      });
+-    }
++          reps:
++            Number(exercise.reps) || 0,
+ 
+-    setActiveId(null);
+-  };
++          weight:
++            Number(exercise.weight) || 0,
+ 
+-  const handleSubmit = async () => {
+-    const isTemplateToSave = isCreation ? !effectiveIsTracking : formData.is_template;
++          rest_time:
++            Number(exercise.rest_time) || 60,
+ 
+-    if (!formData.title) {
+-      toast.error("Le nom du programme est obligatoire");
+-      return;
+-    }
++          order_index:
++            index,
++
++          notes:
++            exercise.notes || '',
+ 
+-    if (effectiveIsTracking && !formData.athlete_id) {
+-      toast.error("Veuillez sélectionner un athlète");
+-      return;
++          intensity:
++            Number(exercise.intensity) || 0,
++
++          section:
++            exercise.section || 'main',
++
++          rounds:
++            Number(exercise.rounds) || 1,
++        })
++      ),
+     }
++  }, [sessionData, exercices])
++
+ 
+-    if (formData.exercises.length === 0) {
+-      toast.error("Ajoutez au moins un exercice");
+-      return;
++  /**
++   * Création / modification.
++   */
++  const handleSubmit = async (event) => {
++    event.preventDefault()
++
++    if (
++      isDisabled ||
++      isSubmitting
++    ) {
++      return
+     }
+ 
+-    // Vérifier si le nombre max de séances pour l'objectif est atteint
+-    if (isCreation && formData.objectif_id && !isTemplateToSave) {
+-      try {
+-        const isFull = await isObjectifFull(formData.objectif_id);
+-        if (isFull) {
+-          setShowMaxSessionsModal(true);
+-          return;
+-        }
+-      } catch (error) {
+-        console.error("Erreur lors de la vérification de l'objectif:", error);
+-        toast.error("Erreur lors de la vérification de l'objectif");
+-        return;
+-      }
++    if (!sessionData.title?.trim()) {
++      toast.error(
++        'Veuillez renseigner le titre de la séance'
++      )
++      return
+     }
+ 
+-    for (const [index, ex] of formData.exercises.entries()) {
+-        if (!ex.exercise_id && !ex.template_id) {
+-          toast.error(`Exercice ${index + 1} : ID manquant`);
+-          return;
+-        }
++    if (
++      !isTemplate &&
++      !sessionData.athlete_id
++    ) {
++      toast.error(
++        'Veuillez sélectionner un athlète'
++      )
++      return
+     }
+ 
+-    const loadingToast = toast.loading(isTemplateToSave ? "Enregistrement du modèle..." : "Enregistrement de la séance...")
++    if (
++      !isTemplate &&
++      !sessionData.objectif_id
++    ) {
++      toast.error(
++        'Veuillez sélectionner un objectif'
++      )
++      return
++    }
+ 
+-    try {
+-      const mappedExercises = formData.exercises.map((ex, index) => ({
+-        exercise_id: ex.exercise_id || ex.template_id,
+-        sets: 1,
+-        reps: parseInt(ex.reps) || 0,
+-        weight: parseFloat(ex.weight) || 0,
+-        rest_time: parseInt(ex.rest_time_seconds) || 60,
+-        order_index: index,
+-        notes: ex.notes || "",
+-        intensity: ex.intensity || "",
+-        section: ex.section || 'main'
+-      }))
++    setIsSubmitting(true)
+ 
+-      const payload = {
+-        title: formData.title,
+-        description: formData.description,
+-        athlete_id: isTemplateToSave ? null : formData.athlete_id,
+-        objectif_id: formData.objectif_id,
+-        date: formData.date,
+-        duration: formData.duration,
+-        main_rounds: parseInt(formData.main_rounds) || 1,
+-        is_template: isTemplateToSave,
+-        status: formData.status || "prévu",
+-        exercises: mappedExercises
+-      }
++    const toastId = toast.loading(
++      mode === 'edit'
++        ? 'Mise à jour en cours...'
++        : 'Création en cours...'
++    )
+ 
+-      let result;
+-      if (isCreation) {
+-        result = await createSession(payload)
++    try {
++      const payload = buildPayload()
++
++      let result
++
++      if (
++        mode === 'edit' &&
++        sessionData.id
++      ) {
++        result = await updateSession(
++          sessionData.id,
++          payload
++        )
++
++        toast.success(
++          'Séance mise à jour avec succès',
++          { id: toastId }
++        )
+       } else {
+-        result = await updateSession(seanceId, payload)
++        result = await createSession(
++          payload
++        )
++
++        toast.success(
++          'Séance créée avec succès',
++          { id: toastId }
++        )
+       }
+ 
+-      if (!result) {
+-        throw new Error('Erreur lors de la sauvegarde');
++      if (result?.id) {
++        router.push(
++          `/admin/seances/${result.id}?mode=view`
++        )
+       }
+-
+-      toast.dismiss(loadingToast)
+-      setShowSuccessModal(true)
+-
+-      // Rediriger après succès
+-      setTimeout(() => {
+-        setShowSuccessModal(false)
+-        if (context === 'seances') {
+-          router.push(`/admin/seances/${result.id}?mode=view`)
+-        } else {
+-          router.push(`/admin/modeles/${result.id}?mode=view`)
+-        }
+-      }, 1500)
+-
+     } catch (error) {
+-      console.error("Erreur lors de l'enregistrement:", error)
+-      toast.error(`Erreur : ${error.message}`, { id: loadingToast })
++      console.error(
++        'Erreur sauvegarde séance :',
++        error
++      )
++
++      toast.error(
++        error?.message ||
++          'Une erreur est survenue',
++        { id: toastId }
++      )
++    } finally {
++      setIsSubmitting(false)
+     }
+   }
+ 
+-  const handleModalClose = () => {
+-    setShowSuccessModal(false)
+-    if (formData.athlete_id) {
+-      router.push(`/admin/users/${formData.athlete_id}`)
+-    } else {
+-      router.push('/admin/seances')
+-    }
++
++  /**
++   * Chargement.
++   */
++  if (isLoading) {
++    return (
++      <div className="flex justify-center p-8">
++        <div className="flex items-center gap-2 text-muted-foreground">
++          <IconLoader2
++            className="animate-spin"
++            size={18}
++          />
++          Chargement de la séance...
++        </div>
++      </div>
++    )
+   }
+ 
+-  const renderExerciseSection = (sectionId, title, icon, colorClass) => {
+-    const sectionExercises = formData.exercises.filter(ex => ex.section === sectionId);
+-    const isExpanded = expandedSections[sectionId];
+ 
+-    return (
+-      <div className="space-y-4">
+-        <div className="flex items-center justify-between border-b pb-2">
+-          <div className="flex items-center gap-2 flex-1 cursor-pointer select-none group" onClick={() => toggleSection(sectionId)}>
+-            <div className="text-muted-foreground group-hover:text-primary transition-colors">
+-                {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+-            </div>
+-            <div className={cn("p-1.5 rounded-lg", colorClass)}>
+-              {icon}
+-            </div>
+-            <h3 className="font-bold text-sm uppercase tracking-tight">{title}</h3>
+-            <Badge variant="secondary" className="text-[10px] h-5 px-1.5 ml-1">{sectionExercises.length}</Badge>
+-          </div>
++  return (
++    <DndContext
++      sensors={sensors}
++      collisionDetection={closestCenter}
++      onDragEnd={handleDragEnd}
++      modifiers={[restrictToVerticalAxis]}
++    >
++      <SortableContext
++        items={exercices.map(
++          (exercise) => exercise._dndId
++        )}
++        strategy={verticalListSortingStrategy}
++      >
++        <form
++          onSubmit={handleSubmit}
++          className="space-y-6"
++        >
++          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++
++            {/* ========================= */}
++            {/* INFORMATIONS SEANCE */}
++            {/* ========================= */}
++
++            <div className="space-y-4">
++
++              <div className="space-y-2">
++                <Label htmlFor="title">
++                  Titre
++                </Label>
++
++                <Input
++                  id="title"
++                  value={sessionData.title || ''}
++                  onChange={(event) =>
++                    handleSessionChange(
++                      'title',
++                      event.target.value
++                    )
++                  }
++                  disabled={isDisabled}
++                  placeholder="Ex : Séance force bas du corps"
++                />
++              </div>
+ 
+-          {isExpanded && (
+-            <div className="flex items-center gap-3 animate-in fade-in duration-300">
+-              {sectionId === 'main' && (
+-                <div className="flex items-center gap-2 bg-muted/20 px-3 py-1 rounded-full border border-primary/10">
+-                  <Label className="text-[10px] uppercase font-bold text-muted-foreground whitespace-nowrap">Répéter le bloc</Label>
+-                  <div className="flex items-center gap-1.5">
+-                    <RotateCcw size={12} className="text-primary" />
+-                    <Input
+-                      type="number"
+-                      min="1"
+-                      value={formData.main_rounds}
+-                      onChange={(e) => setFormData(prev => ({ ...prev, main_rounds: Math.max(1, parseInt(e.target.value) || 1) }))}
+-                      className="h-6 w-12 text-xs text-center p-0 bg-transparent border-none font-bold text-violet-600"
+-                      disabled={isView}
+-                    />
+-                    <span className="text-[10px] font-bold text-muted-foreground">Tours</span>
+-                  </div>
++
++              <div className="space-y-2">
++                <Label htmlFor="date">
++                  Date
++                </Label>
++
++                <Input
++                  id="date"
++                  type="date"
++                  value={
++                    sessionData.date ||
++                    new Date()
++                      .toISOString()
++                      .split('T')[0]
++                  }
++                  onChange={(event) =>
++                    handleSessionChange(
++                      'date',
++                      event.target.value
++                    )
++                  }
++                  disabled={isDisabled}
++                />
++              </div>
++
++
++              {!isTemplate && (
++                <div className="space-y-2">
++                  <Label htmlFor="athlete">
++                    Athlète
++                  </Label>
++
++                  <Select
++                    value={
++                      sessionData.athlete_id || ''
++                    }
++                    onValueChange={(value) =>
++                      handleSessionChange(
++                        'athlete_id',
++                        value
++                      )
++                    }
++                    disabled={isDisabled}
++                  >
++                    <SelectTrigger id="athlete">
++                      <SelectValue placeholder="Sélectionner un athlète" />
++                    </SelectTrigger>
++
++                    <SelectContent>
++                      {athletes.map((athlete) => (
++                        <SelectItem
++                          key={athlete.id}
++                          value={String(athlete.id)}
++                        >
++                          {athlete.first_name}{' '}
++                          {athlete.last_name}
++                        </SelectItem>
++                      ))}
++                    </SelectContent>
++                  </Select>
+                 </div>
+               )}
+ 
+-              {!isView && (
+-                <Button
+-                  variant="outline"
+-                  size="sm"
+-                  className="h-7 gap-1 border-primary/30 text-[10px] font-bold uppercase hover:bg-primary/5"
+-                  onClick={(e) => {
+-                    e.stopPropagation();
+-                    setOpenExercises({ open: true, section: sectionId });
+-                  }}
+-                >
+-                  <Plus size={12} /> Ajouter
+-                </Button>
+-              )}
+-            </div>
+-          )}
+-        </div>
+ 
+-        {isExpanded && (
+-          <SortableContext
+-            items={sectionExercises.map(ex => ex.sortId)}
+-            strategy={verticalListSortingStrategy}
+-          >
+-            <div className="min-h-[50px] animate-in slide-in-from-top-2 duration-300">
+-              {sectionExercises.length === 0 ? (
+-                <div className="text-center py-6 border-2 border-dashed rounded-xl text-muted-foreground text-[10px] uppercase font-semibold opacity-40">
+-                  Aucun exercice dans cette section
++              {!isTemplate && (
++                <div className="space-y-2">
++                  <Label htmlFor="objectif">
++                    Objectif
++                  </Label>
++
++                  <Select
++                    value={
++                      sessionData.objectif_id || ''
++                    }
++                    onValueChange={(value) =>
++                      handleSessionChange(
++                        'objectif_id',
++                        value
++                      )
++                    }
++                    disabled={isDisabled}
++                  >
++                    <SelectTrigger id="objectif">
++                      <SelectValue placeholder="Sélectionner un objectif" />
++                    </SelectTrigger>
++
++                    <SelectContent>
++                      {objectifs.map((objectif) => (
++                        <SelectItem
++                          key={objectif.id}
++                          value={String(objectif.id)}
++                        >
++                          {objectif.label ||
++                            objectif.name ||
++                            `Objectif ${objectif.id}`}
++                        </SelectItem>
++                      ))}
++                    </SelectContent>
++                  </Select>
+                 </div>
+-              ) : (
+-                formData.exercises.map((ex, originalIndex) => {
+-                  if (ex.section !== sectionId) return null;
+-                  return (
+-                    <SortableExerciseCard
+-                      key={ex.sortId}
+-                      ex={ex}
+-                      index={originalIndex}
+-                      isView={isView}
+-                      updateExerciseDetails={updateExerciseDetails}
+-                      onRemoveRequest={requestRemoveExercise}
+-                    />
+-                  )
+-                })
+               )}
+-            </div>
+-          </SortableContext>
+-        )}
+-      </div>
+-    );
+-  };
+ 
+-  // Mettre à jour le numéro de séance quand l'objectif change
+-  React.useEffect(() => {
+-    if (formData.objectif_id) {
+-      const objectif = objectifsList.find(o => o.id === formData.objectif_id);
+-      if (objectif) {
+-        setSessionNumber(getSessionNumber(seanceId || 'new', {
+-          ...objectif,
+-          sessions: objectif.sessions || []
+-        }));
+-      }
+-    } else {
+-      setSessionNumber(null);
+-    }
+-  }, [formData.objectif_id, objectifsList, seanceId]);
+ 
+-  return (
+-    <>
+-      {!showMaxSessionsModal && (
+-        <Card className="w-full max-w-3xl mx-auto border shadow-none relative bg-background/50 backdrop-blur-sm">
+-        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/5 pb-6">
+-          <CardTitle className="text-xl font-bold flex items-center gap-3">
+-            {isView ? (
+-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+-                    <Target size={20} />
+-                </div>
+-            ) : null}
+-            <div>
+-                <span className="block text-[10px] uppercase tracking-widest text-muted-foreground font-black mb-1">
+-                    {isView ? "Visualisation" : (isCreation ? (isDuplicate ? "Duplication" : "Édition") : "Modification")}
+-                </span>
+-                {isView ? "Détails de la séance" : (isCreation ? (isDuplicate ? "Dupliquer le programme" : (effectiveIsTracking ? "Nouvelle séance" : "Nouveau Modèle")) : "Modifier le programme")}
++              <div className="space-y-2">
++                <Label htmlFor="notes">
++                  Notes
++                </Label>
++
++                <Textarea
++                  id="notes"
++                  value={sessionData.notes || ''}
++                  onChange={(event) =>
++                    handleSessionChange(
++                      'notes',
++                      event.target.value
++                    )
++                  }
++                  disabled={isDisabled}
++                  rows={4}
++                  placeholder="Notes concernant la séance..."
++                />
++              </div>
++
+             </div>
+-          </CardTitle>
+-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors" onClick={() => router.push(formData.athlete_id ? `/admin/users/${formData.athlete_id}` : (context === 'seances' ? '/admin/seances' : '/admin/modeles'))}>
+-            <X size={20} />
+-          </Button>
+-        </CardHeader>
+-
+-        <CardContent className="space-y-8 pt-6">
+-          {/* Section Accordéon : INFOS SÉANCE */}
+-          <div className="space-y-4">
+-            <div className="flex items-center justify-between border-b pb-2 cursor-pointer group select-none" onClick={() => toggleSection('info')}>
+-                <div className="flex items-center gap-2">
+-                    <div className="text-muted-foreground group-hover:text-primary transition-colors">
+-                        {expandedSections.info ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+-                    </div>
+-                    <div className="p-1.5 rounded-lg bg-muted">
+-                        <Info size={16} className="text-foreground" />
+-                    </div>
+-                    <h3 className="font-bold text-sm uppercase tracking-tight">Informations & Statistiques</h3>
+-                </div>
+-                <div className="flex items-center gap-3">
+-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-tight bg-background/50 px-2 py-1 rounded-full border border-border/50">
+-                        <span className="flex items-center gap-1"><Clock size={10} className="text-primary"/> {formData.duration} durée estimée</span>
+-                        <span className="opacity-20">|</span>
+-                        <span className="flex items-center gap-1"><Dumbbell size={10} className="text-primary"/> {formData.exercises.length} ex.</span>
+-                    </div>
++
++
++            {/* ========================= */}
++            {/* EXERCICES */}
++            {/* ========================= */}
++
++            <div className="space-y-4">
++
++              <div className="space-y-2">
++                <Label>
++                  Exercices
++                </Label>
++
++                <div className="flex flex-col sm:flex-row gap-2">
++
++                  <Select
++                    value={selectedExercise}
++                    onValueChange={
++                      setSelectedExercise
++                    }
++                    disabled={isDisabled}
++                  >
++                    <SelectTrigger className="w-full">
++                      <SelectValue placeholder="Ajouter un exercice" />
++                    </SelectTrigger>
++
++                    <SelectContent>
++                      {availableExercices.map(
++                        (exercise) => (
++                          <SelectItem
++                            key={exercise.id}
++                            value={String(exercise.id)}
++                          >
++                            {exercise.name}
++                          </SelectItem>
++                        )
++                      )}
++                    </SelectContent>
++                  </Select>
++
++                  <Button
++                    type="button"
++                    onClick={addExercise}
++                    disabled={
++                      isDisabled ||
++                      !selectedExercise
++                    }
++                    className="w-full sm:w-auto"
++                  >
++                    <IconPlus
++                      className="h-4 w-4 mr-2"
++                    />
++                    Ajouter
++                  </Button>
++
+                 </div>
+-            </div>
++              </div>
++
++
++              <div className="rounded-md border overflow-x-auto">
++
++                <table className="min-w-full divide-y divide-border">
++
++                  <thead className="bg-muted/30">
++                    <tr>
++
++                      <th className="w-10 px-2 py-2" />
++
++                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
++                        Exercice
++                      </th>
++
++                      <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
++                        Séries
++                      </th>
++
++                      <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
++                        Rép.
++                      </th>
++
++                      <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
++                        Poids
++                      </th>
++
++                      <th className="px-2 py-2 text-left text-xs font-medium text-muted-foreground uppercase">
++                        Repos
++                      </th>
++
++                      <th className="w-12 px-2 py-2" />
++
++                    </tr>
++                  </thead>
+ 
+-            {expandedSections.info && (
+-              <div className="space-y-6 animate-in slide-in-from-top-2 duration-300">
+-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+-                    <div className="space-y-2">
+-                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Nom de la séance (Obligatoire)</Label>
+-                        <Input
+-                            name="title"
+-                            value={formData.title}
+-                            onChange={handleInputChange}
+-                            placeholder="Nouvelle séance"
+-                            className="h-12 border-2 font-bold"
+-                            disabled={isView}
+-                        />
+-                    </div>
+-
+-                    {effectiveIsTracking && (
+-                        <div className="space-y-2">
+-                            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Athlète assigné (Obligatoire)</Label>
+-                            <Select
+-                              value={formData.athlete_id || undefined}
+-                              onValueChange={(value) => handleSelectChange('athlete_id', value)}
+-                              disabled={isView}
+-                            >
+-                            <SelectTrigger className="h-12 border-2 font-bold">
+-                                <SelectValue placeholder="Sélectionner un athlète" />
+-                            </SelectTrigger>
+-                            <SelectContent>
+-                                {availableAthletes.map((athlete) => (
+-                                <SelectItem key={athlete.id} value={athlete.id.toString()}>
+-                                    {athlete.first_name} {athlete.last_name || ''}
+-                                </SelectItem>
+-                                ))}
+-                            </SelectContent>
+-                            </Select>
+-                        </div>
+-                    )}
+ 
+-                    <div className="space-y-2">
+-                        <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Objectif lié (Facultatif)</Label>
+-                        <Select
+-                          value={formData.objectif_id || undefined}
+-                          onValueChange={(value) => handleSelectChange('objectif_id', value)}
+-                          disabled={isView || (effectiveIsTracking && !formData.athlete_id)}
++                  <tbody>
++
++                    {exercices.length > 0 ? (
++
++                      exercices.map(
++                        (exercise, index) => (
++                          <ExerciseRow
++                            key={
++                              exercise._dndId ||
++                              `${exercise.exercise_id}-${index}`
++                            }
++                            exercise={exercise}
++                            index={index}
++                            removeExercise={
++                              removeExercise
++                            }
++                            updateExercise={
++                              updateExercise
++                            }
++                            isDisabled={
++                              isDisabled
++                            }
++                          />
++                        )
++                      )
++
++                    ) : (
++
++                      <tr>
++                        <td
++                          colSpan={7}
++                          className="px-4 py-8 text-center text-muted-foreground"
+                         >
+-                        <SelectTrigger className="h-12 border-2 font-bold">
+-                            <SelectValue placeholder="Sélectionner un objectif" />
+-                        </SelectTrigger>
+-                        <SelectContent>
+-                            {availableObjectifs
+-                              .filter(obj => !effectiveIsTracking || obj.athlete_id === formData.athlete_id)
+-                              .map((obj) => (
+-                              <SelectItem key={obj.id} value={obj.id.toString()}>
+-                                  {obj.label}
+-                                  {obj.total_sessions && ` (${obj.sessions?.length || 0}/${obj.total_sessions})`}
+-                              </SelectItem>
+-                            ))}
+-                        </SelectContent>
+-                        </Select>
+-                        {sessionNumber && (
+-                          <p className="text-sm text-muted-foreground mt-1">
+-                            Cette séance sera la {sessionNumber}
+-                          </p>
+-                        )}
+-                    </div>
+-
+-                    {effectiveIsTracking && (
+-                        <div className="space-y-2">
+-                            <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Date prévue</Label>
+-                            <Input
+-                                type="date"
+-                                name="date"
+-                                value={formData.date}
+-                                onChange={handleInputChange}
+-                                className="h-12 border-2 font-bold"
+-                                disabled={isView}
+-                            />
+-                        </div>
++                          Aucun exercice ajouté
++                        </td>
++                      </tr>
++
+                     )}
+-                </div>
+ 
+-                <div className="space-y-2">
+-                  <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Description globale (Facultatif)</Label>
+-                  <Input
+-                    name="description"
+-                    placeholder="Objectifs de la séance, focus particulier..."
+-                    value={formData.description}
+-                    onChange={handleInputChange}
+-                    className="h-12 border-primary/10 bg-muted/5 italic"
+-                    disabled={isView}
+-                  />
+-                </div>
++                  </tbody>
+ 
+-                {effectiveIsTracking && (
+-                  <div className="space-y-2">
+-                    <Label className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Statut</Label>
+-                    <Select
+-                      value={formData.status}
+-                      onValueChange={(value) => handleSelectChange('status', value)}
+-                      disabled={isView}
+-                    >
+-                      <SelectTrigger className="h-12 border-2 font-bold">
+-                        <SelectValue placeholder="Sélectionner un statut" />
+-                      </SelectTrigger>
+-                      <SelectContent>
+-                        <SelectItem value="en attente">En attente</SelectItem>
+-                        <SelectItem value="transmis">Transmis</SelectItem>
+-                        <SelectItem value="prévu">Prévu</SelectItem>
+-                      </SelectContent>
+-                    </Select>
+-                  </div>
+-                )}
++                </table>
+ 
+-                {context === 'modeles' && (
+-                  <div className="flex items-center space-x-2">
+-                    <input
+-                      type="checkbox"
+-                      id="is_template"
+-                      name="is_template"
+-                      checked={formData.is_template}
+-                      onChange={(e) => handleSelectChange('is_template', e.target.checked)}
+-                      disabled={isView}
+-                      className="h-4 w-4"
+-                    />
+-                    <Label htmlFor="is_template">Modèle réutilisable</Label>
+-                  </div>
+-                )}
+               </div>
+-            )}
+-          </div>
+ 
+-          {/* DND Context avec sections accordéons */}
+-          <DndContext
+-            sensors={sensors}
+-            collisionDetection={closestCenter}
+-            onDragStart={handleDragStart}
+-            onDragEnd={handleDragEnd}
+-            modifiers={[restrictToVerticalAxis]}
+-          >
+-            <div className="space-y-10">
+-              {/* WARMUP */}
+-              {renderExerciseSection('warmup', 'Échauffement', <Flame size={16} className="text-orange-500" />, 'bg-orange-100 dark:bg-orange-950')}
+-
+-              {/* MAIN BODY */}
+-              {renderExerciseSection('main', 'Corps de séance', <Target size={16} className="text-violet-500" />, 'bg-violet-100 dark:bg-violet-950')}
+-
+-              {/* COOLDOWN */}
+-              {renderExerciseSection('cooldown', 'Retour au calme', <Wind size={16} className="text-blue-500" />, 'bg-blue-100 dark:bg-blue-950')}
+             </div>
+ 
+-            {/* Drag Overlay for smooth visual feedback */}
+-            <DragOverlay dropAnimation={{
+-              sideEffects: defaultDropAnimationSideEffects({
+-                styles: {
+-                  active: {
+-                    opacity: '0.4',
+-                  },
+-                },
+-              }),
+-            }}>
+-              {activeId ? (
+-                <div className="opacity-80">
+-                  <SortableExerciseCard
+-                    ex={formData.exercises.find(ex => ex.sortId === activeId)}
+-                    isView={true}
+-                    index={-1}
+-                    updateExerciseDetails={() => {}}
+-                    onRemoveRequest={() => {}}
+-                  />
+-                </div>
+-              ) : null}
+-            </DragOverlay>
+-          </DndContext>
+-        </CardContent>
+-
+-        <CardFooter className="flex justify-end border-t p-6 mt-10 bg-muted/5 sticky bottom-0 z-10 backdrop-blur-md">
+-          <div className="flex gap-3 w-full sm:w-auto">
+-            {isView ? (
+-              <>
+-                {effectiveIsTracking && (
+-                  <Button
+-                    variant="outline"
+-                    className="flex-1 sm:px-6 h-12 rounded-xl font-bold uppercase tracking-widest text-xs border-primary/30 text-primary hover:bg-primary/5 gap-2"
+-                    onClick={async () => {
+-                      const tId = toast.loading("Transmission en cours...");
+-                      const res = await transmitSession(seanceId);
+-                      if (res.success) {
+-                        toast.success("Séance transmise !", { id: tId });
+-                        router.refresh();
+-                      } else {
+-                        toast.error("Échec de l'envoi", { id: tId });
+-                      }
+-                    }}
+-                  >
+-                    <Send size={16} />
+-                    Transmettre
+-                  </Button>
++          </div>
++
++
++          {/* ========================= */}
++          {/* ACTIONS */}
++          {/* ========================= */}
++
++          {!isDisabled && (
++            <div className="flex justify-end gap-4">
++
++              <Button
++                type="button"
++                variant="outline"
++                onClick={() => router.back()}
++                disabled={isSubmitting}
++              >
++                Annuler
++              </Button>
++
++              <Button
++                type="submit"
++                disabled={isSubmitting}
++              >
++                {isSubmitting ? (
++                  <>
++                    <IconLoader2
++                      className="animate-spin mr-2"
++                      size={16}
++                    />
++
++                    {mode === 'edit'
++                      ? 'Mise à jour...'
++                      : 'Création...'}
++                  </>
++                ) : (
++                  mode === 'edit'
++                    ? 'Mettre à jour'
++                    : 'Créer la séance'
+                 )}
+-                <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs" onClick={() => router.push(formData.athlete_id ? `/admin/users/${formData.athlete_id}` : (context === 'seances' ? '/admin/seances' : '/admin/modeles'))}>Quitter</Button>
+-              </>
+-            ) : (
+-              <Button className="flex-1 sm:px-10 h-12 rounded-xl font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20 active:scale-[0.98] transition-all" onClick={handleSubmit}>
+-                {mode === "edit" ? "Mettre à jour" : (effectiveIsTracking ? "Enregistrer la séance" : "Créer le modèle")}
+               </Button>
+-            )}
+-          </div>
+-        </CardFooter>
+-      </Card>
+-      )}
+ 
+-      {/* Exercise Selection Modal */}
+-      <Dialog open={openExercises.open} onOpenChange={(val) => setOpenExercises(prev => ({ ...prev, open: val }))}>
+-        <DialogContent className="sm:max-w-xl p-0 overflow-hidden">
+-            <div className="p-6 border-b bg-muted/5">
+-                <DialogTitle className="text-xl font-bold">Ajouter un exercice</DialogTitle>
+-                <DialogDescription>
+-                    Sélectionnez un exercice pour la section <span className="text-primary font-bold">{openExercises.section === 'warmup' ? 'Échauffement' : openExercises.section === 'cooldown' ? 'Retour au calme' : 'Corps de séance'}</span>
+-                </DialogDescription>
+             </div>
+-            <Command className="rounded-none border-none">
+-                <CommandInput placeholder="Rechercher un exercice (ex: squat, squat sauté...)" className="h-14" />
+-                <CommandList className="max-h-[400px]">
+-                <CommandEmpty>Aucun exercice trouvé.</CommandEmpty>
+-                <CommandGroup>
+-                    {availableExercises.map((ex) => (
+-                    <CommandItem
+-                        key={ex.id}
+-                        onSelect={() => addExerciseToSeance(ex, openExercises.section)}
+-                        className="py-3 px-6 cursor-pointer hover:bg-primary/5 transition-colors"
+-                    >
+-                        <div className="flex items-center justify-between w-full">
+-                            <div className="flex flex-col">
+-                                <span className="font-bold text-sm">{ex.name}</span>
+-                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">{ex.category}</span>
+-                            </div>
+-                            <Plus size={16} className="text-primary opacity-20 group-hover:opacity-100" />
+-                        </div>
+-                    </CommandItem>
+-                    ))}
+-                </CommandGroup>
+-                </CommandList>
+-            </Command>
+-        </DialogContent>
+-      </Dialog>
+-
+-      {/* Confirmation Modal for Deletion */}
+-      <Dialog open={showDeleteConfirm.open} onOpenChange={(val) => setShowDeleteConfirm(prev => ({ ...prev, open: val }))}>
+-        <DialogContent className="sm:max-w-md">
+-          <DialogHeader>
+-            <DialogTitle className="flex items-center gap-2">
+-              <Trash2 className="h-5 w-5 text-destructive" />
+-              Retirer l'exercice
+-            </DialogTitle>
+-            <DialogDescription className="py-4">
+-              Êtes-vous sûr de vouloir retirer cet exercice de la séance ? Cette action est irréversible pour cette séance.
+-            </DialogDescription>
+-          </DialogHeader>
+-          <DialogFooter className="flex gap-2 sm:justify-end">
+-            <Button variant="outline" onClick={() => setShowDeleteConfirm({ open: false, index: null })}>Annuler</Button>
+-            <Button variant="destructive" onClick={confirmRemoveExercise}>Retirer</Button>
+-          </DialogFooter>
+-        </DialogContent>
+-      </Dialog>
+-
+-      {/* Success Modal */}
+-      <Dialog open={showSuccessModal} onOpenChange={() => {}}>
+-        <DialogContent className="sm:max-w-md [&>button]:hidden border-none shadow-2xl">
+-          <DialogHeader className="flex flex-col items-center justify-center text-center py-6">
+-            <div className={cn(
+-              "h-20 w-20 rounded-2xl flex items-center justify-center mb-6 animate-in zoom-in duration-300",
+-              isDuplicate ? "bg-blue-100 text-blue-600" : "bg-green-100 text-green-600"
+-            )}>
+-              {isDuplicate ? (
+-                <LayoutGrid className="h-6 w-6 text-blue-600" />
+-              ) : (
+-                <Check className="h-10 w-10 stroke-primary" />
+-              )}
+-            </div>
+-            <DialogTitle className="text-2xl font-black uppercase tracking-tighter">
+-              {isDuplicate ? "Copié !" : "Succès !"}
+-            </DialogTitle>
+-            <DialogDescription className="text-base font-medium text-muted-foreground mt-2">
+-              {isDuplicate
+-                ? `Le programme a été dupliqué.`
+-                : `L'opération a été effectuée avec succès.`
+-              }
+-            </DialogDescription>
+-          </DialogHeader>
+-        </DialogContent>
+-      </Dialog>
+-
+-      {/* Modal de limite de séances */}
+-      <Dialog open={showMaxSessionsModal} onOpenChange={setShowMaxSessionsModal}>
+-        <DialogContent className="sm:max-w-md">
+-          <DialogHeader className="flex flex-col items-center justify-center text-center">
+-            <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center mb-4">
+-              <AlertCircle className="h-6 w-6 text-amber-600" />
+-            </div>
+-            <DialogTitle className="text-xl">Limite de séances atteinte</DialogTitle>
+-            <DialogDescription className="text-base py-2">
+-              {formData.objectif_id && (
+-                <>
+-                  Vous avez atteint le nombre maximal de séances ({objectifsList.find(obj => obj.id === formData.objectif_id)?.total_sessions || 0})
+-                  pour cet objectif. <br />
+-                  Souhaitez-vous :
+-                </>
+-              )}
+-            </DialogDescription>
+-          </DialogHeader>
+-          <DialogFooter className="flex sm:justify-center gap-2">
+-            <Button
+-              variant="outline"
+-              onClick={() => {
+-                setShowMaxSessionsModal(false)
+-                router.push(`/admin/objectifs/${formData.objectif_id}/edit`)
+-              }}
+-              className="flex-1 sm:flex-none"
+-            >
+-              Modifier l'objectif
+-            </Button>
+-            <Button
+-              variant="ghost"
+-              onClick={() => {
+-                setShowMaxSessionsModal(false)
+-                router.push(formData.athlete_id ? `/admin/users/${formData.athlete_id}` : (context === 'seances' ? '/admin/seances' : '/admin/modeles'))
+-              }}
+-              className="flex-1 sm:flex-none"
+-            >
+-              Revenir à la page précédente
+-            </Button>
+-          </DialogFooter>
+-        </DialogContent>
+-      </Dialog>
+-    </>
++          )}
++
++        </form>
++      </SortableContext>
++    </DndContext>
+   )
+-}
++}
+\ No newline at end of file

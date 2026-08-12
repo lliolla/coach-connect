@@ -8,7 +8,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { IconArrowLeft, IconLoader2 } from "@tabler/icons-react";
 import Link from "next/link";
-import { SeanceForm } from "@/components/seance/seance-form";
+import { CardSeance } from "@/components/seance/card_seance";
 import { getSessionById, updateSession } from "@/app/actions/sessions";
 import { getObjectifs } from "@/app/actions/objectifs";
 import { toast } from "sonner";
@@ -153,14 +153,10 @@ export default function EditSeancePage() {
             <h1 className="text-2xl font-bold">Modifier la séance</h1>
           </div>
           <div className="max-w-4xl mx-auto w-full py-8">
-            <SeanceForm
-              seanceId={id}
-              mode="edit"
-              onSubmit={handleSubmit}
-              onCancel={() => router.push(`/admin/seances/${id}`)}
-              objectifs={objectifs}
-              initialData={seanceData}
-            />
+            <CardSeance
+  mode="edit"
+  seanceId={id}
+/>
           </div>
         </div>
       </SidebarInset>

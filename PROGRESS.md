@@ -1,48 +1,310 @@
- 1→prompte a lancer en debute de cession : Lis @PROGRESS.md. On reprend le projet. Attaquons la première tâche de la liste 'Prochaine session'
- 2→promte fin de cession :On s'arrête là pour aujourd'hui. Peux-tu mettre à jour PROGRESS.md avec tout ce qu'on vient d'accomplir, supprimer les tâches terminées de la liste 'À faire', et lister précisément les 2 ou 3 prochaines étapes pour la prochaine fois ?"
+# 📊 Prep Athlete — Suivi du développement
 
-# Journal du projet
+## 🎯 Rôle de ce fichier
 
-## Dernière session : 28/07/2026
-### Ce qui a été fait
-- [x] **Correction d'un bug d'affichage** (FIX: bug affichage).4
-- [x] **Correction de la redirection après modification d'un objectif** (fix: cfa54c9).
-- [x] **Amélioration des boutons d'action dans le tableau des séances des objectifs** :
-  - Ajout d'une modale de confirmation pour la suppression des séances.
-  - Corrections des imports (`Dialog`, `deleteSession`).
-  - Suppression effective via `handleDeleteSession` avec modal de succès.
-  - Boutons d'action fonctionnels (icônes et actions).
-- [x] **Amélioration du flux de création de séance depuis les objectifs** :
-  - Ajout du bouton **"Nouvelle séance"** dans chaque card objectif (même avec séances existantes).
-  - Pré-remplissage automatique de l'athlète et de l'objectif dans le formulaire.
-  - Correction des redirections après création/succès (évite les erreurs 404).
-  - Redirection vers la page athlète après création.
+`PROGRESS.md` sert de **mémoire entre les sessions de développement**.
 
-## Dernière session : 27/07/2026
-### Ce qui a été fait
-- [x] Uniformisation des styles des composants Accordion (CollapsibleCard) avec les tables
-  - Conteneur : `rounded-xl border shadow-sm bg-card overflow-hidden`
-  - En-tête : `px-6 py-4 text-left text-xs capitalize`
-  - Contenu : `bg-transparent divide-y divide-border px-6 py-4`
-- [x] Suppression du soulignement au survol sur les titres des Accordions
-- [x] Ajustement du titre "Objectifs (X/Y)" en gras et légèrement plus grand (`text-xl font-bold`)
-- [x] Titre des objectifs dans les cards : texte normal avec première lettre en majuscule
-- [x] Badge de progression en gris discret (`bg-gray-200 text-gray-700`) et en gras
-- [x] Suppression de la barre de progression et du ratio de progression dans les cards
-- [x] Mise à jour du README.md avec les styles UI de référence
+Il doit permettre de reprendre le travail sans que l'IA ait besoin de deviner ce qui a été fait.
 
-### Prochaine session
-- [ ] Réagencer la barre du menu latéral.
-- [ ] **Tester les nouvelles fonctionnalités** :
-  - Vérifier la suppression des séances avec modale de confirmation.
-  - Valider le pré-remplissage des formulaires de création de séance.
-- [ ] **Améliorer le chargement des données** (optimisation des requêtes Supabase).
-- [ ] Fonctionnalité de la page athlète quand on n'est pas admin.
-- [ ] **Documenter les décisions techniques** pour les modales de succès/confirmation.
+### Règles
 
-### Notes & Décisions techniques
-- Utilisation de Server Actions pour les mutations.
-- Les styles des Accordions doivent rester alignés avec ceux des tables pour une expérience utilisateur uniforme.
-- **Les modales de succès doivent se fermer automatiquement après 2 secondes** et rediriger l'utilisateur (pas de bouton "Fermer").
-- **Les modales de confirmation sont obligatoires pour les actions de suppression**.
-- **Pré-remplissage des formulaires** pour améliorer l'expérience utilisateur (ex: athlète et objectif dans le formulaire de création de séance).
+- Mettre ce fichier à jour à la fin d'une session significative.
+- Ne pas marquer une tâche comme terminée sans test ou validation.
+- Garder uniquement les informations utiles à la reprise.
+- Limiter les prochaines étapes à **2 ou 3 actions précises**.
+
+---
+
+# 🚀 État actuel du projet
+
+## Branche de travail
+
+```text
+dev
+```
+
+La branche `main` doit rester stable.
+
+---
+
+## 🟢 État général
+
+Le projet compile actuellement avec succès.
+
+Dernier build connu :
+
+```bash
+npm run build
+```
+
+Résultat :
+
+```text
+✓ Compiled successfully
+✓ Linting and checking validity of types
+✓ Collecting page data
+✓ Generating static pages
+✓ Collecting build traces
+✓ Finalizing page optimization
+```
+
+### Version actuelle
+
+```text
+Next.js 15.3.8
+React 19
+Supabase PostgreSQL
+```
+
+---
+
+# 📌 MÉTHODE DE TRAVAIL
+
+## Début de session
+
+Utiliser :
+
+```text
+Lis @AGENTS.md et @PROGRESS.md.
+
+Nous reprenons le projet.
+
+Ne modifie aucun fichier pour le moment.
+
+1. Résume l'état actuel du projet.
+2. Indique la branche Git actuelle.
+3. Indique la fonctionnalité actuellement en cours.
+4. Indique les fichiers concernés.
+5. Donne les 2 ou 3 prochaines étapes prévues.
+
+Attends mes instructions.
+```
+
+---
+
+## Pendant une fonctionnalité
+
+### 1. ANALYSE
+
+Comprendre le fonctionnement existant.
+
+### 2. PLAN
+
+Définir la modification minimale.
+
+### 3. MODIFICATION
+
+Modifier uniquement les fichiers nécessaires.
+
+### 4. VÉRIFICATION
+
+```bash
+git diff --check
+git diff --stat
+git diff -- <fichiers>
+npm run build
+```
+
+### 5. TEST
+
+Tester manuellement la fonctionnalité.
+
+### 6. GIT
+
+Proposer le commit.
+
+**Ne jamais committer sans validation explicite.**
+
+---
+
+# 🗓️ Historique récent
+
+## Session — 10/08/2026
+
+### Statut
+
+`VALIDÉE`
+
+### Ce qui a été vérifié
+
+- [x] Branche de développement utilisée.
+- [x] Problème d'import de `CardObjectif` corrigé dans la page de création.
+- [x] `app/admin/objectifs/page.jsx` restauré à sa version Git après une modification hors périmètre.
+- [x] Fichiers accidentels sans extension identifiés puis supprimés lorsqu'ils étaient clairement des artefacts.
+- [x] Le fichier `AGENTS.md` a été renforcé avec une méthode de travail persistante.
+- [x] Le build Next.js a réussi.
+- [x] `git diff --check` ne signale pas d'erreur de whitespace ; les messages LF/CRLF sont des avertissements de fin de ligne.
+- [x] La configuration Aider utilise `AGENTS.md` comme fichier de référence.
+- [x] Les commits automatiques Aider sont désactivés.
+
+### Fichiers importants récemment concernés
+
+- `frontend/app/admin/objectifs/new/page.jsx`
+- `frontend/app/admin/objectifs/page.jsx`
+- `frontend/components/seance/card_seance.jsx`
+- `AGENTS.md`
+- `PROGRESS.md`
+
+### Point important
+
+`frontend/components/seance/card_seance.jsx` a subi une modification importante.
+
+**Ne pas le refactoriser davantage sans fonctionnalité précise à traiter.**
+
+Toute nouvelle modification de ce composant doit commencer par une analyse ciblée et un diff contrôlé.
+
+---
+
+# 🎯 PROCHAINE FONCTIONNALITÉ
+
+## Statut
+
+`ANALYSE`
+
+### Principe
+
+Nous reprenons maintenant le projet **fonctionnalité par fonctionnalité**.
+
+**Ne pas toucher plusieurs fonctionnalités simultanément.**
+
+---
+
+## Prochaine étape 1
+
+### 🔎 Analyser la fonctionnalité choisie
+
+Avant toute modification :
+
+- identifier la page ;
+- identifier le composant principal ;
+- identifier les Server Actions ;
+- identifier les composants enfants ;
+- vérifier le comportement actuel.
+
+**Aucune modification pendant cette phase.**
+
+---
+
+## Prochaine étape 2
+
+### 🧪 Tester le comportement existant
+
+Avant de corriger :
+
+- reproduire le problème ;
+- déterminer si le problème est réellement présent ;
+- vérifier que les autres parcours fonctionnent.
+
+---
+
+## Prochaine étape 3
+
+### 🛠️ Appliquer la correction minimale
+
+Après validation du plan :
+
+- modifier uniquement les fichiers nécessaires ;
+- exécuter `git diff --check` ;
+- contrôler `git diff --stat` ;
+- lancer `npm run build` ;
+- tester la fonctionnalité.
+
+---
+
+# 🧭 Règles pour la prochaine session
+
+## Ne pas faire
+
+- [ ] Ne pas refactoriser `card_seance.jsx` globalement.
+- [ ] Ne pas modifier plusieurs fonctionnalités en même temps.
+- [ ] Ne pas restaurer un ancien fichier sans vérifier son contenu actuel.
+- [ ] Ne pas supprimer un fichier sans vérifier qu'il s'agit bien d'un artefact.
+- [ ] Ne pas committer sans validation.
+
+## Faire
+
+- [ ] Lire `AGENTS.md`.
+- [ ] Lire `PROGRESS.md`.
+- [ ] Vérifier `git status --short`.
+- [ ] Vérifier `git branch --show-current`.
+- [ ] Choisir une seule fonctionnalité.
+- [ ] Analyser avant de modifier.
+- [ ] Tester après modification.
+- [ ] Mettre à jour `PROGRESS.md`.
+
+---
+
+# 🧠 Décisions techniques importantes
+
+## Supabase
+
+Les opérations DB utilisent les **Server Actions**.
+
+---
+
+## Objectifs
+
+Les objectifs utilisent notamment :
+
+```text
+total_sessions
+completed
+athlete_id
+```
+
+Les séances rattachées à un objectif doivent pouvoir afficher leur progression.
+
+---
+
+## Séances
+
+Une nouvelle séance est par défaut :
+
+```text
+en attente
+```
+
+Après transmission :
+
+```text
+transmis
+```
+
+---
+
+## Modales
+
+### Succès
+
+- fermeture automatique après 2 secondes ;
+- redirection automatique ;
+- pas de bouton de fermeture.
+
+### Suppression
+
+- confirmation obligatoire ;
+- modale stylisée ;
+- jamais de `confirm()` natif.
+
+---
+
+# 🧾 Prompt de fin de session
+
+À utiliser systématiquement :
+
+```text
+Nous arrêtons la session ici.
+
+Mets à jour @PROGRESS.md avec :
+
+- ce qui a réellement été fait aujourd'hui ;
+- les fichiers modifiés ;
+- les tests effectués et leur résultat ;
+- les problèmes restant à résoudre ;
+- le statut de la fonctionnalité en cours ;
+- les 2 ou 3 prochaines étapes précises pour la prochaine session.
+
+Ne marque pas comme terminée une tâche qui n'a pas été testée ou validée.
+
+Ne modifie aucun autre fichier.
+```

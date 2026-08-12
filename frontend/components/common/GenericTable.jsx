@@ -16,7 +16,7 @@ import {
   Calendar
 } from 'lucide-react'
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
+import { cn, getSessionNumber } from "@/lib/utils"
 import { transmitSession } from "@/app/actions/sessions"
 import {
   DropdownMenu,
@@ -30,21 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const ITEMS_PER_PAGE = 10
 
-export function getSessionProgression(sessionId, rawObjectif) {
-  if (!rawObjectif || !rawObjectif.sessions) return null
 
-  const sessions = rawObjectif.sessions
-  const sortedSessions = [...sessions].sort((a, b) => new Date(a.date) - new Date(b.date))
-  const index = sortedSessions.findIndex(s => s.id === sessionId)
-
-  if (index === -1) return null
-
-  return {
-    current: index + 1,
-    total: sessions.length,
-    label: `Séance ${index + 1} / ${sessions.length}`
-  }
-}
 
 export default function GenericTable({
   data,
@@ -191,7 +177,7 @@ export default function GenericTable({
           </thead>
           <tbody className="bg-transparent divide-y divide-border">
             {paginatedData.map((item) => {
-              const progression = isObjectifs ? null : getSessionProgression(item.id, item.rawObjectif)
+              const progression = isObjectifs ? null : getSessionNumber(item.id, item.rawObjectif)
               return (
                 <tr key={item.id} className="hover:bg-muted/5 transition-colors group">
                   {isTracking && !isObjectifs && (
@@ -241,7 +227,7 @@ export default function GenericTable({
                       {progression ? (
                         <div className="inline-flex items-center gap-1.5 text-[10px] text-primary font-black uppercase tracking-widest bg-primary/5 px-2 py-1 rounded-full border border-primary/10">
                           <Target size={10} />
-                          {progression.current} / {progression.total}
+                          {progression}
                         </div>
                       ) : (
                         <span className="text-gray-400 italic text-xs">Hors objectif</span>

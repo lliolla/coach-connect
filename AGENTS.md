@@ -1,67 +1,58 @@
-# Prep Athlete - Project Analysis
+# 🏟️ Prep Athlete — Règles de développement
 
-## Overview
-This project is a web application for athlete preparation management. It is a full-stack Next.js application using Server Actions to communicate directly with Supabase.
+## 🎯 OBJECTIF DU DOCUMENT
 
-## Technical Stack
-- **Frontend/Backend:** Next.js 15.3.3 (App Router), React 19.
-- **Database:** Supabase (PostgreSQL) with Row Level Security (RLS) via `@supabase/ssr`.
-- **Styling:** Tailwind CSS 4, Lucide React & Tabler Icons.
-- **Data Visualization:** Recharts.
-- **UI Components:** Radix UI primitives, Shadcn-like components.
+Ce fichier contient les **règles permanentes du projet**.
 
-## Project Structure
-- `frontend/app/`: Main application routes (Dashboard, Tracking, Athletes, Exercises, Administration).
-- `frontend/app/actions/`: Server Actions for database communication (athletes, exercices, lookups, sessions).
-- `frontend/components/`: Reusable UI components.
-- `frontend/lib/supabase/`: Supabase client configuration (server and client).
+Il constitue la **source de vérité des règles de développement**.
 
-## Database Schema (Supabase)
-- **athletes**: Profiles (id, first_name, last_name, email, sports, objectives, avatar_url, abonnement_id, mode_paiement_id).
-- **abonnements**: List of available subscriptions.
-- **groupes**: List of athlete groups.
-- **objectifs**: List of objectives (id, label, description, weeksCount, total_sessions, athlete_id).
-- **sessions**: Enveloppe de la séance (id, title, date, status, athlete_id, objectif_id, is_template, duration, main_rounds).
-- **exercices_library**: Bibliothèque de modèles d'exercices (id, name, description, category, unit, video_url, image_data, intensity).
-- **session_exercises**: Table de liaison (id, session_id, exercise_id, sets, reps, weight, order_index, rest_time, notes, intensity, section).
+### RÈGLE ABSOLUE
 
-## Workflow Rules (CRITICAL)
-- **Langue**: Toutes les communications et la documentation technique doivent être en français.
-- **Git Commits**: After each feature creation or modification, a git commit must be proposed but never done alone.
-- **Validation**: **DO NOT** commit without explicit user validation of the proposed commit message and changes.
-- **UI/UX Standard**: 
-    - All forms (creation, modification) MUST use styled Modals/Dialogs for success or error messages.
-    - **SUCCESS**: Success Modals MUST close automatically after 2 seconds and trigger the appropriate redirection. They MUST NOT contain a "Close" button to maintain a fluid experience.
-    - **OBJECTIFS & PROGRESSION**: 
-        - Les objectifs incluent un champ `total_sessions` (ex: 20).
-        - Les séances liées à un objectif affichent un badge de progression (ex: "Séance 5 / 20").
-        - Le rang est calculé dynamiquement par un tri chronologique des séances rattachées au même objectif.
-    - **STATUTS DES SÉANCES**: 
-        - Par défaut, une nouvelle séance est créée avec le statut `en attente`.
-        - Une fois transmise à l'athlète, le statut passe à `transmis` (icône verte).
-        - `en attente` (icône orange) signifie que la séance n'a pas encore été transmise.
-    - **SESSION STRUCTURE**: Sessions MUST be divided into 3 distinct blocks: Warmup (optional), Main Body (with a "Rounds/Tours" setting), and Cooldown (optional).
-    - **DRAG & DROP**: Exercise reordering MUST be implemented using a fluid Drag & Drop interface, optimized for mobile usage (large touch targets, visual feedback).
-    - **DELETION**: All deletion actions MUST use a styled Confirmation Modal. Native browser pop-ups (`alert`, `confirm`) are STRICTLY FORBIDDEN.
-    - **Toasts**: Prefer Success Modals over Toasts for critical validation messages.
-    - **TABLES**: 
-        - In the Session Templates Library (`/sessions`), the "Athlete" and "Transmission" columns must be hidden.
-        - In the Session Tracking (`/suivis`), the "Athlete" name must be displayed and the "Transmission" action must be available.
-- **Database Consistency**: Use Server Actions for all DB operations. Environment variables MUST use the `NEXT_PUBLIC_` prefix for Supabase keys.
+**Avant toute analyse, recherche ou modification de code, Aider doit lire `AGENTS.md`.**
 
-## Development
-- **Frontend:** `npm run dev` in `frontend` directory.
-- **Deployment:** Vercel.
+Il ne doit jamais supposer qu'il connaît déjà son contenu.
 
-## RÈGLES DE MODIFICATION DU CODE
+À chaque nouvelle tâche ou nouvelle session :
 
-- Ne jamais réécrire ou refactoriser massivement un fichier pour corriger une fonctionnalité ponctuelle.
-- Avant toute modification, identifier précisément le fichier et la fonctionnalité concernés.
-- Ne modifier que les fichiers strictement nécessaires à la tâche demandée.
-- Ne jamais supprimer une fonctionnalité existante pour résoudre un problème sans validation explicite.
-- Avant toute modification importante, analyser le code existant et expliquer brièvement ce qui sera changé.
-- Après modification, vérifier avec `git diff` que seules les modifications demandées ont été effectuées.
-- Ne jamais lancer de refactoring global sans demande explicite.
-- Ne jamais utiliser `/lint` avec une instruction de correction automatique lorsque le rapport ne contient pas d'erreur explicite.
-- Si `npm run build` réussit, ne pas modifier du code uniquement à cause d'un avertissement ambigu d'Aider.
-- Les commits Git sont interdits sans validation explicite de l'utilisateur.
+1. Lire `@AGENTS.md`.
+2. Lire `@PROGRESS.md`.
+3. Vérifier l'état Git.
+4. Comprendre le périmètre de la demande.
+5. Analyser avant toute modification.
+
+**La lecture de ces fichiers est obligatoire à chaque nouvelle tâche.**
+
+---
+
+# 🛠️ STACK TECHNIQUE
+
+- **Framework :** Next.js 15.3.8 — App Router
+- **Langage :** React 19 / JavaScript
+- **Base de données :** Supabase PostgreSQL
+- **Sécurité DB :** RLS avec `@supabase/ssr`
+- **Style :** Tailwind CSS 4
+- **UI :** Radix UI / composants de type shadcn/ui
+- **Icônes :** Lucide React / Tabler Icons
+- **Graphiques :** Recharts
+- **Déploiement :** Vercel
+
+---
+
+# 📁 STRUCTURE DU PROJET
+
+```text
+app V1/
+├── AGENTS.md
+├── PROGRESS.md
+├── README.md
+├── .aider.conf.yml
+├── frontend/
+│   ├── app/
+│   │   ├── actions/
+│   │   ├── admin/
+│   │   └── ...
+│   ├── components/
+│   ├── lib/
+│   │   └── supabase/
+│   └── ...
+└── supabase/
