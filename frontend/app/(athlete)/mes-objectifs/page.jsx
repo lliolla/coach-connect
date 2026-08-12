@@ -97,7 +97,7 @@ export default function MesObjectifsPage() {
                           </div>
                         </div>
                         <div className="text-xs text-muted-foreground flex justify-between">
-                          <span>Durée : {obj.weeksCount || 4} semaines</span>
+                          <span>Durée : {obj.duree || 4} semaines</span>
                           <span>Prévu : {total} séances</span>
                         </div>
                       </div>

@@ -414,9 +414,9 @@ export default function AthleteDetailPage() {
                       <Badge className="seance-badge text-gray-700 bg-gray-200 px-3 py-1 font-bold">
                         {objectif.progression.display}
                       </Badge>
-                      {objectif.weeksCount && (
+                      {objectif.duree && (
                         <span className="text-sm text-muted-foreground">
-                          ({objectif.weeksCount} semaines)
+                          ({objectif.duree} semaines)
                         </span>
                       )}
                     </div>

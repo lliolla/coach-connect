@@ -13,7 +13,7 @@ export async function getObjectifs() {
     // Récupérer les objectifs avec les champs minimaux requis
     const { data, error } = await supabase
       .from('objectifs')
-      .select('id, label, description, total_sessions, weeksCount, duree, completed, athletes_objectifs(athlete_id)')
+      .select('id, label, description, total_sessions, duree, completed, athletes_objectifs(athlete_id)' )
       .order('label', { ascending: true })
 
     if (error) {
@@ -27,7 +27,7 @@ export async function getObjectifs() {
       label: obj.label || 'Sans nom', // Garantit que label existe toujours
       description: obj.description || '',
       total_sessions: obj.total_sessions || 20,
-      weeksCount: obj.weeksCount || 4,
+
       duree: obj.duree || 4,
       completed: obj.completed || false,
       athlete_id: obj.athletes_objectifs?.[0]?.athlete_id || null
@@ -75,7 +75,6 @@ export async function createObjectif(formData) {
       label: formData.label,
       description: formData.description,
       total_sessions: parseInt(formData.total_sessions) || 20,
-      weeksCount: parseInt(formData.weeksCount) || 4,
       duree: parseInt(formData.duree) || 4,
       completed: formData.completed || false
     }
